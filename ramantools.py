@@ -73,6 +73,14 @@ class ramanmap:
 		self.ramanshift = m[:, 0]
 		self.map = np.reshape(m[:, 1:], (m.shape[0], self.pixel_y, self.pixel_x))
 
+		# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
+		with open(map_path, 'r') as file:
+			lines = [next(file).strip() for _ in range(17)]
+			self.metadata_datafile = '\n'.join(lines)
+
+		# extract the WIP filename
+		self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+
 		return self.map
 
 	def _toxarray(self):
@@ -91,6 +99,7 @@ class ramanmap:
 				'height': height
 				})
 		# adding attributes
+		self.mapxr.attrs['wipfile name'] = self.wipfilename
 		self.mapxr.attrs['units'] = 'au'
 		self.mapxr.attrs['long_name'] = 'Raman intensity'
 		self.mapxr.attrs['sample name'] = self.samplename
@@ -174,6 +183,13 @@ class singlespec:
 		self.ramanshift = ss[:, 0]
 		self.counts = ss[:, 1]
 
+		# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
+		with open(spec_path, 'r') as file:
+			lines = [next(file).strip() for _ in range(17)]
+			self.metadata_datafile = '\n'.join(lines)
+
+		self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+
 		return self.ramanshift, self.counts
 
 	def _toxarray(self):
@@ -185,6 +201,7 @@ class singlespec:
 			dims = ['ramanshift'],
 			coords = {'ramanshift': self.ramanshift})
 		# adding attributes
+		self.ssxr.attrs['wipfile name'] = self.wipfilename
 		self.ssxr.attrs['units'] = 'au'
 		self.ssxr.attrs['long_name'] = 'Raman intensity'
 		self.ssxr.attrs['sample name'] = self.samplename
@@ -202,7 +219,7 @@ class singlespec:
 		self.ssxr.coords['ramanshift'].attrs['units'] = 'cm$^{-1}$'
 		self.ssxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
 
-## ----------------------------------------------------
+
 """
 Tools -------------------------------------------------
 """
