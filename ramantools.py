@@ -74,7 +74,7 @@ class ramanmap:
 		self.map = np.reshape(m[:, 1:], (m.shape[0], self.pixel_y, self.pixel_x))
 
 		# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
-		with open(map_path, 'r') as file:
+		with open(map_path, 'r', encoding = 'latin1') as file:
 			lines = [next(file).strip() for _ in range(17)]
 			self.metadata_datafile = '\n'.join(lines)
 
@@ -184,7 +184,7 @@ class singlespec:
 		self.counts = ss[:, 1]
 
 		# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
-		with open(spec_path, 'r') as file:
+		with open(spec_path, 'r', encoding = 'latin1') as file:
 			lines = [next(file).strip() for _ in range(17)]
 			self.metadata_datafile = '\n'.join(lines)
 
