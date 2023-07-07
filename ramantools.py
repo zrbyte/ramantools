@@ -14,7 +14,8 @@ class ramanmap:
 		self._load_info(info_path)
 		# Load the Raman map
 		self._load_map(map_path)
-		
+		# load the data into an xarray container
+		self._toxarray()
 
 
 	def print_metadata(self):
@@ -73,3 +74,64 @@ class ramanmap:
 		self.map = np.reshape(m[:, 1:], (m.shape[0], self.pixel_y, self.pixel_x))
 
 		return self.map
+
+	def _toxarray(self):
+		"""
+		Load the raw numpy data, as well as the metadata into an xarray object
+		"""
+		width = np.linspace(0, self.size_x, num = self.pixel_x)
+		height = np.linspace(0, self.size_y, num = self.pixel_y)
+		# We need to flip the along the hieght axis, so that the data show up in the same way as in Witec Project
+		self.mapxr = xr.DataArray(
+			np.flip(self.map, axis = 1),
+			dims = ['ramanshift', 'height', 'width'],
+			coords = {
+				'ramanshift': self.ramanshift,
+				'width': width,
+				'height': height
+				})
+		# adding attributes
+		self.mapxr.attrs['units'] = 'au'
+		self.mapxr.attrs['long_name'] = 'Raman intensity'
+		self.mapxr.attrs['sample name'] = self.samplename
+		self.mapxr.attrs['laser excitation'] = str(self.laser) + ' nm'
+		self.mapxr.attrs['time of measurement'] = self.time
+		self.mapxr.attrs['date of measurement'] = self.date
+		self.mapxr.attrs['integration time'] = str(self.itime) + ' s'
+		self.mapxr.attrs['map width'] = str(self.size_x) + ' um'
+		self.mapxr.attrs['map height'] = str(self.size_y) + ' um'
+		self.mapxr.attrs['sample positioner X'] = self.positioner_x
+		self.mapxr.attrs['sample positioner Y'] = self.positioner_y
+		self.mapxr.attrs['objective name'] = self.objname
+		self.mapxr.attrs['objective magnification'] = self.objmagn + 'x'
+		self.mapxr.attrs['grating'] = self.grating
+		# coordinate attributes
+		self.mapxr.coords['ramanshift'].attrs['units'] = 'cm$^{-1}$'
+		self.mapxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
+		self.mapxr.coords['width'].attrs['units'] = '$\mathrm{\mu m}$'
+		self.mapxr.coords['width'].attrs['long_name'] = 'width'
+		self.mapxr.coords['height'].attrs['units'] = '$\mathrm{\mu m}$'
+		self.mapxr.coords['height'].attrs['long_name'] = 'height'
+
+def plotspec(xrobject, width, height, shift):
+	# Selecting the values for the spectrum
+	spec = xrobject.sel(width = width, height = height, method = 'nearest')
+	ramanintensity = xrobject.sel(ramanshift = shift, method = 'nearest')
+
+	# Creating a figure with two subplots and a given size
+	fig, [ax0, ax1] = pl.subplots(1, 2, figsize = (9, 4))
+	# plotting the density plot of the 2D peak area ratio
+	ramanintensity.plot(
+		ax = ax0,
+		cmap = 'plasma')
+	# plotting the spectrum at the given coordinates on the right plot
+	spec.plot(ax = ax1, color = 'lime')
+	# plotting a dot on the density map, where the selected spectrum was measured
+	ax0.scatter(
+		spec.coords['width'].data,
+		spec.coords['height'].data,
+		color = 'lime', marker = 'x')
+	ax0.set_aspect('equal', 'box')
+	ax0.axes.title.set_size(10)
+	ax1.axes.title.set_size(10)
+	pl.tight_layout()
