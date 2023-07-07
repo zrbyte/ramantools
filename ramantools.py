@@ -113,6 +113,100 @@ class ramanmap:
 		self.mapxr.coords['height'].attrs['units'] = '$\mathrm{\mu m}$'
 		self.mapxr.coords['height'].attrs['long_name'] = 'height'
 
+## ----------------------------------------------------
+
+class singlespec:
+	"""
+	Container for Raman data imported from a text file. The text file needs to be exported as a "table" from Witec Project or Witec Control
+	Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.
+	"""
+	def __init__(self, spec_path, info_path):
+		# Load the metadata
+		self._load_info(info_path)
+		# Load the Raman map
+		self._load_singlespec(spec_path)
+		# load the data into an xarray container
+		self._toxarray()
+
+
+	def print_metadata(self):
+		print(self.metadata)
+
+	def _load_info(self, info_path, **kwargs):
+		"""
+		Load the file containing the metadata.
+		The metadata will be filled by searching the info file for various patterns, using regular expressions.
+		"""
+		with open(info_path, mode='r', encoding='latin1') as infofile:
+			metadata = infofile.read()
+
+		self.metadata = metadata
+		# find any character up to a newline, show the forst result `[0]`, this will be the name of the map.
+		# Use raw strings: `r` to treat special characters as characters.
+		self.specname = re.findall(r'.*', metadata)[0]
+		# date of measurement
+		self.date = re.findall(r'(?<=Start Date:\t)-?.+', metadata)[0]
+		# time of measurement
+		self.time = re.findall(r'(?<=Start Time:\t)-?.+', metadata)[0]
+		# sample name
+		self.samplename = re.findall(r'(?<=Sample Name:\t)-?.+', metadata)[0]
+		# laser energy
+		self.laser = float(re.findall(r'(?<=Excitation Wavelength \[nm\]:\t)-?.+', metadata)[0])
+		# integration time
+		self.itime = float(re.findall(r'(?<=Integration Time \[s\]:\t)-?.+', metadata)[0])
+		# grating
+		self.grating = re.findall(r'(?<=Grating:\t)-?.+', metadata)[0]
+		# objective name and magnification
+		self.objname = re.findall('(?<=Objective Name:\t)-?.+', metadata)[0]
+		self.objmagn = re.findall('(?<=Objective Magnification:\t)-?.+', metadata)[0]
+		# positioner position
+		self.positioner_x = float(re.findall(r'(?<=Position X \[µm\]:\t)-?.+', metadata)[0])
+		self.positioner_y = float(re.findall(r'(?<=Position Y \[µm\]:\t)-?.+', metadata)[0])
+		self.positioner_z = float(re.findall(r'(?<=Position Z \[µm\]:\t)-?.+', metadata)[0])
+
+		return metadata
+
+	def _load_singlespec(self, spec_path):
+		"""
+		Load the Raman map data into an xarray container
+		"""
+		ss = np.loadtxt(spec_path, skiprows = 17, encoding = 'latin1')
+		self.ramanshift = ss[:, 0]
+		self.counts = ss[:, 1]
+
+		return self.ramanshift, self.counts
+
+	def _toxarray(self):
+		"""
+		Load the raw numpy data, as well as the metadata into an xarray object
+		"""
+		self.ssxr = xr.DataArray(
+			self.counts,
+			dims = ['ramanshift'],
+			coords = {'ramanshift': self.ramanshift})
+		# adding attributes
+		self.ssxr.attrs['units'] = 'au'
+		self.ssxr.attrs['long_name'] = 'Raman intensity'
+		self.ssxr.attrs['sample name'] = self.samplename
+		self.ssxr.attrs['laser excitation'] = str(self.laser) + ' nm'
+		self.ssxr.attrs['time of measurement'] = self.time
+		self.ssxr.attrs['date of measurement'] = self.date
+		self.ssxr.attrs['integration time'] = str(self.itime) + ' s'
+		self.ssxr.attrs['sample positioner X'] = self.positioner_x
+		self.ssxr.attrs['sample positioner Y'] = self.positioner_y
+		self.ssxr.attrs['sample positioner Z'] = self.positioner_z
+		self.ssxr.attrs['objective name'] = self.objname
+		self.ssxr.attrs['objective magnification'] = self.objmagn + 'x'
+		self.ssxr.attrs['grating'] = self.grating
+		# coordinate attributes
+		self.ssxr.coords['ramanshift'].attrs['units'] = 'cm$^{-1}$'
+		self.ssxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
+
+## ----------------------------------------------------
+"""
+Tools -------------------------------------------------
+"""
+
 def plotspec(xrobject, width, height, shift):
 	# Selecting the values for the spectrum
 	spec = xrobject.sel(width = width, height = height, method = 'nearest')
