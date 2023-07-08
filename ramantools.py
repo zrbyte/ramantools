@@ -89,7 +89,7 @@ class ramanmap:
 		"""
 		width = np.linspace(0, self.size_x, num = self.pixel_x)
 		height = np.linspace(0, self.size_y, num = self.pixel_y)
-		# We need to flip the along the hieght axis, so that the data show up in the same way as in Witec Project
+		# We need to flip the array along the height axis, so that the data show up in the same orientation as in Witec Project.
 		self.mapxr = xr.DataArray(
 			np.flip(self.map, axis = 1),
 			dims = ['ramanshift', 'height', 'width'],
