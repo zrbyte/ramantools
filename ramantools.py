@@ -26,7 +26,7 @@ class ramanmap:
 		Load the file containing the metadata.
 		The metadata will be filled by searching the info file for various patterns, using regular expressions.
 		"""
-		with open(info_path, mode='r') as infofile:
+		with open(info_path, mode = 'r', encoding = 'latin1') as infofile:
 			metadata = infofile.read()
 
 		self.metadata = metadata
@@ -146,7 +146,7 @@ class singlespec:
 		Load the file containing the metadata.
 		The metadata will be filled by searching the info file for various patterns, using regular expressions.
 		"""
-		with open(info_path, mode='r') as infofile:
+		with open(info_path, mode='r', encoding = 'latin1') as infofile:
 			metadata = infofile.read()
 
 		self.metadata = metadata
