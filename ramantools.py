@@ -66,7 +66,7 @@ class ramanmap:
 
 	def _load_map(self, map_path):
 		"""
-		Load the Raman map data into an xarray container
+		Load the Raman map data into a numpy array.
 		"""
 		m = np.loadtxt(map_path, skiprows=19, encoding='latin1')
 		# The raman shift is the first column in the exported table.
@@ -85,7 +85,7 @@ class ramanmap:
 
 	def _toxarray(self):
 		"""
-		Load the raw numpy data, as well as the metadata into an xarray object
+		Load the raw numpy data, as well as the metadata into an xarray object.
 		"""
 		width = np.linspace(0, self.size_x, num = self.pixel_x)
 		height = np.linspace(0, self.size_y, num = self.pixel_y)
@@ -177,7 +177,7 @@ class singlespec:
 
 	def _load_singlespec(self, spec_path):
 		"""
-		Load the Raman map data into an xarray container
+		Load the Raman map data into a numpy array.
 		"""
 		ss = np.loadtxt(spec_path, skiprows = 17, encoding = 'latin1')
 		self.ramanshift = ss[:, 0]
