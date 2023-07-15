@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ramantools module &mdash; Ramantools 2023 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Ramantools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">ramantools module</a><ul>
+<li><a class="reference internal" href="#ramantools.plotspec"><code class="docutils literal notranslate"><span class="pre">plotspec()</span></code></a></li>
+<li><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
+<li><a class="reference internal" href="#ramantools.ramanmap.map_path"><code class="docutils literal notranslate"><span class="pre">ramanmap.map_path</span></code></a></li>
+<li><a class="reference internal" href="#ramantools.ramanmap.info_path"><code class="docutils literal notranslate"><span class="pre">ramanmap.info_path</span></code></a></li>
+<li><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
+<li><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
+<li><a class="reference internal" href="#ramantools.singlespec.map_path"><code class="docutils literal notranslate"><span class="pre">singlespec.map_path</span></code></a></li>
+<li><a class="reference internal" href="#ramantools.singlespec.info_path"><code class="docutils literal notranslate"><span class="pre">singlespec.info_path</span></code></a></li>
+<li><a class="reference internal" href="#ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
+<li><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Ramantools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>ramantools module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ramantools.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-ramantools">
+<span id="ramantools-module"></span><h1>ramantools module<a class="headerlink" href="#module-ramantools" title="Permalink to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="ramantools.plotspec">
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">plotspec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xrobject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#plotspec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.plotspec" title="Permalink to this definition"></a></dt>
+<dd><p><cite>plotspec</cite> plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
+First variable is a <cite>ramanmap</cite> object, followed by the specific width and height coordinates for the single spectrum.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xrobject</strong> (<cite>xarray DataArray</cite>) – This is a Raman map</p></li>
+<li><p><strong>width</strong> (<em>float</em>) – ‘width’ coordinate in um, from xrobject</p></li>
+<li><p><strong>height</strong> (<em>float</em>) – ‘height’ coordinate in um, from xrobject</p></li>
+<li><p><strong>shift</strong> (<em>float</em>) – ‘ramanshift’ coordinate in um, from xrobject</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>none</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ramantools.ramanmap">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">ramanmap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">map_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">info_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>Container for Raman data imported from a text file. The text file needs to be exported as a “table” from Witec Project or Witec Control</dt><dd><p>Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.</p>
+</dd>
+</dl>
+<p>…</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ramantools.ramanmap.map_path">
+<span class="sig-name descname"><span class="pre">map_path</span></span><a class="headerlink" href="#ramantools.ramanmap.map_path" title="Permalink to this definition"></a></dt>
+<dd><p>Path to the exported text file containing the Raman spectroscopy map.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ramantools.ramanmap.info_path">
+<span class="sig-name descname"><span class="pre">info_path</span></span><a class="headerlink" href="#ramantools.ramanmap.info_path" title="Permalink to this definition"></a></dt>
+<dd><p>Path to the exported metadata text file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramanmap.print_metadata">
+<span class="sig-name descname"><span class="pre">print_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.print_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.print_metadata" title="Permalink to this definition"></a></dt>
+<dd><p>Print the imported metadata.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">print_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.print_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ramantools.singlespec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">singlespec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">info_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="simple">
+<dt>Container for Raman data imported from a text file. The text file needs to be exported as a “table” from Witec Project or Witec Control</dt><dd><p>Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.
+It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.</p>
+</dd>
+</dl>
+<p>…</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ramantools.singlespec.map_path">
+<span class="sig-name descname"><span class="pre">map_path</span></span><a class="headerlink" href="#ramantools.singlespec.map_path" title="Permalink to this definition"></a></dt>
+<dd><p>Path to the exported text file containing the Raman spectroscopy map.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ramantools.singlespec.info_path">
+<span class="sig-name descname"><span class="pre">info_path</span></span><a class="headerlink" href="#ramantools.singlespec.info_path" title="Permalink to this definition"></a></dt>
+<dd><p>Path to the exported metadata text file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.singlespec.print_metadata">
+<span class="sig-name descname"><span class="pre">print_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.print_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.print_metadata" title="Permalink to this definition"></a></dt>
+<dd><p>Print the imported metadata.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">print_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.print_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Permalink to this definition"></a></dt>
+<dd><p>Prints the metadata of the <cite>singlespec</cite> object.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Peter Nemes-Incze.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
