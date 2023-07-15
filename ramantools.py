@@ -4,11 +4,32 @@ import pylab as pl
 from scipy.optimize import curve_fit
 import xarray as xr
 
+"""
+Module ramantools
+=============
+Tools to analize Raman spectroscopy data, measured using the Witec 300rsa+ confocal Raman spectrometer.
+"""
+
 class ramanmap:
 	"""
-	Container for Raman data imported from a text file. The text file needs to be exported as a "table" from Witec Project or Witec Control
+    Container for Raman data imported from a text file. The text file needs to be exported as a "table" from Witec Project or Witec Control
 	Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.
-	"""
+
+    ...
+
+    Attributes
+    ----------
+    map_path : str
+        Path to the exported text file containing the Raman spectroscopy map.
+    info_path : str
+        Path to the exported metadata text file.
+
+    Methods
+    -------
+    print_metadata()
+        Print the imported metadata.
+    """
+    
 	def __init__(self, map_path, info_path):
 		# Load the metadata
 		self._load_info(info_path)
@@ -126,9 +147,25 @@ class ramanmap:
 
 class singlespec:
 	"""
-	Container for Raman data imported from a text file. The text file needs to be exported as a "table" from Witec Project or Witec Control
+    Container for Raman data imported from a text file. The text file needs to be exported as a "table" from Witec Project or Witec Control
 	Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.
-	"""
+	It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.
+
+    ...
+
+    Attributes
+    ----------
+    map_path : str
+        Path to the exported text file containing the Raman spectroscopy map.
+    info_path : str
+        Path to the exported metadata text file.
+
+    Methods
+    -------
+    print_metadata()
+        Print the imported metadata.
+    """
+
 	def __init__(self, spec_path, info_path):
 		# Load the metadata
 		self._load_info(info_path)
@@ -139,9 +176,12 @@ class singlespec:
 
 
 	def print_metadata(self):
+		"""
+		Prints the metadata of the `singlespec` object.
+		"""
 		print(self.metadata)
 
-	def _load_info(self, info_path, **kwargs):
+	def _load_info(self, info_path):
 		"""
 		Load the file containing the metadata.
 		The metadata will be filled by searching the info file for various patterns, using regular expressions.
@@ -220,12 +260,24 @@ class singlespec:
 		self.ssxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
 
 
-"""
-Tools -------------------------------------------------
-"""
+## Tools -------------------------------------------------
 
 def plotspec(xrobject, width, height, shift):
-	# Selecting the values for the spectrum
+	"""
+	`plotspec` plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
+	First variable is a `ramanmap` object, followed by the specific width and height coordinates for the single spectrum.
+	
+	:param xrobject: This is a Raman map
+	:type xrobject: `xarray DataArray`
+	:param width: 'width' coordinate in um, from xrobject
+	:type width: float
+	:param height: 'height' coordinate in um, from xrobject
+	:type height: float
+	:param shift: 'ramanshift' coordinate in um, from xrobject
+	:type shift: float
+
+	:return: none
+	"""
 	spec = xrobject.sel(width = width, height = height, method = 'nearest')
 	ramanintensity = xrobject.sel(ramanshift = shift, method = 'nearest')
 
@@ -246,3 +298,4 @@ def plotspec(xrobject, width, height, shift):
 	ax0.axes.title.set_size(10)
 	ax1.axes.title.set_size(10)
 	pl.tight_layout()
+
