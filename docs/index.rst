@@ -9,9 +9,8 @@ Welcome to Ramantools's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-   modules
-   ramantools
-
+modules
+ramantools
 
 
 Indices and tables
