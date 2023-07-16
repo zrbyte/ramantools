@@ -10,8 +10,8 @@ Welcome to Ramantools's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-intro
-ramantools
+   intro
+   ramantools
 
 
 Indices and tables

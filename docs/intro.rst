@@ -6,4 +6,4 @@ Tools to analize Raman spectroscopy data, measured using the Witec 300rsa+ confo
 Examples
 =============
 
-Take a look at the ``ramantools tutorial.ipynb`` Jupyter notebook in the `GitHub <https://github.com/zrbyte/ramantools/>`_.
+Take a look at the ``ramantools tutorial.ipynb`` Jupyter notebook in the ramantools `GitHub repository <https://github.com/zrbyte/ramantools/>`_.
