@@ -9,7 +9,8 @@ Welcome to Ramantools's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-modules
+
+intro
 ramantools
 
 

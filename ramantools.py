@@ -17,6 +17,9 @@ class ramanmap:
 	Additional info also needs to be exported, containing the metadata for the measurement.
 	This is the text next to the map data in the Witec software.
 
+	:return: object containing the data and metadata
+	:rtype: :class:`ramanmap` object
+
 	:param map_path: Path to the text file, containing the Raman map, exported from Witec
 	:type map_path: str
 	:param info_path: Path to the info file, containing the metadata, exported from Witec
