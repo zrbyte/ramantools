@@ -12,25 +12,20 @@ Tools to analize Raman spectroscopy data, measured using the Witec 300rsa+ confo
 
 class ramanmap:
 	"""
-    Container for Raman data imported from a text file. The text file needs to be exported as a "table" from Witec Project or Witec Control
-	Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.
+	Container for Raman maps, imported from a text file.
+	The text file needs to be exported as a “table” from Witec Project or Witec Control.
+	Additional info also needs to be exported, containing the metadata for the measurement.
+	This is the text next to the map data in the Witec software.
 
-    ...
+	:param map_path: Path to the text file, containing the Raman map, exported from Witec
+	:type map_path: str
+	:param info_path: Path to the info file, containing the metadata, exported from Witec
+	:type info_path: str
+	"""	
 
-    Attributes
-    ----------
-    map_path : str
-        Path to the exported text file containing the Raman spectroscopy map.
-    info_path : str
-        Path to the exported metadata text file.
-
-    Methods
-    -------
-    print_metadata()
-        Print the imported metadata.
-    """
-    
 	def __init__(self, map_path, info_path):
+		"""Constructor for :class:`ramanmap`
+		"""		
 		# Load the metadata
 		self._load_info(info_path)
 		# Load the Raman map
@@ -40,6 +35,9 @@ class ramanmap:
 
 
 	def print_metadata(self):
+		"""
+		Prints the imported metadata, loaded from the info file.
+		"""
 		print(self.metadata)
 
 	def _load_info(self, info_path, **kwargs):
@@ -147,23 +145,10 @@ class ramanmap:
 
 class singlespec:
 	"""
-    Container for Raman data imported from a text file. The text file needs to be exported as a "table" from Witec Project or Witec Control
+    Container for Raman single spectra, imported from a text file.
+	The text file needs to be exported as a "table" from Witec Project or Witec Control
 	Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.
 	It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.
-
-    ...
-
-    Attributes
-    ----------
-    map_path : str
-        Path to the exported text file containing the Raman spectroscopy map.
-    info_path : str
-        Path to the exported metadata text file.
-
-    Methods
-    -------
-    print_metadata()
-        Print the imported metadata.
     """
 
 	def __init__(self, spec_path, info_path):
@@ -267,6 +252,8 @@ def plotspec(xrobject, width, height, shift):
 	`plotspec` plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
 	First variable is a `ramanmap` object, followed by the specific width and height coordinates for the single spectrum.
 	
+	:return: none
+
 	:param xrobject: This is a Raman map
 	:type xrobject: `xarray DataArray`
 	:param width: 'width' coordinate in um, from xrobject
@@ -275,8 +262,6 @@ def plotspec(xrobject, width, height, shift):
 	:type height: float
 	:param shift: 'ramanshift' coordinate in um, from xrobject
 	:type shift: float
-
-	:return: none
 	"""
 	spec = xrobject.sel(width = width, height = height, method = 'nearest')
 	ramanintensity = xrobject.sel(ramanshift = shift, method = 'nearest')

@@ -77,25 +77,20 @@
 
 <div class="viewcode-block" id="ramanmap"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap">[docs]</a><span class="k">class</span> <span class="nc">ramanmap</span><span class="p">:</span>
 	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Container for Raman data imported from a text file. The text file needs to be exported as a &quot;table&quot; from Witec Project or Witec Control</span>
-<span class="sd">	Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.</span>
+<span class="sd">	Container for Raman maps, imported from a text file.</span>
+<span class="sd">	The text file needs to be exported as a “table” from Witec Project or Witec Control.</span>
+<span class="sd">	Additional info also needs to be exported, containing the metadata for the measurement.</span>
+<span class="sd">	This is the text next to the map data in the Witec software.</span>
 
-<span class="sd">    ...</span>
+<span class="sd">	:param map_path: Path to the text file, containing the Raman map, exported from Witec</span>
+<span class="sd">	:type map_path: str</span>
+<span class="sd">	:param info_path: Path to the info file, containing the metadata, exported from Witec</span>
+<span class="sd">	:type info_path: str</span>
+<span class="sd">	&quot;&quot;&quot;</span>	
 
-<span class="sd">    Attributes</span>
-<span class="sd">    ----------</span>
-<span class="sd">    map_path : str</span>
-<span class="sd">        Path to the exported text file containing the Raman spectroscopy map.</span>
-<span class="sd">    info_path : str</span>
-<span class="sd">        Path to the exported metadata text file.</span>
-
-<span class="sd">    Methods</span>
-<span class="sd">    -------</span>
-<span class="sd">    print_metadata()</span>
-<span class="sd">        Print the imported metadata.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    
 	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Constructor for :class:`ramanmap`</span>
+<span class="sd">		&quot;&quot;&quot;</span>		
 		<span class="c1"># Load the metadata</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_load_info</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
 		<span class="c1"># Load the Raman map</span>
@@ -105,6 +100,9 @@
 
 
 <div class="viewcode-block" id="ramanmap.print_metadata"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Prints the imported metadata, loaded from the info file.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
 	<span class="k">def</span> <span class="nf">_load_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -212,23 +210,10 @@
 
 <div class="viewcode-block" id="singlespec"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec">[docs]</a><span class="k">class</span> <span class="nc">singlespec</span><span class="p">:</span>
 	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Container for Raman data imported from a text file. The text file needs to be exported as a &quot;table&quot; from Witec Project or Witec Control</span>
+<span class="sd">    Container for Raman single spectra, imported from a text file.</span>
+<span class="sd">	The text file needs to be exported as a &quot;table&quot; from Witec Project or Witec Control</span>
 <span class="sd">	Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.</span>
 <span class="sd">	It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.</span>
-
-<span class="sd">    ...</span>
-
-<span class="sd">    Attributes</span>
-<span class="sd">    ----------</span>
-<span class="sd">    map_path : str</span>
-<span class="sd">        Path to the exported text file containing the Raman spectroscopy map.</span>
-<span class="sd">    info_path : str</span>
-<span class="sd">        Path to the exported metadata text file.</span>
-
-<span class="sd">    Methods</span>
-<span class="sd">    -------</span>
-<span class="sd">    print_metadata()</span>
-<span class="sd">        Print the imported metadata.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
@@ -332,6 +317,8 @@
 <span class="sd">	`plotspec` plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.</span>
 <span class="sd">	First variable is a `ramanmap` object, followed by the specific width and height coordinates for the single spectrum.</span>
 <span class="sd">	</span>
+<span class="sd">	:return: none</span>
+
 <span class="sd">	:param xrobject: This is a Raman map</span>
 <span class="sd">	:type xrobject: `xarray DataArray`</span>
 <span class="sd">	:param width: &#39;width&#39; coordinate in um, from xrobject</span>
@@ -340,8 +327,6 @@
 <span class="sd">	:type height: float</span>
 <span class="sd">	:param shift: &#39;ramanshift&#39; coordinate in um, from xrobject</span>
 <span class="sd">	:type shift: float</span>
-
-<span class="sd">	:return: none</span>
 <span class="sd">	&quot;&quot;&quot;</span>
 	<span class="n">spec</span> <span class="o">=</span> <span class="n">xrobject</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">height</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
 	<span class="n">ramanintensity</span> <span class="o">=</span> <span class="n">xrobject</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">shift</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
