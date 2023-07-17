@@ -2,6 +2,7 @@ import re
 import numpy as np
 import matplotlib.pyplot as pl
 from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
 import xarray as xr
 
 """
@@ -308,8 +309,79 @@ class singlespec:
 		self.ssxr.coords['ramanshift'].attrs['units'] = 'cm$^{-1}$'
 		self.ssxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
 
+## internal functions ------------------------------------------------------------
 
-## Tools -------------------------------------------------
+def _lorentz(x, x0, area, width, offset):
+	"""Single Lorentz function
+
+	:return: values of a single Lorentz function
+	:rtype: float, :py:mod:`numpy` array, etc.
+
+	:param x: values for the x coordinate
+	:type x: float, :py:mod:`numpy` array, etc.
+	:param x0: shift along the `x` corrdinate
+	:type x0: float
+	:param area: area of the peak
+	:type area: float
+	:param width: width (FWHM) of the peak
+	:type width: float
+	:param offset: offset along the function value
+	:type offset: float
+
+	The amplitude of the peak can be given by::
+	(2*area)/(np.pi*width)
+	
+	"""
+	return offset + (2/np.pi) * (area * width) / (4*(x - x0)**2 + width**2)
+
+def _lorentz2(x, x01, area1, width1, x02, area2, width2, offset):
+	"""Double Lorentz function
+
+	:return: values of a double Lorentz function
+	:rtype: float, :py:mod:`numpy` array, etc.
+
+	:param x: values for the x coordinate
+	:type x: float, :py:mod:`numpy` array, etc.
+	:param x0: shift along the `x` corrdinate
+	:type x0: float
+	:param area: area of the peak
+	:type area: float
+	:param width: width (FWHM) of the peak
+	:type width: float
+	:param offset: offset along the function value
+	:type offset: float
+	
+	"""
+	return offset + (2/np.pi) * (area1 * width1) / (4*(x - x01)**2 + width1**2) + (2/np.pi) * (area2 * width2) / (4*(x - x02)**2 + width2**2)
+
+
+## Tools -----------------------------------------------------------------
+
+def polynomial_fit(order, x_data, y_data):
+	"""Polinomial fit to `x_data`, `y_data`
+
+	:param order: order of the polinomial to be fit
+	:type order: int
+	:param x_data: x coordinate of the data, this would be Raman shift
+	:type x_data: :py:mod:`numpy` array
+	:param y_data: y coordinate of the data, this would be Raman intensity
+	:type y_data: :py:mod:`numpy` array
+	:return: coefficients of the polinomial, as used by `np.polyval`
+	:rtype: :py:mod:`numpy` array
+
+	"""    
+	# Define polynomial function of given order
+	def poly_func(x, *coeffs):
+		y = np.polyval(coeffs, x)
+		return y
+
+	# Initial guess for the coefficients is all ones
+	guess = np.ones(order + 1)
+
+	# Use curve_fit to find best fit parameters
+	coeff, _ = curve_fit(poly_func, x_data, y_data, p0 = guess)
+
+	return coeff
 
 def plotspec(xrobject, width, height, shift):
 	"""
@@ -349,3 +421,85 @@ def plotspec(xrobject, width, height, shift):
 	ax1.axes.title.set_size(10)
 	pl.tight_layout()
 
+def bgsubtract(x_data, y_data, hmin = 50, hmax = 10000, wmin = 5, vmax = 60, prom = 10, exclusion_factor = 6, peak_pos = None, **kwargs):
+	# Should return the polynomial coefficients of the fit and the subtracted data in numpy array format.
+	
+	# Clip the data to remove any below the notch filter cutoff, ~80 cm^{-1}
+	orig_shape = x_data.shape[0]
+	x_data = x_data[x_data > 80]
+	toclip = orig_shape - x_data.shape[0]
+	y_data = y_data[toclip:]
+
+	if peak_pos is None:
+		# Find the peaks with specified minimum height and width
+		# re_height sets the width from the maximum at which value the width is evaluated
+		peak_properties = find_peaks(y_data, height = (hmin, hmax), width = (wmin, vmax), prominence = prom, rel_height = 0.5)
+
+		# Find the indices of the peaks
+		peak_indices = peak_properties[0]
+
+		# Get the properties of the peaks
+		peak_info = peak_properties[1]
+	else:
+		# Use the provided peak positions
+		peak_indices = []
+		for peak_position in peak_pos:
+			# Find the index of the closest data point to the peak position
+			closest_index = np.argmin(np.abs(x_data - peak_position))
+			peak_indices.append(closest_index)
+
+		# # Calculate the widths of the peaks using the data
+		# peak_widths = [wmin] * len(peak_indices)  # Use the minimum width if peak widths cannot be calculated from the data
+		# peak_info = {'widths': peak_widths}
+
+	# Calculate the start and end indices of each peak with a larger exclusion area
+	start_indices = peak_indices - (exclusion_factor * np.array(peak_info['widths'])).astype(int)
+	end_indices = peak_indices + (exclusion_factor * np.array(peak_info['widths'])).astype(int)
+
+	# Ensure indices are within data bounds
+	start_indices = np.maximum(start_indices, 0)
+	end_indices = np.minimum(end_indices, len(x_data) - 1)
+
+	# Define the indices covered by the peaks
+	covered_indices = []
+	for start, end in zip(start_indices, end_indices):
+		covered_indices.extend(range(start, end + 1))
+
+	# Remove these indices from the data
+	mask = np.ones(x_data.shape[0], dtype = bool)
+	mask[covered_indices] = False
+	uncovered_x_data = x_data[mask]
+	uncovered_y_data = y_data[mask]
+
+	# Fit polynomial to the remaining data
+	coeff = polynomial_fit(1, x_data, y_data)
+
+	# Get the line parameters
+	slope, intercept = coeff[1], coeff[0]
+
+	# Calculate the fitted line values
+	line_values = np.polyval(coeff, x_data)
+
+	# Create an array for the line subtracted data
+	subtracted_x_data = x_data.copy()
+	subtracted_y_data = y_data.copy()
+	subtracted_y_data -= line_values
+
+	# Plot the data
+	pl.figure(figsize=(10,6))
+	pl.plot(x_data, y_data, label='Data')
+
+	# Highlight the peaks
+	pl.scatter(x_data[peak_indices], y_data[peak_indices], color='red', label='Peaks')
+
+	# Plot the fitted line
+	pl.plot(x_data, line_values, color='blue', label='Fitted Line')
+
+	# Highlight the new background data used for fitting
+	pl.scatter(uncovered_x_data, uncovered_y_data, color='green', lw=3, alpha=0.5, label='Background')
+
+	pl.xlabel('Column 1')
+	pl.ylabel('Column 2')
+	pl.title('Data Plot with Peaks, Fitted Line and Background Highlighted')
+	pl.legend()
+	pl.show()

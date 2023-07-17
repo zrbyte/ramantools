@@ -48,7 +48,7 @@ def analyze_data(data, min_height, min_width, exclusion_factor, peak_positions=N
     uncovered_data = data[mask]
 
     # Fit a line to the remaining data using scipy's curve_fit
-    popt, pcov = curve_fit(linear_model, uncovered_data[:, 0], uncovered_data[:, 1])
+    popt, _ = curve_fit(linear_model, uncovered_data[:, 0], uncovered_data[:, 1])
 
     # Get the line parameters
     slope, intercept = popt

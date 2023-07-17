@@ -45,6 +45,7 @@
 <li class="toctree-l1"><a class="reference internal" href="intro.html#examples">Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ramantools module</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.plotspec"><code class="docutils literal notranslate"><span class="pre">plotspec()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
 </ul>
@@ -58,6 +59,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">ramantools</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">ramantools module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.plotspec"><code class="docutils literal notranslate"><span class="pre">plotspec()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
 </ul>
@@ -114,6 +116,27 @@ First variable is a <cite>ramanmap</cite> object, followed by the specific width
 <li><p><strong>height</strong> (<em>float</em>) – ‘height’ coordinate in um, from xrobject</p></li>
 <li><p><strong>shift</strong> (<em>float</em>) – ‘ramanshift’ coordinate in um, from xrobject</p></li>
 </ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ramantools.polynomial_fit">
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">polynomial_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#polynomial_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.polynomial_fit" title="Permalink to this definition"></a></dt>
+<dd><p>Polinomial fit to <cite>x_data</cite>, <cite>y_data</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>order</strong> (<em>int</em>) – order of the polinomial to be fit</p></li>
+<li><p><strong>x_data</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) – x coordinate of the data, this would be Raman shift</p></li>
+<li><p><strong>y_data</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) – y coordinate of the data, this would be Raman intensity</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>coefficients of the polinomial, as used by <cite>np.polyval</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array</p>
 </dd>
 </dl>
 </dd></dl>
