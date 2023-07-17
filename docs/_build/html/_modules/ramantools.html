@@ -41,6 +41,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../intro.html#examples">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../ramantools.html">ramantools module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">ramantools</a></li>
 </ul>
 
         </div>
@@ -94,6 +95,16 @@
 <span class="sd">	:type map_path: str</span>
 <span class="sd">	:param info_path: Path to the info file, containing the metadata, exported from Witec</span>
 <span class="sd">	:type info_path: str</span>
+
+<span class="sd">	Examples::</span>
+
+<span class="sd">		import ramantools as rt</span>
+
+<span class="sd">		map_path = &#39;data path on you machine&#39;</span>
+<span class="sd">		info_path = &#39;metadata path on your machine&#39;</span>
+
+<span class="sd">		r = rt.ramanmap(map_path, info_path)</span>
+<span class="sd">	</span>
 <span class="sd">	&quot;&quot;&quot;</span>	
 
 	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
@@ -335,6 +346,7 @@
 <span class="sd">	:type height: float</span>
 <span class="sd">	:param shift: &#39;ramanshift&#39; coordinate in um, from xrobject</span>
 <span class="sd">	:type shift: float</span>
+
 <span class="sd">	&quot;&quot;&quot;</span>
 	<span class="n">spec</span> <span class="o">=</span> <span class="n">xrobject</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">height</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
 	<span class="n">ramanintensity</span> <span class="o">=</span> <span class="n">xrobject</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">shift</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>

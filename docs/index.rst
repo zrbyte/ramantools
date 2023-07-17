@@ -12,6 +12,7 @@ Welcome to Ramantools's documentation!
 
    intro
    ramantools
+   modules
 
 
 Indices and tables

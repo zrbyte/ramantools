@@ -24,6 +24,16 @@ class ramanmap:
 	:type map_path: str
 	:param info_path: Path to the info file, containing the metadata, exported from Witec
 	:type info_path: str
+
+	Examples::
+
+		import ramantools as rt
+
+		map_path = 'data path on you machine'
+		info_path = 'metadata path on your machine'
+
+		r = rt.ramanmap(map_path, info_path)
+	
 	"""	
 
 	def __init__(self, map_path, info_path):
@@ -265,6 +275,7 @@ def plotspec(xrobject, width, height, shift):
 	:type height: float
 	:param shift: 'ramanshift' coordinate in um, from xrobject
 	:type shift: float
+
 	"""
 	spec = xrobject.sel(width = width, height = height, method = 'nearest')
 	ramanintensity = xrobject.sel(ramanshift = shift, method = 'nearest')
