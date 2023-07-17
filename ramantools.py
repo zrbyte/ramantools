@@ -63,6 +63,8 @@ class ramanmap:
 	def print_metadata(self):
 		"""
 		Prints the imported metadata, loaded from the info file.
+		
+		:return: none
 		"""
 		print(self.metadata)
 
@@ -178,7 +180,7 @@ class singlespec:
 	It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.
 
 	:return: object containing the data and metadata
-	:rtype: :class:`ramanmap` instance
+	:rtype: :class:`singlespec` instance
 
 	:param spec_path: Path to the text file, containing the Raman spectrum, exported from Witec
 	:type spec_path: str
@@ -223,6 +225,8 @@ class singlespec:
 	def print_metadata(self):
 		"""
 		Prints the metadata of the `singlespec` object.
+
+		:return: none
 		"""
 		print(self.metadata)
 

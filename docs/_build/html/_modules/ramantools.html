@@ -69,7 +69,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ramantools</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">glob</span><span class="o">,</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">re</span>
+<span></span><span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pylab</span> <span class="k">as</span> <span class="nn">pl</span>
 <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
@@ -134,6 +134,8 @@
 <div class="viewcode-block" id="ramanmap.print_metadata"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Prints the imported metadata, loaded from the info file.</span>
+<span class="sd">		</span>
+<span class="sd">		:return: none</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
@@ -249,7 +251,7 @@
 <span class="sd">	It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.</span>
 
 <span class="sd">	:return: object containing the data and metadata</span>
-<span class="sd">	:rtype: :class:`ramanmap` instance</span>
+<span class="sd">	:rtype: :class:`singlespec` instance</span>
 
 <span class="sd">	:param spec_path: Path to the text file, containing the Raman spectrum, exported from Witec</span>
 <span class="sd">	:type spec_path: str</span>
@@ -294,6 +296,8 @@
 <div class="viewcode-block" id="singlespec.print_metadata"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Prints the metadata of the `singlespec` object.</span>
+
+<span class="sd">		:return: none</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
