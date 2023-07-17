@@ -1,4 +1,4 @@
-import glob, os, sys, re
+import re
 import numpy as np
 import pylab as pl
 from scipy.optimize import curve_fit
