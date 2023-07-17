@@ -71,7 +71,7 @@
   <h1>Source code for ramantools</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pylab</span> <span class="k">as</span> <span class="nn">pl</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">pl</span>
 <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
 <span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
 
@@ -384,13 +384,13 @@
 
 <div class="viewcode-block" id="plotspec"><a class="viewcode-back" href="../ramantools.html#ramantools.plotspec">[docs]</a><span class="k">def</span> <span class="nf">plotspec</span><span class="p">(</span><span class="n">xrobject</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">	`plotspec` plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.</span>
+<span class="sd">	Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.</span>
 <span class="sd">	First variable is a `ramanmap` object, followed by the specific width and height coordinates for the single spectrum.</span>
 <span class="sd">	</span>
 <span class="sd">	:return: none</span>
 
 <span class="sd">	:param xrobject: This is a Raman map</span>
-<span class="sd">	:type xrobject: `xarray DataArray`</span>
+<span class="sd">	:type xrobject: :py:mod:`xarray` DataArray</span>
 <span class="sd">	:param width: &#39;width&#39; coordinate in um, from xrobject</span>
 <span class="sd">	:type width: float</span>
 <span class="sd">	:param height: &#39;height&#39; coordinate in um, from xrobject</span>

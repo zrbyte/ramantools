@@ -1,6 +1,6 @@
 import re
 import numpy as np
-import pylab as pl
+import matplotlib.pyplot as pl
 from scipy.optimize import curve_fit
 import xarray as xr
 
@@ -313,13 +313,13 @@ class singlespec:
 
 def plotspec(xrobject, width, height, shift):
 	"""
-	`plotspec` plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
+	Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
 	First variable is a `ramanmap` object, followed by the specific width and height coordinates for the single spectrum.
 	
 	:return: none
 
 	:param xrobject: This is a Raman map
-	:type xrobject: `xarray DataArray`
+	:type xrobject: :py:mod:`xarray` DataArray
 	:param width: 'width' coordinate in um, from xrobject
 	:type width: float
 	:param height: 'height' coordinate in um, from xrobject
