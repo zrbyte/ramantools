@@ -472,10 +472,7 @@ def bgsubtract(x_data, y_data, hmin = 50, hmax = 10000, wmin = 5, vmax = 60, pro
 	uncovered_y_data = y_data[mask]
 
 	# Fit polynomial to the remaining data
-	coeff = polynomial_fit(1, x_data, y_data)
-
-	# Get the line parameters
-	slope, intercept = coeff[1], coeff[0]
+	coeff = polynomial_fit(1, uncovered_x_data, uncovered_y_data)
 
 	# Calculate the fitted line values
 	line_values = np.polyval(coeff, x_data)
