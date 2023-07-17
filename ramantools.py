@@ -18,21 +18,34 @@ class ramanmap:
 	This is the text next to the map data in the Witec software.
 
 	:return: object containing the data and metadata
-	:rtype: :class:`ramanmap` object
+	:rtype: :class:`ramanmap` instance
 
 	:param map_path: Path to the text file, containing the Raman map, exported from Witec
 	:type map_path: str
 	:param info_path: Path to the info file, containing the metadata, exported from Witec
 	:type info_path: str
 
+	Most important variables of the :class:`ramanmap` instance:
+
+	:var mapxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata
+	:var map: (type :py:mod:`numpy` array) Raman intensity values
+	:var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`
+	:var samplename: (type: str) name of the sample, as shown in the Witec software.
+	:var mapname: (type: str) contains the name of the Raman map, as shown in the Witec software.
+
+	For a compete list see example below.
+
 	Examples::
 
 		import ramantools as rt
 
-		map_path = 'data path on you machine'
-		info_path = 'metadata path on your machine'
+		map_path = r'data path on you machine'
+		info_path = r'metadata path on your machine'
+		# use raw strings, starting with `r'` to escape special characters, such as backslash
 
-		r = rt.ramanmap(map_path, info_path)
+		map = rt.ramanmap(map_path, info_path)
+		# list of the variables stored in the `ramanmap` instance
+		print(list(map.__dict__))
 	
 	"""	
 
@@ -158,13 +171,47 @@ class ramanmap:
 
 class singlespec:
 	"""
-    Container for Raman single spectra, imported from a text file.
+	Container for Raman single spectra, imported from a text file.
 	The text file needs to be exported as a "table" from Witec Project or Witec Control
-	Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.
+	Additional info also needs to be exported, containing the metadata for the measurement.
+	This is the text next to the map data in the Witec software.
 	It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.
-    """
+
+	:return: object containing the data and metadata
+	:rtype: :class:`ramanmap` instance
+
+	:param spec_path: Path to the text file, containing the Raman spectrum, exported from Witec
+	:type spec_path: str
+	:param info_path: Path to the info file, containing the metadata, exported from Witec
+	:type info_path: str
+
+	Most important variables of the :class:`singlespec` instance:
+
+	:var ssxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata
+	:var counts: (type :py:mod:`numpy` array) Raman intensity values
+	:var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`
+	:var samplename: (type: str) name of the sample, as shown in the Witec software.
+	:var specname: (type: str) contains the name of the Raman single spectrum, as shown in the Witec software.
+
+	For a compete list see example below.
+
+	Examples::
+
+		import ramantools as rt
+
+		spec_path = r'data path on you machine'
+		info_path = r'metadata path on your machine'
+		# use raw strings, starting with `r'` to escape special characters, such as backslash
+
+		single_spectrum = rt.singlespec(spec_path, info_path)
+		# list of variables stored in the `singlespec` instance
+		print(list(single_spectrum.__dict__))
+
+	"""
 
 	def __init__(self, spec_path, info_path):
+		"""Constructor for :class:`singlespec`
+		"""		
 		# Load the metadata
 		self._load_info(info_path)
 		# Load the Raman map

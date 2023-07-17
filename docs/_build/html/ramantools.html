@@ -131,7 +131,7 @@ This is the text next to the map data in the Witec software.</p>
 <dd class="field-odd"><p>object containing the data and metadata</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> object</p>
+<dd class="field-even"><p><a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance</p>
 </dd>
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -140,13 +140,29 @@ This is the text next to the map data in the Witec software.</p>
 </ul>
 </dd>
 </dl>
+<p>Most important variables of the <a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mapxr</strong> – (type <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray) all data, coordinates and metadata</p></li>
+<li><p><strong>map</strong> – (type <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) Raman intensity values</p></li>
+<li><p><strong>ramanshift</strong> – (type <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) Raman shift values for the datapoints stored in <cite>map</cite></p></li>
+<li><p><strong>samplename</strong> – (type: str) name of the sample, as shown in the Witec software.</p></li>
+<li><p><strong>mapname</strong> – (type: str) contains the name of the Raman map, as shown in the Witec software.</p></li>
+</ul>
+</dd>
+</dl>
+<p>For a compete list see example below.</p>
 <p>Examples:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
 
-<span class="n">map_path</span> <span class="o">=</span> <span class="s1">&#39;data path on you machine&#39;</span>
-<span class="n">info_path</span> <span class="o">=</span> <span class="s1">&#39;metadata path on your machine&#39;</span>
+<span class="n">map_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
+<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
 
-<span class="n">r</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
+<span class="nb">map</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
+<span class="c1"># list of the variables stored in the `ramanmap` instance</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">))</span>
 </pre></div>
 </div>
 <dl class="py method">
@@ -161,12 +177,50 @@ This is the text next to the map data in the Witec software.</p>
 <dt class="sig sig-object py" id="ramantools.singlespec">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">singlespec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">info_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="simple">
-<dt>Container for Raman single spectra, imported from a text file.</dt><dd><p>The text file needs to be exported as a “table” from Witec Project or Witec Control
-Additional info also needs to be exported, containing the metadata for the measurement. This is the text next to the map data in the Witec software.
+<p>Container for Raman single spectra, imported from a text file.
+The text file needs to be exported as a “table” from Witec Project or Witec Control
+Additional info also needs to be exported, containing the metadata for the measurement.
+This is the text next to the map data in the Witec software.
 It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>object containing the data and metadata</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spec_path</strong> (<em>str</em>) – Path to the text file, containing the Raman spectrum, exported from Witec</p></li>
+<li><p><strong>info_path</strong> (<em>str</em>) – Path to the info file, containing the metadata, exported from Witec</p></li>
+</ul>
 </dd>
 </dl>
+<p>Most important variables of the <a class="reference internal" href="#ramantools.singlespec" title="ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> instance:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ssxr</strong> – (type <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray) all data, coordinates and metadata</p></li>
+<li><p><strong>counts</strong> – (type <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) Raman intensity values</p></li>
+<li><p><strong>ramanshift</strong> – (type <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) Raman shift values for the datapoints stored in <cite>map</cite></p></li>
+<li><p><strong>samplename</strong> – (type: str) name of the sample, as shown in the Witec software.</p></li>
+<li><p><strong>specname</strong> – (type: str) contains the name of the Raman single spectrum, as shown in the Witec software.</p></li>
+</ul>
+</dd>
+</dl>
+<p>For a compete list see example below.</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
+
+<span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
+<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+
+<span class="n">single_spectrum</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">singlespec</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
+<span class="c1"># list of variables stored in the `singlespec` instance</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">single_spectrum</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">))</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.singlespec.print_metadata">
 <span class="sig-name descname"><span class="pre">print_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.print_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.print_metadata" title="Permalink to this definition"></a></dt>
