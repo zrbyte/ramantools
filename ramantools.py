@@ -146,6 +146,8 @@ class ramanmap:
 				'width': width,
 				'height': height
 				})
+		# add a comment field
+		self.mapxr.attrs['comments'] = 'raw data loaded \n'
 		# adding attributes
 		self.mapxr.attrs['wipfile name'] = self.wipfilename
 		self.mapxr.attrs['units'] = 'au'
@@ -290,6 +292,9 @@ class singlespec:
 			self.counts,
 			dims = ['ramanshift'],
 			coords = {'ramanshift': self.ramanshift})
+		
+		# add a comment field
+		self.ssxr.attrs['comments'] = 'raw data loaded \n'
 		# adding attributes
 		self.ssxr.attrs['wipfile name'] = self.wipfilename
 		self.ssxr.attrs['units'] = 'au'
@@ -421,7 +426,17 @@ def plotspec(xrobject, width, height, shift):
 	ax1.axes.title.set_size(10)
 	pl.tight_layout()
 
-def bgsubtract(x_data, y_data, hmin = 50, hmax = 10000, wmin = 4, vmax = 60, prom = 10, exclusion_factor = 6, peak_pos = None, **kwargs):
+def bgsubtract(x_data, y_data,
+	       polyorder = 2,
+	       toplot = False,
+	       hmin = 50,
+		   hmax = 10000,
+		   wmin = 4,
+		   vmax = 60,
+		   prom = 10,
+		   exclusion_factor = 6,
+		   peak_pos = None,
+		   **kwargs):
 	# Should return the polynomial coefficients of the fit and the subtracted data in numpy array format.
 
 	if peak_pos is None:
@@ -469,7 +484,7 @@ def bgsubtract(x_data, y_data, hmin = 50, hmax = 10000, wmin = 4, vmax = 60, pro
 	uncovered_y_data = y_data[mask]
 
 	# Fit polynomial to the remaining data
-	coeff = polynomial_fit(1, uncovered_x_data, uncovered_y_data)
+	coeff = polynomial_fit(polyorder, uncovered_x_data, uncovered_y_data)
 
 	# Calculate the fitted polynomial values
 	bg_values = np.polyval(coeff, x_data)
@@ -477,23 +492,23 @@ def bgsubtract(x_data, y_data, hmin = 50, hmax = 10000, wmin = 4, vmax = 60, pro
 	# Line subtracted data
 	y_data_nobg = y_data - bg_values
 
-	# Plot the data
-	# pl.figure(figsize = (5,3))
-	pl.plot(x_data, y_data, label = 'Raman spectrum')
+	if toplot == True:
+		# Plot the data and peaks
+		pl.plot(x_data, y_data, label = 'Raman spectrum')
 
-	# Highlight the peaks
-	pl.scatter(x_data[peak_indices], y_data[peak_indices], color = 'green', label = 'peaks')
+		# Highlight the peaks
+		pl.scatter(x_data[peak_indices], y_data[peak_indices], color = 'green', label = 'peaks')
 
-	# Plot the fitted polynomial
-	pl.plot(x_data, bg_values, color = 'k', ls = "dashed", label = 'fitted polynomial')
+		# Plot the fitted polynomial
+		pl.plot(x_data, bg_values, color = 'k', ls = "dashed", label = 'fitted polynomial')
 
-	# Highlight the background used for fitting
-	pl.scatter(uncovered_x_data, uncovered_y_data, color = 'red', marker= 'o', alpha = 1, label = 'background used for fit')
+		# Highlight the background used for fitting
+		pl.scatter(uncovered_x_data, uncovered_y_data, color = 'red', marker= 'o', alpha = 1, label = 'background used for fit')
 
-	pl.xlabel('Raman shift (cm$^{-1}$)')
-	pl.ylabel('Raman intensity (a.u.)')
-	pl.title('Data plot with peaks, fitted line and background highlighted')
-	pl.legend()
+		pl.xlabel('Raman shift (cm$^{-1}$)')
+		pl.ylabel('Raman intensity (a.u.)')
+		pl.title('Data plot with peaks, fitted line and background highlighted.')
+		pl.legend()
 
-	return y_data_nobg, coeff
+	return y_data_nobg, bg_values, coeff
 	
