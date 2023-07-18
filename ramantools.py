@@ -235,6 +235,7 @@ class singlespec:
 
 	def remove_bg(self):
 		# remove the background of Raman spectra
+		return None
 
 	# internal functions
 
