@@ -233,6 +233,11 @@ class singlespec:
 		"""
 		print(self.metadata)
 
+	def remove_bg(self):
+		# remove the background of Raman spectra
+
+	# internal functions
+
 	def _load_info(self, info_path):
 		"""
 		Load the file containing the metadata.
