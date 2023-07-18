@@ -24,10 +24,10 @@ jobs:
 
     - name: Build documentation
       run: |
-        sphinx-build -b html ./ ./docs/_build
+        sphinx-build -b html -c ./docs ./docs ./docs/_build/html
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs/_build
+        publish_dir: ./docs/_build/html
