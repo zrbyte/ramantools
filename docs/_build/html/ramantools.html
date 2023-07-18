@@ -44,6 +44,7 @@
 <li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="intro.html#examples">Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ramantools module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.plotspec"><code class="docutils literal notranslate"><span class="pre">plotspec()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
@@ -52,12 +53,14 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.remove_bg"><code class="docutils literal notranslate"><span class="pre">singlespec.remove_bg()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">ramantools</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">ramantools module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.plotspec"><code class="docutils literal notranslate"><span class="pre">plotspec()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
@@ -66,6 +69,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.remove_bg"><code class="docutils literal notranslate"><span class="pre">singlespec.remove_bg()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -100,6 +104,11 @@
              
   <section id="module-ramantools">
 <span id="ramantools-module"></span><h1>ramantools module<a class="headerlink" href="#module-ramantools" title="Permalink to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="ramantools.bgsubtract">
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">bgsubtract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prom</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclusion_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#bgsubtract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.bgsubtract" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.plotspec">
 <span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">plotspec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xrobject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#plotspec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.plotspec" title="Permalink to this definition"></a></dt>
@@ -259,6 +268,11 @@ It takes two arguments, the first is the path to the file containing the spectro
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.singlespec.remove_bg">
+<span class="sig-name descname"><span class="pre">remove_bg</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.remove_bg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.remove_bg" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 

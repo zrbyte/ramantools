@@ -217,6 +217,8 @@
 				<span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span>
 				<span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="n">height</span>
 				<span class="p">})</span>
+		<span class="c1"># add a comment field</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded </span><span class="se">\n</span><span class="s1">&#39;</span>
 		<span class="c1"># adding attributes</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;wipfile name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;au&#39;</span>
@@ -302,6 +304,12 @@
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="singlespec.remove_bg"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.remove_bg">[docs]</a>	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="c1"># remove the background of Raman spectra</span>
+		<span class="k">return</span> <span class="kc">None</span></div>
+
+	<span class="c1"># internal functions</span>
+
 	<span class="k">def</span> <span class="nf">_load_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Load the file containing the metadata.</span>
@@ -361,6 +369,9 @@
 			<span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span>
 			<span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">],</span>
 			<span class="n">coords</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">})</span>
+		
+		<span class="c1"># add a comment field</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded </span><span class="se">\n</span><span class="s1">&#39;</span>
 		<span class="c1"># adding attributes</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;wipfile name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;au&#39;</span>
@@ -380,7 +391,53 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;cm$^{-1}$&#39;</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Raman shift&#39;</span></div>
 
-<span class="c1">## internal functions</span>
+<span class="c1">## internal functions ------------------------------------------------------------</span>
+
+<span class="k">def</span> <span class="nf">_lorentz</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Single Lorentz function</span>
+
+<span class="sd">	:return: values of a single Lorentz function</span>
+<span class="sd">	:rtype: float, :py:mod:`numpy` array, etc.</span>
+
+<span class="sd">	:param x: values for the x coordinate</span>
+<span class="sd">	:type x: float, :py:mod:`numpy` array, etc.</span>
+<span class="sd">	:param x0: shift along the `x` corrdinate</span>
+<span class="sd">	:type x0: float</span>
+<span class="sd">	:param area: area of the peak</span>
+<span class="sd">	:type area: float</span>
+<span class="sd">	:param width: width (FWHM) of the peak</span>
+<span class="sd">	:type width: float</span>
+<span class="sd">	:param offset: offset along the function value</span>
+<span class="sd">	:type offset: float</span>
+
+<span class="sd">	The amplitude of the peak can be given by::</span>
+<span class="sd">	(2*area)/(np.pi*width)</span>
+<span class="sd">	</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="n">offset</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">area</span> <span class="o">*</span> <span class="n">width</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">width</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_lorentz2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x01</span><span class="p">,</span> <span class="n">area1</span><span class="p">,</span> <span class="n">width1</span><span class="p">,</span> <span class="n">x02</span><span class="p">,</span> <span class="n">area2</span><span class="p">,</span> <span class="n">width2</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Double Lorentz function</span>
+
+<span class="sd">	:return: values of a double Lorentz function</span>
+<span class="sd">	:rtype: float, :py:mod:`numpy` array, etc.</span>
+
+<span class="sd">	:param x: values for the x coordinate</span>
+<span class="sd">	:type x: float, :py:mod:`numpy` array, etc.</span>
+<span class="sd">	:param x0: shift along the `x` corrdinate</span>
+<span class="sd">	:type x0: float</span>
+<span class="sd">	:param area: area of the peak</span>
+<span class="sd">	:type area: float</span>
+<span class="sd">	:param width: width (FWHM) of the peak</span>
+<span class="sd">	:type width: float</span>
+<span class="sd">	:param offset: offset along the function value</span>
+<span class="sd">	:type offset: float</span>
+<span class="sd">	</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">return</span> <span class="n">offset</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">area1</span> <span class="o">*</span> <span class="n">width1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x01</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">width1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">area2</span> <span class="o">*</span> <span class="n">width2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x02</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">width2</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+
+<span class="c1">## Tools -----------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="polynomial_fit"><a class="viewcode-back" href="../ramantools.html#ramantools.polynomial_fit">[docs]</a><span class="k">def</span> <span class="nf">polynomial_fit</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;Polinomial fit to `x_data`, `y_data`</span>
@@ -401,15 +458,12 @@
 		<span class="k">return</span> <span class="n">y</span>
 
 	<span class="c1"># Initial guess for the coefficients is all ones</span>
-	<span class="n">guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">order</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+	<span class="n">guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 
 	<span class="c1"># Use curve_fit to find best fit parameters</span>
-	<span class="n">coeff</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">poly_func</span><span class="p">,</span> <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">p0</span><span class="o">=</span><span class="n">guess</span><span class="p">)</span>
+	<span class="n">coeff</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">poly_func</span><span class="p">,</span> <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">p0</span> <span class="o">=</span> <span class="n">guess</span><span class="p">)</span>
 
 	<span class="k">return</span> <span class="n">coeff</span></div>
-
-
-<span class="c1">## Tools -------------------------------------------------</span>
 
 <div class="viewcode-block" id="plotspec"><a class="viewcode-back" href="../ramantools.html#ramantools.plotspec">[docs]</a><span class="k">def</span> <span class="nf">plotspec</span><span class="p">(</span><span class="n">xrobject</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;</span>
@@ -449,6 +503,91 @@
 	<span class="n">ax1</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 	<span class="n">pl</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span></div>
 
+<div class="viewcode-block" id="bgsubtract"><a class="viewcode-back" href="../ramantools.html#ramantools.bgsubtract">[docs]</a><span class="k">def</span> <span class="nf">bgsubtract</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span>
+	       <span class="n">polyorder</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+	       <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+	       <span class="n">hmin</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+		   <span class="n">hmax</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span>
+		   <span class="n">wmin</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+		   <span class="n">vmax</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
+		   <span class="n">prom</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+		   <span class="n">exclusion_factor</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+		   <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		   <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+	<span class="c1"># Should return the polynomial coefficients of the fit and the subtracted data in numpy array format.</span>
+
+	<span class="k">if</span> <span class="n">peak_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="c1"># Find the peaks with specified minimum height and width</span>
+		<span class="c1"># re_height sets the width from the maximum at which value the width is evaluated</span>
+		<span class="n">peak_properties</span> <span class="o">=</span> <span class="n">find_peaks</span><span class="p">(</span><span class="n">y_data</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="p">(</span><span class="n">hmin</span><span class="p">,</span> <span class="n">hmax</span><span class="p">),</span> <span class="n">width</span> <span class="o">=</span> <span class="p">(</span><span class="n">wmin</span><span class="p">,</span> <span class="n">vmax</span><span class="p">),</span> <span class="n">prominence</span> <span class="o">=</span> <span class="n">prom</span><span class="p">,</span> <span class="n">rel_height</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
+
+		<span class="c1"># Find the indices of the peaks</span>
+		<span class="n">peak_indices</span> <span class="o">=</span> <span class="n">peak_properties</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+		<span class="c1"># Get the properties of the peaks</span>
+		<span class="n">peak_info</span> <span class="o">=</span> <span class="n">peak_properties</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="c1"># Use the provided peak positions</span>
+		<span class="n">peak_indices</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">peak_position</span> <span class="ow">in</span> <span class="n">peak_pos</span><span class="p">:</span>
+			<span class="c1"># Find the index of the closest data point to the peak position</span>
+			<span class="n">closest_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x_data</span> <span class="o">-</span> <span class="n">peak_position</span><span class="p">))</span>
+			<span class="n">peak_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">closest_index</span><span class="p">)</span>
+
+		<span class="c1"># Calculate the widths of the peaks using the data</span>
+		<span class="n">peak_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">wmin</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">peak_indices</span><span class="p">)</span>  <span class="c1"># Use the minimum width if peak widths cannot be calculated from the data</span>
+		<span class="n">peak_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;widths&#39;</span><span class="p">:</span> <span class="n">peak_widths</span><span class="p">}</span>
+
+	<span class="c1"># Calculate the start and end indices of each peak with a larger exclusion area</span>
+	<span class="n">start_indices</span> <span class="o">=</span> <span class="n">peak_indices</span> <span class="o">-</span> <span class="p">(</span><span class="n">exclusion_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">peak_info</span><span class="p">[</span><span class="s1">&#39;widths&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+	<span class="n">end_indices</span> <span class="o">=</span> <span class="n">peak_indices</span> <span class="o">+</span> <span class="p">(</span><span class="n">exclusion_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">peak_info</span><span class="p">[</span><span class="s1">&#39;widths&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+	<span class="c1"># Ensure indices are within data bounds</span>
+	<span class="n">start_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">start_indices</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+	<span class="n">end_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">end_indices</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_data</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+	<span class="c1"># Define the indices covered by the peaks</span>
+	<span class="n">covered_indices</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_indices</span><span class="p">,</span> <span class="n">end_indices</span><span class="p">):</span>
+		<span class="n">covered_indices</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+	<span class="c1"># Remove these indices from the data</span>
+	<span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">x_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">)</span>
+	<span class="n">mask</span><span class="p">[</span><span class="n">covered_indices</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+	<span class="c1"># make the mask False for the region below the notch filter cutoff (~80 cm^{-1})</span>
+	<span class="n">x_data_notch</span> <span class="o">=</span> <span class="n">x_data</span><span class="p">[</span><span class="n">x_data</span> <span class="o">&lt;</span> <span class="mi">80</span><span class="p">]</span>
+	<span class="n">mask</span><span class="p">[:</span><span class="n">x_data_notch</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span>
+	<span class="n">uncovered_x_data</span> <span class="o">=</span> <span class="n">x_data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+	<span class="n">uncovered_y_data</span> <span class="o">=</span> <span class="n">y_data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+	<span class="c1"># Fit polynomial to the remaining data</span>
+	<span class="n">coeff</span> <span class="o">=</span> <span class="n">polynomial_fit</span><span class="p">(</span><span class="n">polyorder</span><span class="p">,</span> <span class="n">uncovered_x_data</span><span class="p">,</span> <span class="n">uncovered_y_data</span><span class="p">)</span>
+
+	<span class="c1"># Calculate the fitted polynomial values</span>
+	<span class="n">bg_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyval</span><span class="p">(</span><span class="n">coeff</span><span class="p">,</span> <span class="n">x_data</span><span class="p">)</span>
+
+	<span class="c1"># Line subtracted data</span>
+	<span class="n">y_data_nobg</span> <span class="o">=</span> <span class="n">y_data</span> <span class="o">-</span> <span class="n">bg_values</span>
+
+	<span class="k">if</span> <span class="n">toplot</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+		<span class="c1"># Plot the data and peaks</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Raman spectrum&#39;</span><span class="p">)</span>
+
+		<span class="c1"># Highlight the peaks</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">y_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;peaks&#39;</span><span class="p">)</span>
+
+		<span class="c1"># Plot the fitted polynomial</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s2">&quot;dashed&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;fitted polynomial&#39;</span><span class="p">)</span>
+
+		<span class="c1"># Highlight the background used for fitting</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">uncovered_x_data</span><span class="p">,</span> <span class="n">uncovered_y_data</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;background used for fit&#39;</span><span class="p">)</span>
+
+		<span class="n">pl</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Raman shift (cm$^{-1}$)&#39;</span><span class="p">)</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Raman intensity (a.u.)&#39;</span><span class="p">)</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Data plot with peaks, fitted line and background highlighted.&#39;</span><span class="p">)</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+	<span class="k">return</span> <span class="n">y_data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span></div>
 </pre></div>
 
            </div>
