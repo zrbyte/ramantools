@@ -15,7 +15,7 @@ jobs:
         run: |
           sphinx-build -c ./ ./ ./_build
       - name: Deploy
-        uses: zrbyte/actions-main
+        uses: zrbyte/actions/main@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
           publish_branch: gh-pages
