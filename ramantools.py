@@ -447,7 +447,12 @@ def bgsubtract(x_data, y_data,
 		   exclusion_factor = 6,
 		   peak_pos = None,
 		   **kwargs):
-	# Should return the polynomial coefficients of the fit and the subtracted data in numpy array format.
+	"""Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.
+	These peaks are then used to define the areas of the background signal.
+	In the areas with the peaks removed, the background is fitted, using :py:mod:`scipy.curvefit`.
+	The function returns the Raman intensity coults, with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by :py:mod:`numpy.polyval`
+
+	"""	
 
 	if peak_pos is None:
 		# Find the peaks with specified minimum height and width
