@@ -521,7 +521,12 @@
 		   <span class="n">exclusion_factor</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
 		   <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 		   <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-	<span class="c1"># Should return the polynomial coefficients of the fit and the subtracted data in numpy array format.</span>
+<span class="w">	</span><span class="sd">&quot;&quot;&quot;Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.</span>
+<span class="sd">	These peaks are then used to define the areas of the background signal.</span>
+<span class="sd">	In the areas with the peaks removed, the background is fitted, using :py:mod:`scipy.curvefit`.</span>
+<span class="sd">	The function returns the Raman intensity coults, with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by :py:mod:`numpy.polyval`</span>
+
+<span class="sd">	&quot;&quot;&quot;</span>	
 
 	<span class="k">if</span> <span class="n">peak_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 		<span class="c1"># Find the peaks with specified minimum height and width</span>
