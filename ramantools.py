@@ -421,14 +421,8 @@ def plotspec(xrobject, width, height, shift):
 	ax1.axes.title.set_size(10)
 	pl.tight_layout()
 
-def bgsubtract(x_data, y_data, hmin = 50, hmax = 10000, wmin = 5, vmax = 60, prom = 10, exclusion_factor = 6, peak_pos = None, **kwargs):
+def bgsubtract(x_data, y_data, hmin = 50, hmax = 10000, wmin = 4, vmax = 60, prom = 10, exclusion_factor = 6, peak_pos = None, **kwargs):
 	# Should return the polynomial coefficients of the fit and the subtracted data in numpy array format.
-	
-	# Clip the data to remove any below the notch filter cutoff, ~80 cm^{-1}
-	orig_shape = x_data.shape[0]
-	x_data = x_data[x_data > 80]
-	toclip = orig_shape - x_data.shape[0]
-	y_data = y_data[toclip:]
 
 	if peak_pos is None:
 		# Find the peaks with specified minimum height and width
@@ -448,9 +442,9 @@ def bgsubtract(x_data, y_data, hmin = 50, hmax = 10000, wmin = 5, vmax = 60, pro
 			closest_index = np.argmin(np.abs(x_data - peak_position))
 			peak_indices.append(closest_index)
 
-		# # Calculate the widths of the peaks using the data
-		# peak_widths = [wmin] * len(peak_indices)  # Use the minimum width if peak widths cannot be calculated from the data
-		# peak_info = {'widths': peak_widths}
+		# Calculate the widths of the peaks using the data
+		peak_widths = [wmin] * len(peak_indices)  # Use the minimum width if peak widths cannot be calculated from the data
+		peak_info = {'widths': peak_widths}
 
 	# Calculate the start and end indices of each peak with a larger exclusion area
 	start_indices = peak_indices - (exclusion_factor * np.array(peak_info['widths'])).astype(int)
@@ -468,35 +462,38 @@ def bgsubtract(x_data, y_data, hmin = 50, hmax = 10000, wmin = 5, vmax = 60, pro
 	# Remove these indices from the data
 	mask = np.ones(x_data.shape[0], dtype = bool)
 	mask[covered_indices] = False
+	# make the mask False for the region below the notch filter cutoff (~80 cm^{-1})
+	x_data_notch = x_data[x_data < 80]
+	mask[:x_data_notch.shape[0]] = False
 	uncovered_x_data = x_data[mask]
 	uncovered_y_data = y_data[mask]
 
 	# Fit polynomial to the remaining data
 	coeff = polynomial_fit(1, uncovered_x_data, uncovered_y_data)
 
-	# Calculate the fitted line values
-	line_values = np.polyval(coeff, x_data)
+	# Calculate the fitted polynomial values
+	bg_values = np.polyval(coeff, x_data)
 
-	# Create an array for the line subtracted data
-	subtracted_x_data = x_data.copy()
-	subtracted_y_data = y_data.copy()
-	subtracted_y_data -= line_values
+	# Line subtracted data
+	y_data_nobg = y_data - bg_values
 
 	# Plot the data
-	pl.figure(figsize=(10,6))
-	pl.plot(x_data, y_data, label='Data')
+	# pl.figure(figsize = (5,3))
+	pl.plot(x_data, y_data, label = 'Raman spectrum')
 
 	# Highlight the peaks
-	pl.scatter(x_data[peak_indices], y_data[peak_indices], color='red', label='Peaks')
+	pl.scatter(x_data[peak_indices], y_data[peak_indices], color = 'green', label = 'peaks')
 
-	# Plot the fitted line
-	pl.plot(x_data, line_values, color='blue', label='Fitted Line')
+	# Plot the fitted polynomial
+	pl.plot(x_data, bg_values, color = 'k', ls = "dashed", label = 'fitted polynomial')
 
-	# Highlight the new background data used for fitting
-	pl.scatter(uncovered_x_data, uncovered_y_data, color='green', lw=3, alpha=0.5, label='Background')
+	# Highlight the background used for fitting
+	pl.scatter(uncovered_x_data, uncovered_y_data, color = 'red', marker= 'o', alpha = 1, label = 'background used for fit')
 
-	pl.xlabel('Column 1')
-	pl.ylabel('Column 2')
-	pl.title('Data Plot with Peaks, Fitted Line and Background Highlighted')
+	pl.xlabel('Raman shift (cm$^{-1}$)')
+	pl.ylabel('Raman intensity (a.u.)')
+	pl.title('Data plot with peaks, fitted line and background highlighted')
 	pl.legend()
-	pl.show()
+
+	return y_data_nobg, coeff
+	
