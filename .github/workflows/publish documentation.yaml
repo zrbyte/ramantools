@@ -22,12 +22,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install sphinx sphinx_rtd_theme
 
+    - name: Generate API documentation
+      run: sphinx-apidoc -o ./docs ./
+
     - name: Build documentation
       run: |
-        sphinx-build -b html ./ ./docs/_build
+        sphinx-build -b html -c ./docs ./docs ./docs/_build/html
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs/_build
+        github_token: ${{ secrets.PERSONAL_TOKEN }}
+        publish_dir: ./docs/_build/html
