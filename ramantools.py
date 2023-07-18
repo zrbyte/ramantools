@@ -239,7 +239,7 @@ class singlespec:
 		:return: none
 		:rtype: none
 		"""		
-		return None
+		print('z')
 
 	# internal functions
 
@@ -437,7 +437,7 @@ def plotspec(xrobject, width, height, shift):
 	pl.tight_layout()
 
 def bgsubtract(x_data, y_data,
-	       polyorder = 2,
+	       polyorder = 1,
 	       toplot = False,
 	       hmin = 50,
 		   hmax = 10000,
