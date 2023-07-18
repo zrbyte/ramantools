@@ -511,4 +511,3 @@ def bgsubtract(x_data, y_data,
 		pl.legend()
 
 	return y_data_nobg, bg_values, coeff
-	
