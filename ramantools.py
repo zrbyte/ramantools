@@ -326,7 +326,11 @@ class singlespec:
 
 ## internal functions ------------------------------------------------------------
 
-def _lorentz(x, x0, area, width, offset):
+# nothing here yet
+
+## Tools -----------------------------------------------------------------
+
+def lorentz(x, x0, area, width, offset):
 	"""Single Lorentz function
 
 	:return: values of a single Lorentz function
@@ -349,7 +353,7 @@ def _lorentz(x, x0, area, width, offset):
 	"""
 	return offset + (2/np.pi) * (area * width) / (4*(x - x0)**2 + width**2)
 
-def _lorentz2(x, x01, area1, width1, x02, area2, width2, offset):
+def lorentz2(x, x01, area1, width1, x02, area2, width2, offset):
 	"""Double Lorentz function
 
 	:return: values of a double Lorentz function
@@ -368,9 +372,6 @@ def _lorentz2(x, x01, area1, width1, x02, area2, width2, offset):
 	
 	"""
 	return offset + (2/np.pi) * (area1 * width1) / (4*(x - x01)**2 + width1**2) + (2/np.pi) * (area2 * width2) / (4*(x - x02)**2 + width2**2)
-
-
-## Tools -----------------------------------------------------------------
 
 def polynomial_fit(order, x_data, y_data):
 	"""Polinomial fit to `x_data`, `y_data`
