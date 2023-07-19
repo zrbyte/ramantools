@@ -241,10 +241,18 @@ class singlespec:
 
 		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed
 		:rtype: :py:mod:`xarray`
+
+		.. note::
+			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.
+
 		"""		
 		data_nobg, bg_values, coeff = bgsubtract(self.ramanshift, self.counts, **kwargs)
+		singlespec_xr_nobg = self.ssxr - bg_values
+		# copy the attributes to the xarray with the background removed
+		singlespec_xr_nobg.attrs = self.ssxr.attrs.copy()
+		# adding a note to `xarray` comments attribute
 
-		return data_nobg, bg_values, coeff
+		return singlespec_xr_nobg
 
 	# internal functions
 
@@ -352,8 +360,10 @@ def lorentz(x, x0, area, width, offset):
 	:param offset: offset along the function value
 	:type offset: float
 
-	The amplitude of the peak can be given by::
-	(2*area)/(np.pi*width)
+	.. note::
+		The amplitude of the peak can be given by:
+		.. code-block:: python
+			(2*area)/(np.pi*width)
 	
 	"""
 	return offset + (2/np.pi) * (area * width) / (4*(x - x0)**2 + width**2)
