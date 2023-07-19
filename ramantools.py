@@ -63,8 +63,8 @@ class ramanmap:
 
 	def print_metadata(self):
 		"""
-		Prints the imported metadata, loaded from the info file.
-		
+		Prints the metadata of the :class:`ramanmap` instance, imported from the info file.
+
 		:return: none
 		"""
 		print(self.metadata)
@@ -227,7 +227,7 @@ class singlespec:
 
 	def print_metadata(self):
 		"""
-		Prints the metadata of the `singlespec` object.
+		Prints the metadata of the :class:`singlespec` instance, imported from the info file.
 
 		:return: none
 		"""
@@ -237,10 +237,12 @@ class singlespec:
 		"""Remove the background of Raman spectra.
 		It takes the same optional arguments as :func:`bgsubtract`.
 
-		:return: none
-		:rtype: none
+		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed
+		:rtype: :py:mod:`xarray`
 		"""		
-		print('z')
+		data_nobg, bg_values, coeff = bgsubtract(self.ramanshift, self.counts, **kwargs)
+
+		return data_nobg, bg_values, coeff
 
 	# internal functions
 
@@ -447,15 +449,42 @@ def bgsubtract(x_data, y_data,
 		   vmax = 60,
 		   prom = 10,
 		   exclusion_factor = 6,
-		   peak_pos = None,
-		   **kwargs):
+		   peak_pos = None):
 	"""Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.
 	These peaks are then used to define the areas of the background signal.
 	In the areas with the peaks removed, the background is fitted, using :py:mod:`scipy.curvefit`.
-	The function returns the Raman intensity coults, with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by :py:mod:`numpy.polyval`
+	The function returns the Raman intensity counts with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by :py:mod:`numpy.polyval`
+
+	:return: ``y_data_nobg``, ``bg_values``, ``coeff``
+	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array
+
+	:param x_data: Raman shift values
+	:type x_data: :py:mod:`numpy` array
+	:param y_data: Raman intesity values
+	:type y_data: :py:mod:`numpy` array
+	:param polyorder: order of polynomial used to fit the background, defaults to 1
+	:type polyorder: int, optional
+	:param toplot: if `True` a plot of: the fit, the background used and positions of the peaks is shown, defaults to False
+	:type toplot: bool, optional
+	:param hmin: minimum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 50
+	:type hmin: int, optional
+	:param hmax: maximum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 10000
+	:type hmax: int, optional
+	:param wmin: minimum width of the peaks, passed to :py:mod:`scipy.signal.find_peaks`, defaults to 4
+	:type wmin: int, optional
+	:param vmax: maximum width of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 60
+	:type vmax: int, optional
+	:param prom: prominence of the peaks, passed to :py:mod:`scipy.signal.find_peaks`, defaults to 10
+	:type prom: int, optional
+	:param exclusion_factor: this parameter multiplies the width of the peaks found by :py:mod:`scipy.signal.find_peaks`, or specified by ``wmin`` if the peak positions are passed by hand, using ``peak_pos``, defaults to 6
+	:type exclusion_factor: int, optional
+	:param peak_pos: _description_, defaults to None
+	:type peak_pos: _type_, optional
+
+	.. note::
+		bla
 
 	"""	
-
 	if peak_pos is None:
 		# Find the peaks with specified minimum height and width
 		# re_height sets the width from the maximum at which value the width is evaluated
