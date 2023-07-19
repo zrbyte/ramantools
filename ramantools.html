@@ -193,8 +193,14 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 </ul>
 </dd>
 </dl>
-<p>The amplitude of the peak can be given by::
-(2*area)/(np.pi*width)</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The amplitude of the peak can be given by:
+.. code-block:: python</p>
+<blockquote>
+<div><p>(2*area)/(np.pi*width)</p>
+</div></blockquote>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -396,6 +402,10 @@ It takes the same optional arguments as <a class="reference internal" href="#ram
 <dd class="field-even"><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code></p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Metadata is copied over to the returned <cite>xarray</cite> instance, because there are no unit changes, in removing the background.</p>
+</div>
 </dd></dl>
 
 </dd></dl>

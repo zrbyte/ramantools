@@ -315,10 +315,18 @@
 
 <span class="sd">		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed</span>
 <span class="sd">		:rtype: :py:mod:`xarray`</span>
+
+<span class="sd">		.. note::</span>
+<span class="sd">			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.</span>
+
 <span class="sd">		&quot;&quot;&quot;</span>		
 		<span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+		<span class="n">singlespec_xr_nobg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">-</span> <span class="n">bg_values</span>
+		<span class="c1"># copy the attributes to the xarray with the background removed</span>
+		<span class="n">singlespec_xr_nobg</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+		<span class="c1"># adding a note to `xarray` comments attribute</span>
 
-		<span class="k">return</span> <span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span></div>
+		<span class="k">return</span> <span class="n">singlespec_xr_nobg</span></div>
 
 	<span class="c1"># internal functions</span>
 
@@ -426,8 +434,10 @@
 <span class="sd">	:param offset: offset along the function value</span>
 <span class="sd">	:type offset: float</span>
 
-<span class="sd">	The amplitude of the peak can be given by::</span>
-<span class="sd">	(2*area)/(np.pi*width)</span>
+<span class="sd">	.. note::</span>
+<span class="sd">		The amplitude of the peak can be given by:</span>
+<span class="sd">		.. code-block:: python</span>
+<span class="sd">			(2*area)/(np.pi*width)</span>
 <span class="sd">	</span>
 <span class="sd">	&quot;&quot;&quot;</span>
 	<span class="k">return</span> <span class="n">offset</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">area</span> <span class="o">*</span> <span class="n">width</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">width</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
