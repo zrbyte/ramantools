@@ -116,35 +116,43 @@
 <span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">bgsubtract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prom</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclusion_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#bgsubtract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.bgsubtract" title="Permalink to this definition"></a></dt>
 <dd><p>Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.find_peaks</span></code>.
 These peaks are then used to define the areas of the background signal.
-In the areas with the peaks removed, the background is fitted, using <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.curvefit</span></code>.
-The function returns the Raman intensity counts with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy.polyval</span></code></p>
+In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: <code class="docutils literal notranslate"><span class="pre">polyorder</span></code>.
+The fit is performed by <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.curvefit</span></code>.
+The function returns the Raman intensity counts with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy.polyval</span></code>.</p>
+<p>In cases, where the automatic peak find is not functioning as expected, one can pass the values in <code class="docutils literal notranslate"><span class="pre">x_data</span></code>, at which peaks appear.
+In this case, the <code class="docutils literal notranslate"><span class="pre">wmin</span></code> option determines the width of all peaks.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">y_data_nobg</span></code>, <code class="docutils literal notranslate"><span class="pre">bg_values</span></code>, <code class="docutils literal notranslate"><span class="pre">coeff</span></code></p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array</p>
-</dd>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x_data</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) – Raman shift values</p></li>
 <li><p><strong>y_data</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) – Raman intesity values</p></li>
 <li><p><strong>polyorder</strong> (<em>int</em><em>, </em><em>optional</em>) – order of polynomial used to fit the background, defaults to 1</p></li>
 <li><p><strong>toplot</strong> (<em>bool</em><em>, </em><em>optional</em>) – if <cite>True</cite> a plot of: the fit, the background used and positions of the peaks is shown, defaults to False</p></li>
-<li><p><strong>hmin</strong> (<em>int</em><em>, </em><em>optional</em>) – minimum height of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 50</p></li>
-<li><p><strong>hmax</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum height of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 10000</p></li>
-<li><p><strong>wmin</strong> (<em>int</em><em>, </em><em>optional</em>) – minimum width of the peaks, passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 4</p></li>
-<li><p><strong>vmax</strong> (<em>int</em><em>, </em><em>optional</em>) – maximum width of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 60</p></li>
-<li><p><strong>prom</strong> (<em>int</em><em>, </em><em>optional</em>) – prominence of the peaks, passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 10</p></li>
-<li><p><strong>exclusion_factor</strong> (<em>int</em><em>, </em><em>optional</em>) – this parameter multiplies the width of the peaks found by <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, or specified by <code class="docutils literal notranslate"><span class="pre">wmin</span></code> if the peak positions are passed by hand, using <code class="docutils literal notranslate"><span class="pre">peak_pos</span></code>, defaults to 6</p></li>
-<li><p><strong>peak_pos</strong> (<em>_type_</em><em>, </em><em>optional</em>) – _description_, defaults to None</p></li>
+<li><p><strong>hmin</strong> (<em>float</em><em>, </em><em>optional</em>) – minimum height of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 50</p></li>
+<li><p><strong>hmax</strong> (<em>float</em><em>, </em><em>optional</em>) – maximum height of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 10000</p></li>
+<li><p><strong>wmin</strong> (<em>float</em><em>, </em><em>optional</em>) – minimum width of the peaks, passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 4</p></li>
+<li><p><strong>vmax</strong> (<em>float</em><em>, </em><em>optional</em>) – maximum width of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 60</p></li>
+<li><p><strong>prom</strong> (<em>float</em><em>, </em><em>optional</em>) – prominence of the peaks, passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 10</p></li>
+<li><p><strong>exclusion_factor</strong> (<em>float</em><em>, </em><em>optional</em>) – this parameter multiplies the width of the peaks found by <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, or specified by <code class="docutils literal notranslate"><span class="pre">wmin</span></code> if the peak positions are passed by hand, using <code class="docutils literal notranslate"><span class="pre">peak_pos</span></code>, defaults to 6</p></li>
+<li><p><strong>peak_pos</strong> (<em>list</em><em> of </em><em>floats</em><em>, </em><em>optional</em>) – list of the peak positions in <code class="docutils literal notranslate"><span class="pre">x_data</span></code> values used for exclusion, defaults to None</p></li>
 </ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">y_data_nobg</span></code>: Raman counts, with the background subtracted, <code class="docutils literal notranslate"><span class="pre">bg_values</span></code>: the polynomial values of the fit, at the Raman shift positions, <code class="docutils literal notranslate"><span class="pre">coeff</span></code>: coefficients of the polynomial fit, as used by: <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy.polyval</span></code></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array</p>
 </dd>
 </dl>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>bla</p>
+<p>Using the option: <code class="docutils literal notranslate"><span class="pre">peak_pos</span></code>, a <code class="docutils literal notranslate"><span class="pre">wmin*exclusion_factor/2</span></code> area around the peaks is excluded from the background fit.
+If automatic peak finding is used, the exclusion area is calculated in a similar way, but the width of the individual peaks are used, as determined by <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>.</p>
 </div>
+<dl class="field-list simple">
+<dt class="field-odd">Example<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -332,8 +340,11 @@ It takes two arguments, the first is the path to the file containing the spectro
 </dd>
 </dl>
 <p>For a compete list see example below.</p>
-<p>Examples:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
+<dl class="field-list simple">
+<dt class="field-odd">Example<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
 
 <span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
 <span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
