@@ -201,6 +201,7 @@ class singlespec:
 	For a compete list see example below.
 
 	:Example:
+
 	.. code-block:: python
 
 		import ramantools as rt
@@ -491,6 +492,24 @@ def bgsubtract(x_data, y_data,
 		If automatic peak finding is used, the exclusion area is calculated in a similar way, but the width of the individual peaks are used, as determined by :py:mod:`scipy.signal.find_peaks`.
 
 	:Example:
+	
+	.. code-block:: python
+
+		import ramantools as rt
+
+		spec_path = r'data path on you machine'
+		info_path = r'metadata path on your machine'
+		# use raw strings, starting with `r'` to escape special characters, such as backslash
+
+		# Loading a single spectrum from files
+		single_spectrum = rt.singlespec(spec_path, info_path)
+
+		# Using remove_bg to fit and remove the background
+		# In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.
+		data_nobg, bg_values, coeff = single_spectrum.remove_bg()
+
+		# In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.
+		data_nobg, bg_values, coeff = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)
 	
 	"""	
 	if peak_pos is None:
