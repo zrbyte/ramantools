@@ -566,7 +566,7 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, hmin = 50, hmax = 
 	mask = np.ones(x_data.shape[0], dtype = bool)
 	mask[covered_indices] = False
 	# make the mask False for the region below the notch filter cutoff (~80 cm^{-1})
-	x_data_notch = x_data[x_data < 80]
+	x_data_notch = x_data[x_data < 95]
 	mask[:x_data_notch.shape[0]] = False
 	uncovered_x_data = x_data[mask]
 	uncovered_y_data = y_data[mask]
@@ -591,7 +591,7 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, hmin = 50, hmax = 
 		pl.plot(x_data, bg_values, color = 'k', ls = "dashed", label = 'fitted polynomial')
 
 		# Highlight the background used for fitting
-		pl.scatter(uncovered_x_data, uncovered_y_data, color = 'red', marker= 'o', alpha = 1, label = 'background used for fit')
+		pl.scatter(uncovered_x_data, uncovered_y_data, color = 'red', marker= 'o', alpha = 1, label = 'background used for fit') # type: ignore
 
 		pl.xlabel('Raman shift (cm$^{-1}$)')
 		pl.ylabel('Raman intensity (a.u.)')
