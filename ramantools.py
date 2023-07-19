@@ -233,8 +233,9 @@ class singlespec:
 		"""
 		print(self.metadata)
 
-	def remove_bg(self):
-		"""Remove the background of Raman spectra
+	def remove_bg(self, **kwargs):
+		"""Remove the background of Raman spectra.
+		It takes the same optional arguments as :func:`bgsubtract`.
 
 		:return: none
 		:rtype: none
