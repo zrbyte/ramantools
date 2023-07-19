@@ -200,7 +200,8 @@ class singlespec:
 
 	For a compete list see example below.
 
-	Examples::
+	:Example:
+	.. code-block:: python
 
 		import ramantools as rt
 
@@ -452,11 +453,12 @@ def bgsubtract(x_data, y_data,
 		   peak_pos = None):
 	"""Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.
 	These peaks are then used to define the areas of the background signal.
-	In the areas with the peaks removed, the background is fitted, using :py:mod:`scipy.curvefit`.
-	The function returns the Raman intensity counts with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by :py:mod:`numpy.polyval`
+	In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: ``polyorder``.
+	The fit is performed by :py:mod:`scipy.curvefit`.
+	The function returns the Raman intensity counts with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by :py:mod:`numpy.polyval`.
 
-	:return: ``y_data_nobg``, ``bg_values``, ``coeff``
-	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array
+	In cases, where the automatic peak find is not functioning as expected, one can pass the values in ``x_data``, at which peaks appear.
+	In this case, the ``wmin`` option determines the width of all peaks.
 
 	:param x_data: Raman shift values
 	:type x_data: :py:mod:`numpy` array
@@ -467,23 +469,29 @@ def bgsubtract(x_data, y_data,
 	:param toplot: if `True` a plot of: the fit, the background used and positions of the peaks is shown, defaults to False
 	:type toplot: bool, optional
 	:param hmin: minimum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 50
-	:type hmin: int, optional
+	:type hmin: float, optional
 	:param hmax: maximum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 10000
-	:type hmax: int, optional
+	:type hmax: float, optional
 	:param wmin: minimum width of the peaks, passed to :py:mod:`scipy.signal.find_peaks`, defaults to 4
-	:type wmin: int, optional
+	:type wmin: float, optional
 	:param vmax: maximum width of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 60
-	:type vmax: int, optional
+	:type vmax: float, optional
 	:param prom: prominence of the peaks, passed to :py:mod:`scipy.signal.find_peaks`, defaults to 10
-	:type prom: int, optional
+	:type prom: float, optional
 	:param exclusion_factor: this parameter multiplies the width of the peaks found by :py:mod:`scipy.signal.find_peaks`, or specified by ``wmin`` if the peak positions are passed by hand, using ``peak_pos``, defaults to 6
-	:type exclusion_factor: int, optional
-	:param peak_pos: _description_, defaults to None
-	:type peak_pos: _type_, optional
+	:type exclusion_factor: float, optional
+	:param peak_pos: list of the peak positions in ``x_data`` values used for exclusion, defaults to None
+	:type peak_pos: list of floats, optional
+
+	:return: ``y_data_nobg``: Raman counts, with the background subtracted, ``bg_values``: the polynomial values of the fit, at the Raman shift positions, ``coeff``: coefficients of the polynomial fit, as used by: :py:mod:`numpy.polyval`
+	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array
 
 	.. note::
-		bla
+		Using the option: ``peak_pos``, a ``wmin*exclusion_factor/2`` area around the peaks is excluded from the background fit.
+		If automatic peak finding is used, the exclusion area is calculated in a similar way, but the width of the individual peaks are used, as determined by :py:mod:`scipy.signal.find_peaks`.
 
+	:Example:
+	
 	"""	
 	if peak_pos is None:
 		# Find the peaks with specified minimum height and width
