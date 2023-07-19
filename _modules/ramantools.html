@@ -137,8 +137,8 @@
 
 <div class="viewcode-block" id="ramanmap.print_metadata"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">		Prints the imported metadata, loaded from the info file.</span>
-<span class="sd">		</span>
+<span class="sd">		Prints the metadata of the :class:`ramanmap` instance, imported from the info file.</span>
+
 <span class="sd">		:return: none</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
@@ -301,7 +301,7 @@
 
 <div class="viewcode-block" id="singlespec.print_metadata"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">		Prints the metadata of the `singlespec` object.</span>
+<span class="sd">		Prints the metadata of the :class:`singlespec` instance, imported from the info file.</span>
 
 <span class="sd">		:return: none</span>
 <span class="sd">		&quot;&quot;&quot;</span>
@@ -311,10 +311,12 @@
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Remove the background of Raman spectra.</span>
 <span class="sd">		It takes the same optional arguments as :func:`bgsubtract`.</span>
 
-<span class="sd">		:return: none</span>
-<span class="sd">		:rtype: none</span>
+<span class="sd">		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed</span>
+<span class="sd">		:rtype: :py:mod:`xarray`</span>
 <span class="sd">		&quot;&quot;&quot;</span>		
-		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;z&#39;</span><span class="p">)</span></div>
+		<span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span></div>
 
 	<span class="c1"># internal functions</span>
 
@@ -521,15 +523,42 @@
 		   <span class="n">vmax</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span>
 		   <span class="n">prom</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
 		   <span class="n">exclusion_factor</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
-		   <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-		   <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		   <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">	</span><span class="sd">&quot;&quot;&quot;Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.</span>
 <span class="sd">	These peaks are then used to define the areas of the background signal.</span>
 <span class="sd">	In the areas with the peaks removed, the background is fitted, using :py:mod:`scipy.curvefit`.</span>
-<span class="sd">	The function returns the Raman intensity coults, with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by :py:mod:`numpy.polyval`</span>
+<span class="sd">	The function returns the Raman intensity counts with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by :py:mod:`numpy.polyval`</span>
+
+<span class="sd">	:return: ``y_data_nobg``, ``bg_values``, ``coeff``</span>
+<span class="sd">	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array</span>
+
+<span class="sd">	:param x_data: Raman shift values</span>
+<span class="sd">	:type x_data: :py:mod:`numpy` array</span>
+<span class="sd">	:param y_data: Raman intesity values</span>
+<span class="sd">	:type y_data: :py:mod:`numpy` array</span>
+<span class="sd">	:param polyorder: order of polynomial used to fit the background, defaults to 1</span>
+<span class="sd">	:type polyorder: int, optional</span>
+<span class="sd">	:param toplot: if `True` a plot of: the fit, the background used and positions of the peaks is shown, defaults to False</span>
+<span class="sd">	:type toplot: bool, optional</span>
+<span class="sd">	:param hmin: minimum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 50</span>
+<span class="sd">	:type hmin: int, optional</span>
+<span class="sd">	:param hmax: maximum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 10000</span>
+<span class="sd">	:type hmax: int, optional</span>
+<span class="sd">	:param wmin: minimum width of the peaks, passed to :py:mod:`scipy.signal.find_peaks`, defaults to 4</span>
+<span class="sd">	:type wmin: int, optional</span>
+<span class="sd">	:param vmax: maximum width of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 60</span>
+<span class="sd">	:type vmax: int, optional</span>
+<span class="sd">	:param prom: prominence of the peaks, passed to :py:mod:`scipy.signal.find_peaks`, defaults to 10</span>
+<span class="sd">	:type prom: int, optional</span>
+<span class="sd">	:param exclusion_factor: this parameter multiplies the width of the peaks found by :py:mod:`scipy.signal.find_peaks`, or specified by ``wmin`` if the peak positions are passed by hand, using ``peak_pos``, defaults to 6</span>
+<span class="sd">	:type exclusion_factor: int, optional</span>
+<span class="sd">	:param peak_pos: _description_, defaults to None</span>
+<span class="sd">	:type peak_pos: _type_, optional</span>
+
+<span class="sd">	.. note::</span>
+<span class="sd">		bla</span>
 
 <span class="sd">	&quot;&quot;&quot;</span>	
-
 	<span class="k">if</span> <span class="n">peak_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 		<span class="c1"># Find the peaks with specified minimum height and width</span>
 		<span class="c1"># re_height sets the width from the maximum at which value the width is evaluated</span>
