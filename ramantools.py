@@ -238,19 +238,46 @@ class singlespec:
 	def remove_bg(self, **kwargs):
 		"""Remove the background of Raman spectra.
 		It takes the same optional arguments as :func:`bgsubtract`.
+		Default fit function is a first order polynomial.
+		This can be changed by the ``polyorder`` parameter.
 
 		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed
 		:rtype: :py:mod:`xarray`
 
 		.. note::
 			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.
+			After running, the 'comments' attribute of the `xarray` instance is updated with the background fit information.
+
+		:Example:
+		
+		.. code-block:: python
+
+			import ramantools as rt
+
+			spec_path = r'data path on you machine'
+			info_path = r'metadata path on your machine'
+			# use raw strings, starting with `r'` to escape special characters, such as backslash
+
+			# Loading a single spectrum from files
+			single_spectrum = rt.singlespec(spec_path, info_path)
+
+			# Using remove_bg to fit and remove the background
+			# In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.
+			single_spec_nobg = single_spectrum.remove_bg()
+
+			# In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.
+			single_spec_nobg = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)
+
+			# Fitting a third order polynomial
+			single_spec_nobg = single_spectrum.remove_bg(polyorder = 3)
 
 		"""		
-		data_nobg, bg_values, coeff = bgsubtract(self.ramanshift, self.counts, **kwargs)
+		data_nobg, bg_values, coeff, fitparams = bgsubtract(self.ssxr.coords['ramanshift'].data, self.ssxr.data, **kwargs)
 		singlespec_xr_nobg = self.ssxr - bg_values
 		# copy the attributes to the xarray with the background removed
 		singlespec_xr_nobg.attrs = self.ssxr.attrs.copy()
 		# adding a note to `xarray` comments attribute
+		singlespec_xr_nobg.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
 
 		return singlespec_xr_nobg
 
@@ -343,77 +370,6 @@ class singlespec:
 
 ## Tools -----------------------------------------------------------------
 
-def lorentz(x, x0, area, width, offset):
-	"""Single Lorentz function
-
-	:return: values of a single Lorentz function
-	:rtype: float, :py:mod:`numpy` array, etc.
-
-	:param x: values for the x coordinate
-	:type x: float, :py:mod:`numpy` array, etc.
-	:param x0: shift along the `x` corrdinate
-	:type x0: float
-	:param area: area of the peak
-	:type area: float
-	:param width: width (FWHM) of the peak
-	:type width: float
-	:param offset: offset along the function value
-	:type offset: float
-
-	.. note::
-		The amplitude of the peak can be given by:
-		.. code-block:: python
-			(2*area)/(np.pi*width)
-	
-	"""
-	return offset + (2/np.pi) * (area * width) / (4*(x - x0)**2 + width**2)
-
-def lorentz2(x, x01, area1, width1, x02, area2, width2, offset):
-	"""Double Lorentz function
-
-	:return: values of a double Lorentz function
-	:rtype: float, :py:mod:`numpy` array, etc.
-
-	:param x: values for the x coordinate
-	:type x: float, :py:mod:`numpy` array, etc.
-	:param x0: shift along the `x` corrdinate
-	:type x0: float
-	:param area: area of the peak
-	:type area: float
-	:param width: width (FWHM) of the peak
-	:type width: float
-	:param offset: offset along the function value
-	:type offset: float
-	
-	"""
-	return offset + (2/np.pi) * (area1 * width1) / (4*(x - x01)**2 + width1**2) + (2/np.pi) * (area2 * width2) / (4*(x - x02)**2 + width2**2)
-
-def polynomial_fit(order, x_data, y_data):
-	"""Polinomial fit to `x_data`, `y_data`
-
-	:param order: order of the polinomial to be fit
-	:type order: int
-	:param x_data: x coordinate of the data, this would be Raman shift
-	:type x_data: :py:mod:`numpy` array
-	:param y_data: y coordinate of the data, this would be Raman intensity
-	:type y_data: :py:mod:`numpy` array
-	:return: coefficients of the polinomial, as used by `np.polyval`
-	:rtype: :py:mod:`numpy` array
-
-	"""    
-	# Define polynomial function of given order
-	def poly_func(x, *coeffs):
-		y = np.polyval(coeffs, x)
-		return y
-
-	# Initial guess for the coefficients is all ones
-	guess = np.ones(order + 1)
-
-	# Use curve_fit to find best fit parameters
-	coeff, _ = curve_fit(poly_func, x_data, y_data, p0 = guess)
-
-	return coeff
-
 def plotspec(xrobject, width, height, shift):
 	"""
 	Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
@@ -452,16 +408,80 @@ def plotspec(xrobject, width, height, shift):
 	ax1.axes.title.set_size(10)
 	pl.tight_layout()
 
-def bgsubtract(x_data, y_data,
-	       polyorder = 1,
-	       toplot = False,
-	       hmin = 50,
-		   hmax = 10000,
-		   wmin = 4,
-		   vmax = 60,
-		   prom = 10,
-		   exclusion_factor = 6,
-		   peak_pos = None):
+def lorentz(x, x0, area, width, offset):
+	"""Single Lorentz function
+
+	:return: values of a single Lorentz function
+	:rtype: float, :py:mod:`numpy` array, etc.
+
+	:param x: values for the x coordinate
+	:type x: float, :py:mod:`numpy` array, etc.
+	:param x0: shift along the `x` corrdinate
+	:type x0: float
+	:param area: area of the peak
+	:type area: float
+	:param width: width (FWHM) of the peak
+	:type width: float
+	:param offset: offset along the function value
+	:type offset: float
+
+	.. note::
+		The amplitude of the peak can be given by:
+		
+		.. code-block:: python
+
+			(2*area)/(np.pi*width)
+	
+	"""
+	return offset + (2/np.pi) * (area * width) / (4*(x - x0)**2 + width**2)
+
+def lorentz2(x, x01, area1, width1, x02, area2, width2, offset):
+	"""Double Lorentz function
+
+	:return: values of a double Lorentz function
+	:rtype: float, :py:mod:`numpy` array, etc.
+
+	:param x: values for the x coordinate
+	:type x: float, :py:mod:`numpy` array, etc.
+	:param x0: shift along the `x` corrdinate
+	:type x0: float
+	:param area: area of the peak
+	:type area: float
+	:param width: width (FWHM) of the peak
+	:type width: float
+	:param offset: offset along the function value
+	:type offset: float
+	
+	"""
+	return offset + (2/np.pi) * (area1 * width1) / (4*(x - x01)**2 + width1**2) + (2/np.pi) * (area2 * width2) / (4*(x - x02)**2 + width2**2)
+
+def polynomial_fit(order, x_data, y_data):
+	"""Polinomial fit to `x_data`, `y_data`
+
+	:param order: order of the polinomial to be fit
+	:type order: int
+	:param x_data: x coordinate of the data, this would be Raman shift
+	:type x_data: :py:mod:`numpy` array
+	:param y_data: y coordinate of the data, this would be Raman intensity
+	:type y_data: :py:mod:`numpy` array
+	:return: coefficients of the polinomial, as used by :py:mod:`numpy.polyval`
+	:rtype: :py:mod:`numpy` array
+
+	"""    
+	# Define polynomial function of given order
+	def poly_func(x, *coeffs):
+		y = np.polyval(coeffs, x)
+		return y
+
+	# Initial guess for the coefficients is all ones
+	guess = np.ones(order + 1)
+
+	# Use curve_fit to find best fit parameters
+	coeff, _ = curve_fit(poly_func, x_data, y_data, p0 = guess)
+
+	return coeff
+
+def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, hmin = 50, hmax = 10000, wmin = 4, wmax = 60, prom = 10, exclusion_factor = 6, peak_pos = None):
 	"""Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.
 	These peaks are then used to define the areas of the background signal.
 	In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: ``polyorder``.
@@ -485,8 +505,8 @@ def bgsubtract(x_data, y_data,
 	:type hmax: float, optional
 	:param wmin: minimum width of the peaks, passed to :py:mod:`scipy.signal.find_peaks`, defaults to 4
 	:type wmin: float, optional
-	:param vmax: maximum width of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 60
-	:type vmax: float, optional
+	:param wmax: maximum width of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 60
+	:type wmax: float, optional
 	:param prom: prominence of the peaks, passed to :py:mod:`scipy.signal.find_peaks`, defaults to 10
 	:type prom: float, optional
 	:param exclusion_factor: this parameter multiplies the width of the peaks found by :py:mod:`scipy.signal.find_peaks`, or specified by ``wmin`` if the peak positions are passed by hand, using ``peak_pos``, defaults to 6
@@ -494,38 +514,23 @@ def bgsubtract(x_data, y_data,
 	:param peak_pos: list of the peak positions in ``x_data`` values used for exclusion, defaults to None
 	:type peak_pos: list of floats, optional
 
-	:return: ``y_data_nobg``: Raman counts, with the background subtracted, ``bg_values``: the polynomial values of the fit, at the Raman shift positions, ``coeff``: coefficients of the polynomial fit, as used by: :py:mod:`numpy.polyval`
-	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array
+	:return: list: [``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``]
+	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array, dictionary
+
+	* ``y_data_nobg``: Raman counts, with the background subtracted,
+	* ``bg_values``: the polynomial values of the fit, at the Raman shift positions,
+	* ``coeff``: coefficients of the polynomial fit, as used by: :py:mod:`numpy.polyval`,
+	* ``params_used_at_run``: parameters used at runtime	
 
 	.. note::
 		Using the option: ``peak_pos``, a ``wmin*exclusion_factor/2`` area around the peaks is excluded from the background fit.
 		If automatic peak finding is used, the exclusion area is calculated in a similar way, but the width of the individual peaks are used, as determined by :py:mod:`scipy.signal.find_peaks`.
 
-	:Example:
-	
-	.. code-block:: python
-
-		import ramantools as rt
-
-		spec_path = r'data path on you machine'
-		info_path = r'metadata path on your machine'
-		# use raw strings, starting with `r'` to escape special characters, such as backslash
-
-		# Loading a single spectrum from files
-		single_spectrum = rt.singlespec(spec_path, info_path)
-
-		# Using remove_bg to fit and remove the background
-		# In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.
-		data_nobg, bg_values, coeff = single_spectrum.remove_bg()
-
-		# In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.
-		data_nobg, bg_values, coeff = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)
-	
-	"""	
+	"""
 	if peak_pos is None:
 		# Find the peaks with specified minimum height and width
 		# re_height sets the width from the maximum at which value the width is evaluated
-		peak_properties = find_peaks(y_data, height = (hmin, hmax), width = (wmin, vmax), prominence = prom, rel_height = 0.5)
+		peak_properties = find_peaks(y_data, height = (hmin, hmax), width = (wmin, wmax), prominence = prom, rel_height = 0.5)
 
 		# Find the indices of the peaks
 		peak_indices = peak_properties[0]
@@ -592,5 +597,7 @@ def bgsubtract(x_data, y_data,
 		pl.ylabel('Raman intensity (a.u.)')
 		pl.title('Data plot with peaks, fitted line and background highlighted.')
 		pl.legend()
+	
+	params_used_at_run = {'polyorder': polyorder, 'hmin': hmin, 'hmax': hmax, 'wmin': wmin, 'wmax': wmax, 'prom':prom, 'exclusion_factor': exclusion_factor, 'peak_pos': peak_pos}
 
-	return y_data_nobg, bg_values, coeff
+	return y_data_nobg, bg_values, coeff, params_used_at_run

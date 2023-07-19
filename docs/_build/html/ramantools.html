@@ -45,6 +45,8 @@
 <li class="toctree-l1"><a class="reference internal" href="intro.html#examples">Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ramantools module</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ramantools.lorentz"><code class="docutils literal notranslate"><span class="pre">lorentz()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ramantools.lorentz2"><code class="docutils literal notranslate"><span class="pre">lorentz2()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.plotspec"><code class="docutils literal notranslate"><span class="pre">plotspec()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
@@ -61,6 +63,8 @@
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">ramantools</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">ramantools module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.lorentz"><code class="docutils literal notranslate"><span class="pre">lorentz()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.lorentz2"><code class="docutils literal notranslate"><span class="pre">lorentz2()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.plotspec"><code class="docutils literal notranslate"><span class="pre">plotspec()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
@@ -106,8 +110,102 @@
 <span id="ramantools-module"></span><h1>ramantools module<a class="headerlink" href="#module-ramantools" title="Permalink to this heading"></a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.bgsubtract">
-<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">bgsubtract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prom</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclusion_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#bgsubtract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.bgsubtract" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">bgsubtract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prom</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclusion_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#bgsubtract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.bgsubtract" title="Permalink to this definition"></a></dt>
+<dd><p>Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.find_peaks</span></code>.
+These peaks are then used to define the areas of the background signal.
+In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: <code class="docutils literal notranslate"><span class="pre">polyorder</span></code>.
+The fit is performed by <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.curvefit</span></code>.
+The function returns the Raman intensity counts with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy.polyval</span></code>.</p>
+<p>In cases, where the automatic peak find is not functioning as expected, one can pass the values in <code class="docutils literal notranslate"><span class="pre">x_data</span></code>, at which peaks appear.
+In this case, the <code class="docutils literal notranslate"><span class="pre">wmin</span></code> option determines the width of all peaks.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_data</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) – Raman shift values</p></li>
+<li><p><strong>y_data</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) – Raman intesity values</p></li>
+<li><p><strong>polyorder</strong> (<em>int</em><em>, </em><em>optional</em>) – order of polynomial used to fit the background, defaults to 1</p></li>
+<li><p><strong>toplot</strong> (<em>bool</em><em>, </em><em>optional</em>) – if <cite>True</cite> a plot of: the fit, the background used and positions of the peaks is shown, defaults to False</p></li>
+<li><p><strong>hmin</strong> (<em>float</em><em>, </em><em>optional</em>) – minimum height of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 50</p></li>
+<li><p><strong>hmax</strong> (<em>float</em><em>, </em><em>optional</em>) – maximum height of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 10000</p></li>
+<li><p><strong>wmin</strong> (<em>float</em><em>, </em><em>optional</em>) – minimum width of the peaks, passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 4</p></li>
+<li><p><strong>wmax</strong> (<em>float</em><em>, </em><em>optional</em>) – maximum width of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 60</p></li>
+<li><p><strong>prom</strong> (<em>float</em><em>, </em><em>optional</em>) – prominence of the peaks, passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 10</p></li>
+<li><p><strong>exclusion_factor</strong> (<em>float</em><em>, </em><em>optional</em>) – this parameter multiplies the width of the peaks found by <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, or specified by <code class="docutils literal notranslate"><span class="pre">wmin</span></code> if the peak positions are passed by hand, using <code class="docutils literal notranslate"><span class="pre">peak_pos</span></code>, defaults to 6</p></li>
+<li><p><strong>peak_pos</strong> (<em>list</em><em> of </em><em>floats</em><em>, </em><em>optional</em>) – list of the peak positions in <code class="docutils literal notranslate"><span class="pre">x_data</span></code> values used for exclusion, defaults to None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>list: [<code class="docutils literal notranslate"><span class="pre">y_data_nobg</span></code>, <code class="docutils literal notranslate"><span class="pre">bg_values</span></code>, <code class="docutils literal notranslate"><span class="pre">coeff</span></code>, <code class="docutils literal notranslate"><span class="pre">params_used_at_run</span></code>]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, dictionary</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">y_data_nobg</span></code>: Raman counts, with the background subtracted,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bg_values</span></code>: the polynomial values of the fit, at the Raman shift positions,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">coeff</span></code>: coefficients of the polynomial fit, as used by: <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy.polyval</span></code>,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params_used_at_run</span></code>: parameters used at runtime</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Using the option: <code class="docutils literal notranslate"><span class="pre">peak_pos</span></code>, a <code class="docutils literal notranslate"><span class="pre">wmin*exclusion_factor/2</span></code> area around the peaks is excluded from the background fit.
+If automatic peak finding is used, the exclusion area is calculated in a similar way, but the width of the individual peaks are used, as determined by <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ramantools.lorentz">
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">lorentz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#lorentz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.lorentz" title="Permalink to this definition"></a></dt>
+<dd><p>Single Lorentz function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>values of a single Lorentz function</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>float, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, etc.</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (float, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, etc.) – values for the x coordinate</p></li>
+<li><p><strong>x0</strong> (<em>float</em>) – shift along the <cite>x</cite> corrdinate</p></li>
+<li><p><strong>area</strong> (<em>float</em>) – area of the peak</p></li>
+<li><p><strong>width</strong> (<em>float</em>) – width (FWHM) of the peak</p></li>
+<li><p><strong>offset</strong> (<em>float</em>) – offset along the function value</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The amplitude of the peak can be given by:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">area</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">width</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ramantools.lorentz2">
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">lorentz2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#lorentz2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.lorentz2" title="Permalink to this definition"></a></dt>
+<dd><p>Double Lorentz function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>values of a double Lorentz function</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>float, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, etc.</p>
+</dd>
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (float, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, etc.) – values for the x coordinate</p></li>
+<li><p><strong>x0</strong> (<em>float</em>) – shift along the <cite>x</cite> corrdinate</p></li>
+<li><p><strong>area</strong> (<em>float</em>) – area of the peak</p></li>
+<li><p><strong>width</strong> (<em>float</em>) – width (FWHM) of the peak</p></li>
+<li><p><strong>offset</strong> (<em>float</em>) – offset along the function value</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.plotspec">
@@ -142,7 +240,7 @@ First variable is a <cite>ramanmap</cite> object, followed by the specific width
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>coefficients of the polinomial, as used by <cite>np.polyval</cite></p>
+<dd class="field-even"><p>coefficients of the polinomial, as used by <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy.polyval</span></code></p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array</p>
@@ -200,7 +298,7 @@ This is the text next to the map data in the Witec software.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramanmap.print_metadata">
 <span class="sig-name descname"><span class="pre">print_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.print_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.print_metadata" title="Permalink to this definition"></a></dt>
-<dd><p>Prints the imported metadata, loaded from the info file.</p>
+<dd><p>Prints the metadata of the <a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance, imported from the info file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>none</p>
@@ -246,8 +344,11 @@ It takes two arguments, the first is the path to the file containing the spectro
 </dd>
 </dl>
 <p>For a compete list see example below.</p>
-<p>Examples:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
+<dl class="field-list simple">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
 
 <span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
 <span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
@@ -261,7 +362,7 @@ It takes two arguments, the first is the path to the file containing the spectro
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.singlespec.print_metadata">
 <span class="sig-name descname"><span class="pre">print_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.print_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.print_metadata" title="Permalink to this definition"></a></dt>
-<dd><p>Prints the metadata of the <cite>singlespec</cite> object.</p>
+<dd><p>Prints the metadata of the <a class="reference internal" href="#ramantools.singlespec" title="ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> instance, imported from the info file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>none</p>
@@ -271,8 +372,49 @@ It takes two arguments, the first is the path to the file containing the spectro
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.singlespec.remove_bg">
-<span class="sig-name descname"><span class="pre">remove_bg</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.remove_bg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.remove_bg" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">remove_bg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.remove_bg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.remove_bg" title="Permalink to this definition"></a></dt>
+<dd><p>Remove the background of Raman spectra.
+It takes the same optional arguments as <a class="reference internal" href="#ramantools.bgsubtract" title="ramantools.bgsubtract"><code class="xref py py-func docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a>.
+Default fit function is a first order polynomial.
+This can be changed by the <code class="docutils literal notranslate"><span class="pre">polyorder</span></code> parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Returns an <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> instance, with the same data and metadata, but the background removed</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Metadata is copied over to the returned <cite>xarray</cite> instance, because there are no unit changes, in removing the background.
+After running, the ‘comments’ attribute of the <cite>xarray</cite> instance is updated with the background fit information.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
+
+<span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
+<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+
+<span class="c1"># Loading a single spectrum from files</span>
+<span class="n">single_spectrum</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">singlespec</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
+
+<span class="c1"># Using remove_bg to fit and remove the background</span>
+<span class="c1"># In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.</span>
+<span class="n">single_spec_nobg</span> <span class="o">=</span> <span class="n">single_spectrum</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">()</span>
+
+<span class="c1"># In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.</span>
+<span class="n">single_spec_nobg</span> <span class="o">=</span> <span class="n">single_spectrum</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">(</span><span class="n">toplot</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="p">[</span><span class="mi">520</span><span class="p">,</span> <span class="mi">1583</span><span class="p">,</span> <span class="mi">2700</span><span class="p">],</span> <span class="n">wmin</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span>
+
+<span class="c1"># Fitting a third order polynomial</span>
+<span class="n">single_spec_nobg</span> <span class="o">=</span> <span class="n">single_spectrum</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">(</span><span class="n">polyorder</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
 
 </dd></dl>
 

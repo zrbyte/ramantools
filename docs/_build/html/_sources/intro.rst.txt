@@ -3,6 +3,8 @@ Introduction
 
 Tools to analize Raman spectroscopy data, measured using the Witec 300rsa+ confocal Raman spectrometer.
 
+.. Operations made to the xarray instances, using the methods of the `ramanmap` and `singlespec` classes are appended to the 'comments' attribute.
+
 Examples
 =============
 
