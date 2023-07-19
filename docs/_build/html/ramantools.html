@@ -51,6 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.remove_bg"><code class="docutils literal notranslate"><span class="pre">ramanmap.remove_bg()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
@@ -69,6 +70,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.remove_bg"><code class="docutils literal notranslate"><span class="pre">ramanmap.remove_bg()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
@@ -306,6 +308,59 @@ This is the text next to the map data in the Witec software.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramanmap.remove_bg">
+<span class="sig-name descname"><span class="pre">remove_bg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.remove_bg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.remove_bg" title="Permalink to this definition"></a></dt>
+<dd><p>Remove the background of Raman maps.
+It takes the same optional arguments as <a class="reference internal" href="#ramantools.bgsubtract" title="ramantools.bgsubtract"><code class="xref py py-func docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a>.
+Default fit function is a first order polynomial.
+This can be changed by the <code class="docutils literal notranslate"><span class="pre">polyorder</span></code> parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Returns an <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> instance, with the same data and metadata, but the background removed</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Metadata is copied over to the returned <cite>xarray</cite> instance, because there are no unit changes, in removing the background.
+After running, the ‘comments’ attribute of the <cite>xarray</cite> instance is updated with the background fit information.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Example</dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
+
+<span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
+<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+
+<span class="c1"># Loading a single spectrum from files</span>
+<span class="n">single_spectrum</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">singlespec</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
+
+<span class="c1"># Using remove_bg to fit and remove the background</span>
+<span class="c1"># In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.</span>
+<span class="n">single_spec_nobg</span> <span class="o">=</span> <span class="n">single_spectrum</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">()</span>
+
+<span class="c1"># In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.</span>
+<span class="n">single_spec_nobg</span> <span class="o">=</span> <span class="n">single_spectrum</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">(</span><span class="n">toplot</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="p">[</span><span class="mi">520</span><span class="p">,</span> <span class="mi">1583</span><span class="p">,</span> <span class="mi">2700</span><span class="p">],</span> <span class="n">wmin</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span>
+
+<span class="c1"># Fitting a third order polynomial</span>
+<span class="n">single_spec_nobg</span> <span class="o">=</span> <span class="n">single_spectrum</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">(</span><span class="n">polyorder</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<ul class="simple">
+<li><p>Rewrite this for map.</p></li>
+<li><p>Update the example.</p></li>
+</ul>
+</div>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -343,7 +398,7 @@ It takes two arguments, the first is the path to the file containing the spectro
 </ul>
 </dd>
 </dl>
-<p>For a compete list see example below.</p>
+<p>For a complete list see example below.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Example</dt>
 <dd class="field-odd"><p></p></dd>

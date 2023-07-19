@@ -50,6 +50,67 @@ class ramanmap:
 	
 	"""	
 
+	def print_metadata(self):
+		"""
+		Prints the metadata of the :class:`ramanmap` instance, imported from the info file.
+
+		:return: none
+		"""
+		print(self.metadata)
+
+	def remove_bg(self, **kwargs):
+		"""Remove the background of Raman maps.
+		It takes the same optional arguments as :func:`bgsubtract`.
+		Default fit function is a first order polynomial.
+		This can be changed by the ``polyorder`` parameter.
+
+		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed
+		:rtype: :py:mod:`xarray`
+
+		.. note::
+			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.
+			After running, the 'comments' attribute of the `xarray` instance is updated with the background fit information.
+
+		:Example:
+		
+		.. code-block:: python
+
+			import ramantools as rt
+
+			spec_path = r'data path on you machine'
+			info_path = r'metadata path on your machine'
+			# use raw strings, starting with `r'` to escape special characters, such as backslash
+
+			# Loading a single spectrum from files
+			single_spectrum = rt.singlespec(spec_path, info_path)
+
+			# Using remove_bg to fit and remove the background
+			# In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.
+			single_spec_nobg = single_spectrum.remove_bg()
+
+			# In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.
+			single_spec_nobg = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)
+
+			# Fitting a third order polynomial
+			single_spec_nobg = single_spectrum.remove_bg(polyorder = 3)
+
+		.. seealso::
+			
+			* Rewrite this for map.
+			* Update the example.
+
+		"""		
+		# data_nobg, bg_values, coeff, fitparams = bgsubtract(self.ssxr.coords['ramanshift'].data, self.ssxr.data, **kwargs)
+		# singlespec_xr_nobg = self.ssxr - bg_values
+		# # copy the attributes to the xarray with the background removed
+		# singlespec_xr_nobg.attrs = self.ssxr.attrs.copy()
+		# # adding a note to `xarray` comments attribute
+		# singlespec_xr_nobg.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
+
+		return 0
+
+	# internal functions
+
 	def __init__(self, map_path, info_path):
 		"""Constructor for :class:`ramanmap`
 		"""		
@@ -60,14 +121,6 @@ class ramanmap:
 		# load the data into an xarray container
 		self._toxarray()
 
-
-	def print_metadata(self):
-		"""
-		Prints the metadata of the :class:`ramanmap` instance, imported from the info file.
-
-		:return: none
-		"""
-		print(self.metadata)
 
 	def _load_info(self, info_path, **kwargs):
 		"""
@@ -198,7 +251,7 @@ class singlespec:
 	:var samplename: (type: str) name of the sample, as shown in the Witec software.
 	:var specname: (type: str) contains the name of the Raman single spectrum, as shown in the Witec software.
 
-	For a compete list see example below.
+	For a complete list see example below.
 
 	:Example:
 
@@ -600,4 +653,4 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, hmin = 50, hmax = 
 	
 	params_used_at_run = {'polyorder': polyorder, 'hmin': hmin, 'hmax': hmax, 'wmin': wmin, 'wmax': wmax, 'prom':prom, 'exclusion_factor': exclusion_factor, 'peak_pos': peak_pos}
 
-	return y_data_nobg, bg_values, coeff, params_used_at_run
+	return y_data_nobg, bg_values, coeff, params_used_at_run, mask

@@ -121,6 +121,67 @@
 <span class="sd">	</span>
 <span class="sd">	&quot;&quot;&quot;</span>	
 
+<div class="viewcode-block" id="ramanmap.print_metadata"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Prints the metadata of the :class:`ramanmap` instance, imported from the info file.</span>
+
+<span class="sd">		:return: none</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ramanmap.remove_bg"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.remove_bg">[docs]</a>	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Remove the background of Raman maps.</span>
+<span class="sd">		It takes the same optional arguments as :func:`bgsubtract`.</span>
+<span class="sd">		Default fit function is a first order polynomial.</span>
+<span class="sd">		This can be changed by the ``polyorder`` parameter.</span>
+
+<span class="sd">		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed</span>
+<span class="sd">		:rtype: :py:mod:`xarray`</span>
+
+<span class="sd">		.. note::</span>
+<span class="sd">			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.</span>
+<span class="sd">			After running, the &#39;comments&#39; attribute of the `xarray` instance is updated with the background fit information.</span>
+
+<span class="sd">		:Example:</span>
+<span class="sd">		</span>
+<span class="sd">		.. code-block:: python</span>
+
+<span class="sd">			import ramantools as rt</span>
+
+<span class="sd">			spec_path = r&#39;data path on you machine&#39;</span>
+<span class="sd">			info_path = r&#39;metadata path on your machine&#39;</span>
+<span class="sd">			# use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+
+<span class="sd">			# Loading a single spectrum from files</span>
+<span class="sd">			single_spectrum = rt.singlespec(spec_path, info_path)</span>
+
+<span class="sd">			# Using remove_bg to fit and remove the background</span>
+<span class="sd">			# In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.</span>
+<span class="sd">			single_spec_nobg = single_spectrum.remove_bg()</span>
+
+<span class="sd">			# In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.</span>
+<span class="sd">			single_spec_nobg = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)</span>
+
+<span class="sd">			# Fitting a third order polynomial</span>
+<span class="sd">			single_spec_nobg = single_spectrum.remove_bg(polyorder = 3)</span>
+
+<span class="sd">		.. seealso::</span>
+<span class="sd">			</span>
+<span class="sd">			* Rewrite this for map.</span>
+<span class="sd">			* Update the example.</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>		
+		<span class="c1"># data_nobg, bg_values, coeff, fitparams = bgsubtract(self.ssxr.coords[&#39;ramanshift&#39;].data, self.ssxr.data, **kwargs)</span>
+		<span class="c1"># singlespec_xr_nobg = self.ssxr - bg_values</span>
+		<span class="c1"># # copy the attributes to the xarray with the background removed</span>
+		<span class="c1"># singlespec_xr_nobg.attrs = self.ssxr.attrs.copy()</span>
+		<span class="c1"># # adding a note to `xarray` comments attribute</span>
+		<span class="c1"># singlespec_xr_nobg.attrs[&#39;comments&#39;] += &#39;background subtracted, with parameters: &#39; + str(fitparams) + &#39;\n&#39;</span>
+
+		<span class="k">return</span> <span class="mi">0</span></div>
+
+	<span class="c1"># internal functions</span>
+
 	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Constructor for :class:`ramanmap`</span>
 <span class="sd">		&quot;&quot;&quot;</span>		
@@ -131,14 +192,6 @@
 		<span class="c1"># load the data into an xarray container</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_toxarray</span><span class="p">()</span>
 
-
-<div class="viewcode-block" id="ramanmap.print_metadata"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-		<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">		Prints the metadata of the :class:`ramanmap` instance, imported from the info file.</span>
-
-<span class="sd">		:return: none</span>
-<span class="sd">		&quot;&quot;&quot;</span>
-		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
 	<span class="k">def</span> <span class="nf">_load_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
@@ -269,7 +322,7 @@
 <span class="sd">	:var samplename: (type: str) name of the sample, as shown in the Witec software.</span>
 <span class="sd">	:var specname: (type: str) contains the name of the Raman single spectrum, as shown in the Witec software.</span>
 
-<span class="sd">	For a compete list see example below.</span>
+<span class="sd">	For a complete list see example below.</span>
 
 <span class="sd">	:Example:</span>
 
@@ -637,7 +690,7 @@
 	<span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">x_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">)</span>
 	<span class="n">mask</span><span class="p">[</span><span class="n">covered_indices</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 	<span class="c1"># make the mask False for the region below the notch filter cutoff (~80 cm^{-1})</span>
-	<span class="n">x_data_notch</span> <span class="o">=</span> <span class="n">x_data</span><span class="p">[</span><span class="n">x_data</span> <span class="o">&lt;</span> <span class="mi">80</span><span class="p">]</span>
+	<span class="n">x_data_notch</span> <span class="o">=</span> <span class="n">x_data</span><span class="p">[</span><span class="n">x_data</span> <span class="o">&lt;</span> <span class="mi">95</span><span class="p">]</span>
 	<span class="n">mask</span><span class="p">[:</span><span class="n">x_data_notch</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span>
 	<span class="n">uncovered_x_data</span> <span class="o">=</span> <span class="n">x_data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
 	<span class="n">uncovered_y_data</span> <span class="o">=</span> <span class="n">y_data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
@@ -662,7 +715,7 @@
 		<span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s2">&quot;dashed&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;fitted polynomial&#39;</span><span class="p">)</span>
 
 		<span class="c1"># Highlight the background used for fitting</span>
-		<span class="n">pl</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">uncovered_x_data</span><span class="p">,</span> <span class="n">uncovered_y_data</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;background used for fit&#39;</span><span class="p">)</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">uncovered_x_data</span><span class="p">,</span> <span class="n">uncovered_y_data</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span> <span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;background used for fit&#39;</span><span class="p">)</span> <span class="c1"># type: ignore</span>
 
 		<span class="n">pl</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Raman shift (cm$^{-1}$)&#39;</span><span class="p">)</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Raman intensity (a.u.)&#39;</span><span class="p">)</span>
@@ -671,7 +724,7 @@
 	
 	<span class="n">params_used_at_run</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;polyorder&#39;</span><span class="p">:</span> <span class="n">polyorder</span><span class="p">,</span> <span class="s1">&#39;hmin&#39;</span><span class="p">:</span> <span class="n">hmin</span><span class="p">,</span> <span class="s1">&#39;hmax&#39;</span><span class="p">:</span> <span class="n">hmax</span><span class="p">,</span> <span class="s1">&#39;wmin&#39;</span><span class="p">:</span> <span class="n">wmin</span><span class="p">,</span> <span class="s1">&#39;wmax&#39;</span><span class="p">:</span> <span class="n">wmax</span><span class="p">,</span> <span class="s1">&#39;prom&#39;</span><span class="p">:</span><span class="n">prom</span><span class="p">,</span> <span class="s1">&#39;exclusion_factor&#39;</span><span class="p">:</span> <span class="n">exclusion_factor</span><span class="p">,</span> <span class="s1">&#39;peak_pos&#39;</span><span class="p">:</span> <span class="n">peak_pos</span><span class="p">}</span>
 
-	<span class="k">return</span> <span class="n">y_data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">params_used_at_run</span></div>
+	<span class="k">return</span> <span class="n">y_data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">params_used_at_run</span><span class="p">,</span> <span class="n">mask</span></div>
 </pre></div>
 
            </div>
