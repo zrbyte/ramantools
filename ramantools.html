@@ -153,6 +153,23 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 <dt class="field-odd">Example<span class="colon">:</span></dt>
 <dd class="field-odd"><p></p></dd>
 </dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
+
+<span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
+<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+
+<span class="c1"># Loading a single spectrum from files</span>
+<span class="n">single_spectrum</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">singlespec</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
+
+<span class="c1"># Using remove_bg to fit and remove the background</span>
+<span class="c1"># In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.</span>
+<span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span> <span class="o">=</span> <span class="n">single_spectrum</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">()</span>
+
+<span class="c1"># In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.</span>
+<span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span> <span class="o">=</span> <span class="n">single_spectrum</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">(</span><span class="n">toplot</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="p">[</span><span class="mi">520</span><span class="p">,</span> <span class="mi">1583</span><span class="p">,</span> <span class="mi">2700</span><span class="p">],</span> <span class="n">wmin</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">

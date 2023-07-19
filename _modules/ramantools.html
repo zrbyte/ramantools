@@ -275,6 +275,7 @@
 <span class="sd">	For a compete list see example below.</span>
 
 <span class="sd">	:Example:</span>
+
 <span class="sd">	.. code-block:: python</span>
 
 <span class="sd">		import ramantools as rt</span>
@@ -565,6 +566,24 @@
 <span class="sd">		If automatic peak finding is used, the exclusion area is calculated in a similar way, but the width of the individual peaks are used, as determined by :py:mod:`scipy.signal.find_peaks`.</span>
 
 <span class="sd">	:Example:</span>
+<span class="sd">	</span>
+<span class="sd">	.. code-block:: python</span>
+
+<span class="sd">		import ramantools as rt</span>
+
+<span class="sd">		spec_path = r&#39;data path on you machine&#39;</span>
+<span class="sd">		info_path = r&#39;metadata path on your machine&#39;</span>
+<span class="sd">		# use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+
+<span class="sd">		# Loading a single spectrum from files</span>
+<span class="sd">		single_spectrum = rt.singlespec(spec_path, info_path)</span>
+
+<span class="sd">		# Using remove_bg to fit and remove the background</span>
+<span class="sd">		# In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.</span>
+<span class="sd">		data_nobg, bg_values, coeff = single_spectrum.remove_bg()</span>
+
+<span class="sd">		# In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.</span>
+<span class="sd">		data_nobg, bg_values, coeff = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)</span>
 <span class="sd">	</span>
 <span class="sd">	&quot;&quot;&quot;</span>	
 	<span class="k">if</span> <span class="n">peak_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
