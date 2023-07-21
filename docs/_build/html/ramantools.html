@@ -283,6 +283,7 @@ This is the text next to the map data in the Witec software.</p>
 <li><p><strong>mapxr</strong> – (type <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray) all data, coordinates and metadata</p></li>
 <li><p><strong>map</strong> – (type <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) Raman intensity values</p></li>
 <li><p><strong>ramanshift</strong> – (type <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) Raman shift values for the datapoints stored in <cite>map</cite></p></li>
+<li><p><strong>mask</strong> – (type: <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) A boolean array of the same length as the <code class="docutils literal notranslate"><span class="pre">ramanshift</span></code>. It’s only available if <a class="reference internal" href="#ramantools.singlespec.remove_bg" title="ramantools.singlespec.remove_bg"><code class="xref py py-meth docutils literal notranslate"><span class="pre">singlespec.remove_bg()</span></code></a> is called.</p></li>
 <li><p><strong>samplename</strong> – (type: str) name of the sample, as shown in the Witec software.</p></li>
 <li><p><strong>mapname</strong> – (type: str) contains the name of the Raman map, as shown in the Witec software.</p></li>
 </ul>
@@ -333,7 +334,10 @@ This can be changed by the <code class="docutils literal notranslate"><span clas
 </ul>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>mode</strong> (<em>str</em>) – Values can be: <cite>‘const’</cite>, <cite>‘individual’</cite></p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mode</strong> (str, optional, default: <cite>‘const’</cite>) – Values can be: <cite>‘const’</cite>, <cite>‘individual’</cite></p></li>
+<li><p><strong>fitmask</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) – fitmask as returned by <a class="reference internal" href="#ramantools.bgsubtract" title="ramantools.bgsubtract"><code class="xref py py-func docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a> or as contained in the <cite>singlespec.mask</cite> variable of the <a class="reference internal" href="#ramantools.singlespec" title="ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> class, …</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Returns an <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> instance, with the same data and metadata, but the background removed</p>

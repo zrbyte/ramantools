@@ -31,6 +31,7 @@ class ramanmap:
 	:var mapxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata
 	:var map: (type :py:mod:`numpy` array) Raman intensity values
 	:var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`
+	:var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It's only available if :py:meth:`singlespec.remove_bg` is called.
 	:var samplename: (type: str) name of the sample, as shown in the Witec software.
 	:var mapname: (type: str) contains the name of the Raman map, as shown in the Witec software.
 
@@ -74,6 +75,8 @@ class ramanmap:
 
 		:param mode: Values can be: `'const'`, `'individual'`
 		:type mode: str, optional, default: `'const'`
+		:param fitmask: fitmask as returned by :func:`bgsubtract` or as contained in the `singlespec.mask` variable of the :class:`singlespec` class, ...
+		:type fitmask: :py:mod:`numpy` array
 		
 		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed
 		:rtype: :py:mod:`xarray`
@@ -110,7 +113,25 @@ class ramanmap:
 		# singlespec_xr_nobg.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
 
 		if mode == 'const':
-			z = bgsubtract()
+			if fitmask is None:
+				# take the spectrum at the middle of the map and fit the background
+				middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest')
+				y_data_nobg, bg_values, coeff, params_used_at_run, mask = bgsubtract(middle.ramanshift.data, middle.data)
+				# add the mask to the `ramanmap` instance
+				self.mask = mask
+
+				# extending bg_values to have two more axes, to allow adding to bg
+				bg_values = bg_values[:, np.newaxis, np.newaxis]
+				# subtract these along the ramanshift dimension of bg
+				map_nobg = self.mapxr[:] - bg_values
+				# add the metadata to the new xarray instance
+				map_nobg.attrs = self.mapxr.attrs.copy()
+				# update the comments attribute
+				map_nobg.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
+		
+		# return map_nobg
+		return map_nobg
+
 			
 
 	# internal functions
@@ -118,6 +139,7 @@ class ramanmap:
 	def __init__(self, map_path, info_path):
 		"""Constructor for :class:`ramanmap`
 		"""		
+		self.mask = None
 		# Load the metadata
 		self._load_info(info_path)
 		# Load the Raman map
@@ -224,9 +246,9 @@ class ramanmap:
 		# coordinate attributes
 		self.mapxr.coords['ramanshift'].attrs['units'] = 'cm$^{-1}$'
 		self.mapxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
-		self.mapxr.coords['width'].attrs['units'] = '$\mathrm{\mu m}$'
+		self.mapxr.coords['width'].attrs['units'] = '$\mathrm{\mu m}$' # type: ignore
 		self.mapxr.coords['width'].attrs['long_name'] = 'width'
-		self.mapxr.coords['height'].attrs['units'] = '$\mathrm{\mu m}$'
+		self.mapxr.coords['height'].attrs['units'] = '$\mathrm{\mu m}$' # type: ignore
 		self.mapxr.coords['height'].attrs['long_name'] = 'height'
 
 ## ----------------------------------------------------
@@ -335,6 +357,7 @@ class singlespec:
 	def __init__(self, spec_path, info_path):
 		"""Constructor for :class:`singlespec`
 		"""		
+		self.mask = None
 		# Load the metadata
 		self._load_info(info_path)
 		# Load the Raman map

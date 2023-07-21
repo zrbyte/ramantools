@@ -102,6 +102,7 @@
 <span class="sd">	:var mapxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata</span>
 <span class="sd">	:var map: (type :py:mod:`numpy` array) Raman intensity values</span>
 <span class="sd">	:var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`</span>
+<span class="sd">	:var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It&#39;s only available if :py:meth:`singlespec.remove_bg` is called.</span>
 <span class="sd">	:var samplename: (type: str) name of the sample, as shown in the Witec software.</span>
 <span class="sd">	:var mapname: (type: str) contains the name of the Raman map, as shown in the Witec software.</span>
 
@@ -144,7 +145,9 @@
 <span class="sd">			* If a ``fitmask`` is passed to :py:meth:`~ramanmap.remove_bg`, :func:`bgsubtract` only does the polynomial fit.</span>
 
 <span class="sd">		:param mode: Values can be: `&#39;const&#39;`, `&#39;individual&#39;`</span>
-<span class="sd">		:type mode: str</span>
+<span class="sd">		:type mode: str, optional, default: `&#39;const&#39;`</span>
+<span class="sd">		:param fitmask: fitmask as returned by :func:`bgsubtract` or as contained in the `singlespec.mask` variable of the :class:`singlespec` class, ...</span>
+<span class="sd">		:type fitmask: :py:mod:`numpy` array</span>
 <span class="sd">		</span>
 <span class="sd">		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed</span>
 <span class="sd">		:rtype: :py:mod:`xarray`</span>
@@ -181,7 +184,25 @@
 		<span class="c1"># singlespec_xr_nobg.attrs[&#39;comments&#39;] += &#39;background subtracted, with parameters: &#39; + str(fitparams) + &#39;\n&#39;</span>
 
 		<span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;const&#39;</span><span class="p">:</span>
-			<span class="n">z</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">()</span></div>
+			<span class="k">if</span> <span class="n">fitmask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="c1"># take the spectrum at the middle of the map and fit the background</span>
+				<span class="n">middle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+				<span class="n">y_data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">params_used_at_run</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">middle</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">middle</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+				
+				<span class="c1"># expand the background values to be the same size in width and height as the map</span>
+				<span class="c1"># using .loc to assign values along the ramanshift dimension</span>
+				<span class="n">bg</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">)</span>
+				<span class="n">bg</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">))]</span> <span class="o">=</span> <span class="n">bg_values</span>
+				<span class="c1"># # remove the background values from the map</span>
+				<span class="c1"># map_nobg = self.mapxr - bg_values</span>
+				<span class="c1"># # add the metadata to the new xarray instance</span>
+				<span class="c1"># map_nobg.attrs = self.mapxr.attrs.copy()</span>
+				<span class="c1"># # update the comments attribute</span>
+				<span class="c1"># map_nobg.attrs[&#39;comments&#39;] += &#39;mode == const, background fit: middle spectrum \n&#39;</span>
+		
+		<span class="c1"># return map_nobg</span>
+		<span class="k">return</span> <span class="n">bg</span></div>
+
 			
 
 	<span class="c1"># internal functions</span>
@@ -189,6 +210,7 @@
 	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Constructor for :class:`ramanmap`</span>
 <span class="sd">		&quot;&quot;&quot;</span>		
+		<span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
 		<span class="c1"># Load the metadata</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_load_info</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
 		<span class="c1"># Load the Raman map</span>
@@ -295,9 +317,9 @@
 		<span class="c1"># coordinate attributes</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;cm$^{-1}$&#39;</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Raman shift&#39;</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;$\mathrm{\mu m}$&#39;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;$\mathrm{\mu m}$&#39;</span> <span class="c1"># type: ignore</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;width&#39;</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;$\mathrm{\mu m}$&#39;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;$\mathrm{\mu m}$&#39;</span> <span class="c1"># type: ignore</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;height&#39;</span></div>
 
 <span class="c1">## ----------------------------------------------------</span>
@@ -406,6 +428,7 @@
 	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Constructor for :class:`singlespec`</span>
 <span class="sd">		&quot;&quot;&quot;</span>		
+		<span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
 		<span class="c1"># Load the metadata</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_load_info</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
 		<span class="c1"># Load the Raman map</span>
@@ -706,6 +729,7 @@
 	<span class="k">else</span><span class="p">:</span>
 		<span class="c1"># if a mask was passed, use that</span>
 		<span class="n">mask</span> <span class="o">=</span> <span class="n">fitmask</span>
+		<span class="n">peak_indices</span> <span class="o">=</span> <span class="kc">None</span>
 	
 	<span class="c1"># make the mask False for the region below the notch filter cutoff (~80 cm^{-1})</span>
 	<span class="n">x_data_notch</span> <span class="o">=</span> <span class="n">x_data</span><span class="p">[</span><span class="n">x_data</span> <span class="o">&lt;</span> <span class="mi">95</span><span class="p">]</span>
@@ -729,6 +753,8 @@
 		<span class="c1"># Highlight the peaks</span>
 		<span class="k">if</span> <span class="n">fitmask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 			<span class="n">pl</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">y_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;peaks&#39;</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">pass</span>
 
 		<span class="c1"># Plot the fitted polynomial</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s2">&quot;dashed&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;fitted polynomial&#39;</span><span class="p">)</span>
