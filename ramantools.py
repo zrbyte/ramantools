@@ -103,14 +103,8 @@ class ramanmap:
 			* Rewrite this for map.
 			* Update the example.
 
-		"""		
-
-		# data_nobg, bg_values, coeff, fitparams = bgsubtract(self.ssxr.coords['ramanshift'].data, self.ssxr.data, **kwargs)
-		# singlespec_xr_nobg = self.ssxr - bg_values
-		# # copy the attributes to the xarray with the background removed
-		# singlespec_xr_nobg.attrs = self.ssxr.attrs.copy()
-		# # adding a note to `xarray` comments attribute
-		# singlespec_xr_nobg.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
+		"""
+		map_nobg = xr.zeros_like(self.mapxr)
 
 		if mode == 'const':
 			# Set the spectra selected for background fitting
@@ -135,7 +129,7 @@ class ramanmap:
 			map_nobg.attrs = self.mapxr.attrs.copy()
 			# update the comments attribute
 			map_nobg.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
-				
+
 		return map_nobg
 
 
