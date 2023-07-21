@@ -72,6 +72,9 @@ class ramanmap:
 			* If ``fitmask`` = `None`, :func:`bgsubtract` does a peak search for each Raman spectrum and the fitmask is determined based on the parameters passed to :func:`bgsubtract`.
 			* If a ``fitmask`` is passed to :py:meth:`~ramanmap.remove_bg`, :func:`bgsubtract` only does the polynomial fit.
 
+		:param mode: Values can be: `'const'`, `'individual'`
+		:type mode: str, optional, default: `'const'`
+		
 		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed
 		:rtype: :py:mod:`xarray`
 
@@ -271,17 +274,6 @@ class singlespec:
 
 	"""
 
-	def __init__(self, spec_path, info_path):
-		"""Constructor for :class:`singlespec`
-		"""		
-		# Load the metadata
-		self._load_info(info_path)
-		# Load the Raman map
-		self._load_singlespec(spec_path)
-		# load the data into an xarray container
-		self._toxarray()
-
-
 	def print_metadata(self):
 		"""
 		Prints the metadata of the :class:`singlespec` instance, imported from the info file.
@@ -339,6 +331,16 @@ class singlespec:
 		return singlespec_xr_nobg
 
 	# internal functions
+
+	def __init__(self, spec_path, info_path):
+		"""Constructor for :class:`singlespec`
+		"""		
+		# Load the metadata
+		self._load_info(info_path)
+		# Load the Raman map
+		self._load_singlespec(spec_path)
+		# load the data into an xarray container
+		self._toxarray()
 
 	def _load_info(self, info_path):
 		"""
@@ -633,6 +635,7 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 	else:
 		# if a mask was passed, use that
 		mask = fitmask
+		peak_indices = None
 	
 	# make the mask False for the region below the notch filter cutoff (~80 cm^{-1})
 	x_data_notch = x_data[x_data < 95]
@@ -656,6 +659,8 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 		# Highlight the peaks
 		if fitmask is None:
 			pl.scatter(x_data[peak_indices], y_data[peak_indices], color = 'green', label = 'peaks')
+		else:
+			pass
 
 		# Plot the fitted polynomial
 		pl.plot(x_data, bg_values, color = 'k', ls = "dashed", label = 'fitted polynomial')
