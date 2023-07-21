@@ -129,11 +129,19 @@
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ramanmap.remove_bg"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.remove_bg">[docs]</a>	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ramanmap.remove_bg"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.remove_bg">[docs]</a>	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Remove the background of Raman maps.</span>
 <span class="sd">		It takes the same optional arguments as :func:`bgsubtract`.</span>
 <span class="sd">		Default fit function is a first order polynomial.</span>
 <span class="sd">		This can be changed by the ``polyorder`` parameter.</span>
+
+<span class="sd">		There are several modes of background fitting, as a function of the optional variables: ``mode`` and ``fitmask``:</span>
+<span class="sd">		</span>
+<span class="sd">		* ``mode`` = `&#39;const&#39;`: (this is the default) Subtracts the same background from all spectra in the map. The background is determined by either a fitmask calculated by :func:`bgsubtract` and passed to the method using the ``fitmask`` parameter. Additionally, a ``height`` and ``width`` parameter can be passed in which case, the spectrum at those coordinates is used to determine the background. If a fitmask is supplied, it is used instead of the coordinates.</span>
+<span class="sd">		* ``mode`` = `&#39;individual&#39;`: An individual background is subtracted from all spectra.</span>
+
+<span class="sd">			* If ``fitmask`` = `None`, :func:`bgsubtract` does a peak search for each Raman spectrum and the fitmask is determined based on the parameters passed to :func:`bgsubtract`.</span>
+<span class="sd">			* If a ``fitmask`` is passed to :py:meth:`~ramanmap.remove_bg`, :func:`bgsubtract` only does the polynomial fit.</span>
 
 <span class="sd">		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed</span>
 <span class="sd">		:rtype: :py:mod:`xarray`</span>
@@ -153,17 +161,7 @@
 <span class="sd">			# use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
 
 <span class="sd">			# Loading a single spectrum from files</span>
-<span class="sd">			single_spectrum = rt.singlespec(spec_path, info_path)</span>
-
-<span class="sd">			# Using remove_bg to fit and remove the background</span>
-<span class="sd">			# In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.</span>
-<span class="sd">			single_spec_nobg = single_spectrum.remove_bg()</span>
-
-<span class="sd">			# In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.</span>
-<span class="sd">			single_spec_nobg = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)</span>
-
-<span class="sd">			# Fitting a third order polynomial</span>
-<span class="sd">			single_spec_nobg = single_spectrum.remove_bg(polyorder = 3)</span>
+<span class="sd">			m = rt.ramanmap(spec_path, info_path)</span>
 
 <span class="sd">		.. seealso::</span>
 <span class="sd">			</span>
@@ -171,6 +169,7 @@
 <span class="sd">			* Update the example.</span>
 
 <span class="sd">		&quot;&quot;&quot;</span>		
+
 		<span class="c1"># data_nobg, bg_values, coeff, fitparams = bgsubtract(self.ssxr.coords[&#39;ramanshift&#39;].data, self.ssxr.data, **kwargs)</span>
 		<span class="c1"># singlespec_xr_nobg = self.ssxr - bg_values</span>
 		<span class="c1"># # copy the attributes to the xarray with the background removed</span>
@@ -178,7 +177,9 @@
 		<span class="c1"># # adding a note to `xarray` comments attribute</span>
 		<span class="c1"># singlespec_xr_nobg.attrs[&#39;comments&#39;] += &#39;background subtracted, with parameters: &#39; + str(fitparams) + &#39;\n&#39;</span>
 
-		<span class="k">return</span> <span class="mi">0</span></div>
+		<span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;const&#39;</span><span class="p">:</span>
+			<span class="n">z</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">()</span></div>
+			
 
 	<span class="c1"># internal functions</span>
 
@@ -317,6 +318,7 @@
 <span class="sd">	Most important variables of the :class:`singlespec` instance:</span>
 
 <span class="sd">	:var ssxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata</span>
+<span class="sd">	:var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It&#39;s only available if :py:meth:`singlespec.remove_bg` is called.</span>
 <span class="sd">	:var counts: (type :py:mod:`numpy` array) Raman intensity values</span>
 <span class="sd">	:var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`</span>
 <span class="sd">	:var samplename: (type: str) name of the sample, as shown in the Witec software.</span>
@@ -396,12 +398,14 @@
 <span class="sd">			single_spec_nobg = single_spectrum.remove_bg(polyorder = 3)</span>
 
 <span class="sd">		&quot;&quot;&quot;</span>		
-		<span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">fitparams</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+		<span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">fitparams</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 		<span class="n">singlespec_xr_nobg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">-</span> <span class="n">bg_values</span>
 		<span class="c1"># copy the attributes to the xarray with the background removed</span>
 		<span class="n">singlespec_xr_nobg</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 		<span class="c1"># adding a note to `xarray` comments attribute</span>
 		<span class="n">singlespec_xr_nobg</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted, with parameters: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fitparams</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+		<span class="c1"># save the fitmask as a variable of `singlespec`</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
 
 		<span class="k">return</span> <span class="n">singlespec_xr_nobg</span></div>
 
@@ -605,7 +609,7 @@
 
 	<span class="k">return</span> <span class="n">coeff</span></div>
 
-<div class="viewcode-block" id="bgsubtract"><a class="viewcode-back" href="../ramantools.html#ramantools.bgsubtract">[docs]</a><span class="k">def</span> <span class="nf">bgsubtract</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">polyorder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">hmin</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">hmax</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">wmin</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">wmax</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span> <span class="n">prom</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclusion_factor</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="bgsubtract"><a class="viewcode-back" href="../ramantools.html#ramantools.bgsubtract">[docs]</a><span class="k">def</span> <span class="nf">bgsubtract</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">polyorder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hmin</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">hmax</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">wmin</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">wmax</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span> <span class="n">prom</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclusion_factor</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.</span>
 <span class="sd">	These peaks are then used to define the areas of the background signal.</span>
 <span class="sd">	In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: ``polyorder``.</span>
@@ -615,6 +619,9 @@
 <span class="sd">	In cases, where the automatic peak find is not functioning as expected, one can pass the values in ``x_data``, at which peaks appear.</span>
 <span class="sd">	In this case, the ``wmin`` option determines the width of all peaks.</span>
 
+<span class="sd">	If a ``fitmask`` is supplied for fitting, the fitmask is not calculated and only a polynomial fit is performed.</span>
+<span class="sd">	This can decrease the runtime.</span>
+
 <span class="sd">	:param x_data: Raman shift values</span>
 <span class="sd">	:type x_data: :py:mod:`numpy` array</span>
 <span class="sd">	:param y_data: Raman intesity values</span>
@@ -623,6 +630,8 @@
 <span class="sd">	:type polyorder: int, optional</span>
 <span class="sd">	:param toplot: if `True` a plot of: the fit, the background used and positions of the peaks is shown, defaults to False</span>
 <span class="sd">	:type toplot: bool, optional</span>
+<span class="sd">	:param fitmask: Fitmask to be used for polynomial fitting.</span>
+<span class="sd">	:type fitmask: :py:mod:`numpy` array</span>
 <span class="sd">	:param hmin: minimum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 50</span>
 <span class="sd">	:type hmin: float, optional</span>
 <span class="sd">	:param hmax: maximum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 10000</span>
@@ -638,57 +647,64 @@
 <span class="sd">	:param peak_pos: list of the peak positions in ``x_data`` values used for exclusion, defaults to None</span>
 <span class="sd">	:type peak_pos: list of floats, optional</span>
 
-<span class="sd">	:return: list: [``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``]</span>
-<span class="sd">	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array, dictionary</span>
+<span class="sd">	:return: tuple: [``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``, ``mask``]</span>
+<span class="sd">	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array, dictionary, :py:mod:`numpy` array</span>
 
 <span class="sd">	* ``y_data_nobg``: Raman counts, with the background subtracted,</span>
 <span class="sd">	* ``bg_values``: the polynomial values of the fit, at the Raman shift positions,</span>
 <span class="sd">	* ``coeff``: coefficients of the polynomial fit, as used by: :py:mod:`numpy.polyval`,</span>
-<span class="sd">	* ``params_used_at_run``: parameters used at runtime	</span>
+<span class="sd">	* ``params_used_at_run``: parameters used at runtime</span>
+<span class="sd">	* ``mask``: the calculated fitmask</span>
 
 <span class="sd">	.. note::</span>
-<span class="sd">		Using the option: ``peak_pos``, a ``wmin*exclusion_factor/2`` area around the peaks is excluded from the background fit.</span>
+<span class="sd">		Using the option: ``peak_pos``, a ``wmin*exclusion_factor/2`` region (measured in datapoints) on both sides of the peaks is excluded from the background fit.</span>
 <span class="sd">		If automatic peak finding is used, the exclusion area is calculated in a similar way, but the width of the individual peaks are used, as determined by :py:mod:`scipy.signal.find_peaks`.</span>
 
 <span class="sd">	&quot;&quot;&quot;</span>
-	<span class="k">if</span> <span class="n">peak_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-		<span class="c1"># Find the peaks with specified minimum height and width</span>
-		<span class="c1"># re_height sets the width from the maximum at which value the width is evaluated</span>
-		<span class="n">peak_properties</span> <span class="o">=</span> <span class="n">find_peaks</span><span class="p">(</span><span class="n">y_data</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="p">(</span><span class="n">hmin</span><span class="p">,</span> <span class="n">hmax</span><span class="p">),</span> <span class="n">width</span> <span class="o">=</span> <span class="p">(</span><span class="n">wmin</span><span class="p">,</span> <span class="n">wmax</span><span class="p">),</span> <span class="n">prominence</span> <span class="o">=</span> <span class="n">prom</span><span class="p">,</span> <span class="n">rel_height</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
+	<span class="c1"># if a mask is passed to the function, don&#39;t calculate the peak positions</span>
+	<span class="k">if</span> <span class="n">fitmask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="k">if</span> <span class="n">peak_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="c1"># Find the peaks with specified minimum height and width</span>
+			<span class="c1"># re_height sets the width from the maximum at which value the width is evaluated</span>
+			<span class="n">peak_properties</span> <span class="o">=</span> <span class="n">find_peaks</span><span class="p">(</span><span class="n">y_data</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="p">(</span><span class="n">hmin</span><span class="p">,</span> <span class="n">hmax</span><span class="p">),</span> <span class="n">width</span> <span class="o">=</span> <span class="p">(</span><span class="n">wmin</span><span class="p">,</span> <span class="n">wmax</span><span class="p">),</span> <span class="n">prominence</span> <span class="o">=</span> <span class="n">prom</span><span class="p">,</span> <span class="n">rel_height</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
 
-		<span class="c1"># Find the indices of the peaks</span>
-		<span class="n">peak_indices</span> <span class="o">=</span> <span class="n">peak_properties</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+			<span class="c1"># Find the indices of the peaks</span>
+			<span class="n">peak_indices</span> <span class="o">=</span> <span class="n">peak_properties</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-		<span class="c1"># Get the properties of the peaks</span>
-		<span class="n">peak_info</span> <span class="o">=</span> <span class="n">peak_properties</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+			<span class="c1"># Get the properties of the peaks</span>
+			<span class="n">peak_info</span> <span class="o">=</span> <span class="n">peak_properties</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="c1"># Use the provided peak positions</span>
+			<span class="n">peak_indices</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="k">for</span> <span class="n">peak_position</span> <span class="ow">in</span> <span class="n">peak_pos</span><span class="p">:</span>
+				<span class="c1"># Find the index of the closest data point to the peak position</span>
+				<span class="n">closest_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x_data</span> <span class="o">-</span> <span class="n">peak_position</span><span class="p">))</span>
+				<span class="n">peak_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">closest_index</span><span class="p">)</span>
+
+			<span class="c1"># Calculate the widths of the peaks using the data</span>
+			<span class="n">peak_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">wmin</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">peak_indices</span><span class="p">)</span>  <span class="c1"># Use the minimum width if peak widths cannot be calculated from the data</span>
+			<span class="n">peak_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;widths&#39;</span><span class="p">:</span> <span class="n">peak_widths</span><span class="p">}</span>
+
+		<span class="c1"># Calculate the start and end indices of each peak with a larger exclusion area</span>
+		<span class="n">start_indices</span> <span class="o">=</span> <span class="n">peak_indices</span> <span class="o">-</span> <span class="p">(</span><span class="n">exclusion_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">peak_info</span><span class="p">[</span><span class="s1">&#39;widths&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+		<span class="n">end_indices</span> <span class="o">=</span> <span class="n">peak_indices</span> <span class="o">+</span> <span class="p">(</span><span class="n">exclusion_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">peak_info</span><span class="p">[</span><span class="s1">&#39;widths&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+		
+		<span class="c1"># Ensure indices are within data bounds</span>
+		<span class="n">start_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">start_indices</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+		<span class="n">end_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">end_indices</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_data</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+		
+		<span class="c1"># Define the indices covered by the peaks</span>
+		<span class="n">covered_indices</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_indices</span><span class="p">,</span> <span class="n">end_indices</span><span class="p">):</span>
+			<span class="n">covered_indices</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+
+		<span class="c1"># Remove these indices from the data</span>
+		<span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">x_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">)</span>
+		<span class="n">mask</span><span class="p">[</span><span class="n">covered_indices</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 	<span class="k">else</span><span class="p">:</span>
-		<span class="c1"># Use the provided peak positions</span>
-		<span class="n">peak_indices</span> <span class="o">=</span> <span class="p">[]</span>
-		<span class="k">for</span> <span class="n">peak_position</span> <span class="ow">in</span> <span class="n">peak_pos</span><span class="p">:</span>
-			<span class="c1"># Find the index of the closest data point to the peak position</span>
-			<span class="n">closest_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x_data</span> <span class="o">-</span> <span class="n">peak_position</span><span class="p">))</span>
-			<span class="n">peak_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">closest_index</span><span class="p">)</span>
-
-		<span class="c1"># Calculate the widths of the peaks using the data</span>
-		<span class="n">peak_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">wmin</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">peak_indices</span><span class="p">)</span>  <span class="c1"># Use the minimum width if peak widths cannot be calculated from the data</span>
-		<span class="n">peak_info</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;widths&#39;</span><span class="p">:</span> <span class="n">peak_widths</span><span class="p">}</span>
-
-	<span class="c1"># Calculate the start and end indices of each peak with a larger exclusion area</span>
-	<span class="n">start_indices</span> <span class="o">=</span> <span class="n">peak_indices</span> <span class="o">-</span> <span class="p">(</span><span class="n">exclusion_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">peak_info</span><span class="p">[</span><span class="s1">&#39;widths&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-	<span class="n">end_indices</span> <span class="o">=</span> <span class="n">peak_indices</span> <span class="o">+</span> <span class="p">(</span><span class="n">exclusion_factor</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">peak_info</span><span class="p">[</span><span class="s1">&#39;widths&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-
-	<span class="c1"># Ensure indices are within data bounds</span>
-	<span class="n">start_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">start_indices</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-	<span class="n">end_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">end_indices</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_data</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-
-	<span class="c1"># Define the indices covered by the peaks</span>
-	<span class="n">covered_indices</span> <span class="o">=</span> <span class="p">[]</span>
-	<span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_indices</span><span class="p">,</span> <span class="n">end_indices</span><span class="p">):</span>
-		<span class="n">covered_indices</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
-
-	<span class="c1"># Remove these indices from the data</span>
-	<span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">x_data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">)</span>
-	<span class="n">mask</span><span class="p">[</span><span class="n">covered_indices</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+		<span class="c1"># if a mask was passed, use that</span>
+		<span class="n">mask</span> <span class="o">=</span> <span class="n">fitmask</span>
+	
 	<span class="c1"># make the mask False for the region below the notch filter cutoff (~80 cm^{-1})</span>
 	<span class="n">x_data_notch</span> <span class="o">=</span> <span class="n">x_data</span><span class="p">[</span><span class="n">x_data</span> <span class="o">&lt;</span> <span class="mi">95</span><span class="p">]</span>
 	<span class="n">mask</span><span class="p">[:</span><span class="n">x_data_notch</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span>
@@ -709,7 +725,8 @@
 		<span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;Raman spectrum&#39;</span><span class="p">)</span>
 
 		<span class="c1"># Highlight the peaks</span>
-		<span class="n">pl</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">y_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;peaks&#39;</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">fitmask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="n">pl</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">y_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;peaks&#39;</span><span class="p">)</span>
 
 		<span class="c1"># Plot the fitted polynomial</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s2">&quot;dashed&quot;</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;fitted polynomial&#39;</span><span class="p">)</span>

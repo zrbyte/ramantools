@@ -58,11 +58,19 @@ class ramanmap:
 		"""
 		print(self.metadata)
 
-	def remove_bg(self, **kwargs):
+	def remove_bg(self, mode = 'const', fitmask = None, height = None, width = None, **kwargs):
 		"""Remove the background of Raman maps.
 		It takes the same optional arguments as :func:`bgsubtract`.
 		Default fit function is a first order polynomial.
 		This can be changed by the ``polyorder`` parameter.
+
+		There are several modes of background fitting, as a function of the optional variables: ``mode`` and ``fitmask``:
+		
+		* ``mode`` = `'const'`: (this is the default) Subtracts the same background from all spectra in the map. The background is determined by either a fitmask calculated by :func:`bgsubtract` and passed to the method using the ``fitmask`` parameter. Additionally, a ``height`` and ``width`` parameter can be passed in which case, the spectrum at those coordinates is used to determine the background. If a fitmask is supplied, it is used instead of the coordinates.
+		* ``mode`` = `'individual'`: An individual background is subtracted from all spectra.
+
+			* If ``fitmask`` = `None`, :func:`bgsubtract` does a peak search for each Raman spectrum and the fitmask is determined based on the parameters passed to :func:`bgsubtract`.
+			* If a ``fitmask`` is passed to :py:meth:`~ramanmap.remove_bg`, :func:`bgsubtract` only does the polynomial fit.
 
 		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed
 		:rtype: :py:mod:`xarray`
@@ -82,17 +90,7 @@ class ramanmap:
 			# use raw strings, starting with `r'` to escape special characters, such as backslash
 
 			# Loading a single spectrum from files
-			single_spectrum = rt.singlespec(spec_path, info_path)
-
-			# Using remove_bg to fit and remove the background
-			# In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.
-			single_spec_nobg = single_spectrum.remove_bg()
-
-			# In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.
-			single_spec_nobg = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)
-
-			# Fitting a third order polynomial
-			single_spec_nobg = single_spectrum.remove_bg(polyorder = 3)
+			m = rt.ramanmap(spec_path, info_path)
 
 		.. seealso::
 			
@@ -100,6 +98,7 @@ class ramanmap:
 			* Update the example.
 
 		"""		
+
 		# data_nobg, bg_values, coeff, fitparams = bgsubtract(self.ssxr.coords['ramanshift'].data, self.ssxr.data, **kwargs)
 		# singlespec_xr_nobg = self.ssxr - bg_values
 		# # copy the attributes to the xarray with the background removed
@@ -107,7 +106,9 @@ class ramanmap:
 		# # adding a note to `xarray` comments attribute
 		# singlespec_xr_nobg.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
 
-		return 0
+		if mode == 'const':
+			z = bgsubtract()
+			
 
 	# internal functions
 
@@ -246,6 +247,7 @@ class singlespec:
 	Most important variables of the :class:`singlespec` instance:
 
 	:var ssxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata
+	:var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It's only available if :py:meth:`singlespec.remove_bg` is called.
 	:var counts: (type :py:mod:`numpy` array) Raman intensity values
 	:var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`
 	:var samplename: (type: str) name of the sample, as shown in the Witec software.
@@ -325,12 +327,14 @@ class singlespec:
 			single_spec_nobg = single_spectrum.remove_bg(polyorder = 3)
 
 		"""		
-		data_nobg, bg_values, coeff, fitparams = bgsubtract(self.ssxr.coords['ramanshift'].data, self.ssxr.data, **kwargs)
+		data_nobg, bg_values, coeff, fitparams, mask = bgsubtract(self.ssxr.coords['ramanshift'].data, self.ssxr.data, **kwargs)
 		singlespec_xr_nobg = self.ssxr - bg_values
 		# copy the attributes to the xarray with the background removed
 		singlespec_xr_nobg.attrs = self.ssxr.attrs.copy()
 		# adding a note to `xarray` comments attribute
 		singlespec_xr_nobg.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
+		# save the fitmask as a variable of `singlespec`
+		self.mask = mask
 
 		return singlespec_xr_nobg
 
@@ -534,7 +538,7 @@ def polynomial_fit(order, x_data, y_data):
 
 	return coeff
 
-def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, hmin = 50, hmax = 10000, wmin = 4, wmax = 60, prom = 10, exclusion_factor = 6, peak_pos = None):
+def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hmin = 50, hmax = 10000, wmin = 4, wmax = 60, prom = 10, exclusion_factor = 6, peak_pos = None):
 	"""Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.
 	These peaks are then used to define the areas of the background signal.
 	In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: ``polyorder``.
@@ -544,6 +548,9 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, hmin = 50, hmax = 
 	In cases, where the automatic peak find is not functioning as expected, one can pass the values in ``x_data``, at which peaks appear.
 	In this case, the ``wmin`` option determines the width of all peaks.
 
+	If a ``fitmask`` is supplied for fitting, the fitmask is not calculated and only a polynomial fit is performed.
+	This can decrease the runtime.
+
 	:param x_data: Raman shift values
 	:type x_data: :py:mod:`numpy` array
 	:param y_data: Raman intesity values
@@ -552,6 +559,8 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, hmin = 50, hmax = 
 	:type polyorder: int, optional
 	:param toplot: if `True` a plot of: the fit, the background used and positions of the peaks is shown, defaults to False
 	:type toplot: bool, optional
+	:param fitmask: Fitmask to be used for polynomial fitting.
+	:type fitmask: :py:mod:`numpy` array
 	:param hmin: minimum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 50
 	:type hmin: float, optional
 	:param hmax: maximum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 10000
@@ -567,57 +576,64 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, hmin = 50, hmax = 
 	:param peak_pos: list of the peak positions in ``x_data`` values used for exclusion, defaults to None
 	:type peak_pos: list of floats, optional
 
-	:return: list: [``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``]
-	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array, dictionary
+	:return: tuple: [``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``, ``mask``]
+	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array, dictionary, :py:mod:`numpy` array
 
 	* ``y_data_nobg``: Raman counts, with the background subtracted,
 	* ``bg_values``: the polynomial values of the fit, at the Raman shift positions,
 	* ``coeff``: coefficients of the polynomial fit, as used by: :py:mod:`numpy.polyval`,
-	* ``params_used_at_run``: parameters used at runtime	
+	* ``params_used_at_run``: parameters used at runtime
+	* ``mask``: the calculated fitmask
 
 	.. note::
-		Using the option: ``peak_pos``, a ``wmin*exclusion_factor/2`` area around the peaks is excluded from the background fit.
+		Using the option: ``peak_pos``, a ``wmin*exclusion_factor/2`` region (measured in datapoints) on both sides of the peaks is excluded from the background fit.
 		If automatic peak finding is used, the exclusion area is calculated in a similar way, but the width of the individual peaks are used, as determined by :py:mod:`scipy.signal.find_peaks`.
 
 	"""
-	if peak_pos is None:
-		# Find the peaks with specified minimum height and width
-		# re_height sets the width from the maximum at which value the width is evaluated
-		peak_properties = find_peaks(y_data, height = (hmin, hmax), width = (wmin, wmax), prominence = prom, rel_height = 0.5)
+	# if a mask is passed to the function, don't calculate the peak positions
+	if fitmask is None:
+		if peak_pos is None:
+			# Find the peaks with specified minimum height and width
+			# re_height sets the width from the maximum at which value the width is evaluated
+			peak_properties = find_peaks(y_data, height = (hmin, hmax), width = (wmin, wmax), prominence = prom, rel_height = 0.5)
 
-		# Find the indices of the peaks
-		peak_indices = peak_properties[0]
+			# Find the indices of the peaks
+			peak_indices = peak_properties[0]
 
-		# Get the properties of the peaks
-		peak_info = peak_properties[1]
+			# Get the properties of the peaks
+			peak_info = peak_properties[1]
+		else:
+			# Use the provided peak positions
+			peak_indices = []
+			for peak_position in peak_pos:
+				# Find the index of the closest data point to the peak position
+				closest_index = np.argmin(np.abs(x_data - peak_position))
+				peak_indices.append(closest_index)
+
+			# Calculate the widths of the peaks using the data
+			peak_widths = [wmin] * len(peak_indices)  # Use the minimum width if peak widths cannot be calculated from the data
+			peak_info = {'widths': peak_widths}
+
+		# Calculate the start and end indices of each peak with a larger exclusion area
+		start_indices = peak_indices - (exclusion_factor * np.array(peak_info['widths'])).astype(int)
+		end_indices = peak_indices + (exclusion_factor * np.array(peak_info['widths'])).astype(int)
+		
+		# Ensure indices are within data bounds
+		start_indices = np.maximum(start_indices, 0)
+		end_indices = np.minimum(end_indices, len(x_data) - 1)
+		
+		# Define the indices covered by the peaks
+		covered_indices = []
+		for start, end in zip(start_indices, end_indices):
+			covered_indices.extend(range(start, end + 1))
+
+		# Remove these indices from the data
+		mask = np.ones(x_data.shape[0], dtype = bool)
+		mask[covered_indices] = False
 	else:
-		# Use the provided peak positions
-		peak_indices = []
-		for peak_position in peak_pos:
-			# Find the index of the closest data point to the peak position
-			closest_index = np.argmin(np.abs(x_data - peak_position))
-			peak_indices.append(closest_index)
-
-		# Calculate the widths of the peaks using the data
-		peak_widths = [wmin] * len(peak_indices)  # Use the minimum width if peak widths cannot be calculated from the data
-		peak_info = {'widths': peak_widths}
-
-	# Calculate the start and end indices of each peak with a larger exclusion area
-	start_indices = peak_indices - (exclusion_factor * np.array(peak_info['widths'])).astype(int)
-	end_indices = peak_indices + (exclusion_factor * np.array(peak_info['widths'])).astype(int)
-
-	# Ensure indices are within data bounds
-	start_indices = np.maximum(start_indices, 0)
-	end_indices = np.minimum(end_indices, len(x_data) - 1)
-
-	# Define the indices covered by the peaks
-	covered_indices = []
-	for start, end in zip(start_indices, end_indices):
-		covered_indices.extend(range(start, end + 1))
-
-	# Remove these indices from the data
-	mask = np.ones(x_data.shape[0], dtype = bool)
-	mask[covered_indices] = False
+		# if a mask was passed, use that
+		mask = fitmask
+	
 	# make the mask False for the region below the notch filter cutoff (~80 cm^{-1})
 	x_data_notch = x_data[x_data < 95]
 	mask[:x_data_notch.shape[0]] = False
@@ -638,7 +654,8 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, hmin = 50, hmax = 
 		pl.plot(x_data, y_data, label = 'Raman spectrum')
 
 		# Highlight the peaks
-		pl.scatter(x_data[peak_indices], y_data[peak_indices], color = 'green', label = 'peaks')
+		if fitmask is None:
+			pl.scatter(x_data[peak_indices], y_data[peak_indices], color = 'green', label = 'peaks')
 
 		# Plot the fitted polynomial
 		pl.plot(x_data, bg_values, color = 'k', ls = "dashed", label = 'fitted polynomial')
