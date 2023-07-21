@@ -138,7 +138,7 @@
 
 <span class="sd">		There are several modes of background fitting, as a function of the optional variables: ``mode`` and ``fitmask``:</span>
 <span class="sd">		</span>
-<span class="sd">		* ``mode`` = `&#39;const&#39;`: (this is the default) Subtracts the same background from all spectra in the map. The background is determined by either a fitmask calculated by :func:`bgsubtract` and passed to the method using the ``fitmask`` parameter. Additionally, a ``height`` and ``width`` parameter can be passed in which case, the spectrum at those coordinates is used to determine the background. If a fitmask is supplied, it is used instead of the coordinates.</span>
+<span class="sd">		* ``mode`` = `&#39;const&#39;`: (this is the default) Subtracts the same background from all spectra in the map. The background is determined by either a fitmask calculated by :func:`bgsubtract` or passed to the method using the ``fitmask`` parameter. Additionally, a ``height`` and ``width`` parameter can be passed in which case, the spectrum at those coordinates is used to determine the background. If a fitmask is supplied, it is used instead of the coordinates.</span>
 <span class="sd">		* ``mode`` = `&#39;individual&#39;`: An individual background is subtracted from all spectra.</span>
 
 <span class="sd">			* If ``fitmask`` = `None`, :func:`bgsubtract` does a peak search for each Raman spectrum and the fitmask is determined based on the parameters passed to :func:`bgsubtract`.</span>
@@ -153,6 +153,8 @@
 <span class="sd">		:rtype: :py:mod:`xarray`</span>
 
 <span class="sd">		.. note::</span>
+<span class="sd">			If the peaks and background are complicated, it is advised to test the background fit, by selecting the most difficult spectrum from the map and tweaking the fit parameters directly, using :func:`bgsubtract`.</span>
+
 <span class="sd">			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.</span>
 <span class="sd">			After running, the &#39;comments&#39; attribute of the `xarray` instance is updated with the background fit information.</span>
 
@@ -174,36 +176,38 @@
 <span class="sd">			* Rewrite this for map.</span>
 <span class="sd">			* Update the example.</span>
 
-<span class="sd">		&quot;&quot;&quot;</span>		
-
-		<span class="c1"># data_nobg, bg_values, coeff, fitparams = bgsubtract(self.ssxr.coords[&#39;ramanshift&#39;].data, self.ssxr.data, **kwargs)</span>
-		<span class="c1"># singlespec_xr_nobg = self.ssxr - bg_values</span>
-		<span class="c1"># # copy the attributes to the xarray with the background removed</span>
-		<span class="c1"># singlespec_xr_nobg.attrs = self.ssxr.attrs.copy()</span>
-		<span class="c1"># # adding a note to `xarray` comments attribute</span>
-		<span class="c1"># singlespec_xr_nobg.attrs[&#39;comments&#39;] += &#39;background subtracted, with parameters: &#39; + str(fitparams) + &#39;\n&#39;</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">map_nobg</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">)</span>
 
 		<span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;const&#39;</span><span class="p">:</span>
+			<span class="c1"># Set the spectra selected for background fitting</span>
+			<span class="n">middle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">height</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span> 
+				<span class="n">spectofit</span> <span class="o">=</span> <span class="n">middle</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">spectofit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">height</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
 			<span class="k">if</span> <span class="n">fitmask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 				<span class="c1"># take the spectrum at the middle of the map and fit the background</span>
-				<span class="n">middle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
-				<span class="n">y_data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">params_used_at_run</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">middle</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">middle</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-				
-				<span class="c1"># expand the background values to be the same size in width and height as the map</span>
-				<span class="c1"># using .loc to assign values along the ramanshift dimension</span>
-				<span class="n">bg</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">)</span>
-				<span class="n">bg</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">))]</span> <span class="o">=</span> <span class="n">bg_values</span>
-				<span class="c1"># # remove the background values from the map</span>
-				<span class="c1"># map_nobg = self.mapxr - bg_values</span>
-				<span class="c1"># # add the metadata to the new xarray instance</span>
-				<span class="c1"># map_nobg.attrs = self.mapxr.attrs.copy()</span>
-				<span class="c1"># # update the comments attribute</span>
-				<span class="c1"># map_nobg.attrs[&#39;comments&#39;] += &#39;mode == const, background fit: middle spectrum \n&#39;</span>
-		
-		<span class="c1"># return map_nobg</span>
-		<span class="k">return</span> <span class="n">bg</span></div>
+				<span class="n">spectofit</span> <span class="o">=</span> <span class="n">middle</span>
+				<span class="n">_</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">spectofit</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">spectofit</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+				<span class="c1"># add the mask to the `ramanmap` instance</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">fitmask</span>
+				<span class="n">_</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">spectofit</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">spectofit</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-			
+			<span class="c1"># extending bg_values to have two more axes, to allow adding to bg</span>
+			<span class="n">bg_values</span> <span class="o">=</span> <span class="n">bg_values</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+			<span class="c1"># subtract these along the ramanshift dimension of bg</span>
+			<span class="n">map_nobg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">[:]</span> <span class="o">-</span> <span class="n">bg_values</span>
+			<span class="c1"># add the metadata to the new xarray instance</span>
+			<span class="n">map_nobg</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+			<span class="c1"># update the comments attribute</span>
+			<span class="n">map_nobg</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted - mode == const, background fit: middle spectrum </span><span class="se">\n</span><span class="s1">&#39;</span>
+
+		<span class="k">return</span> <span class="n">map_nobg</span></div>
+
 
 	<span class="c1"># internal functions</span>
 

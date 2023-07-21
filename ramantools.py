@@ -82,8 +82,10 @@ class ramanmap:
 		:rtype: :py:mod:`xarray`
 
 		.. note::
+			If the peaks and background are complicated, it is advised to test the background fit, by selecting the most difficult spectrum from the map and tweaking the fit parameters directly, using :func:`bgsubtract`.
+
 			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.
-			After running, the 'comments' attribute of the `xarray` instance is updated with the background fit information.
+			After running, the 'comments' attribute of the returned `xarray` instance is updated with the background fit information.
 
 		:Example:
 		
@@ -107,19 +109,23 @@ class ramanmap:
 		map_nobg = xr.zeros_like(self.mapxr)
 
 		if mode == 'const':
+			# Remove the same background for all spectra in the map
 			# Set the spectra selected for background fitting
 			middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest')
-			spectofit = middle
+			if (width is None) or (height is None): 
+				spectofit = middle
+			else:
+				spectofit = self.mapxr.sel(width = width, height = height, method = 'nearest')
 
 			if fitmask is None:
 				# take the spectrum at the middle of the map and fit the background
 				spectofit = middle
-				_, bg_values, _, _, mask = bgsubtract(spectofit.ramanshift.data, spectofit.data)
+				_, bg_values, _, _, mask = bgsubtract(spectofit.ramanshift.data, spectofit.data, **kwargs)
 				# add the mask to the `ramanmap` instance
 				self.mask = mask
 			else:
 				self.mask = fitmask
-				_, bg_values, _, _, mask = bgsubtract(spectofit.ramanshift.data, spectofit.data, fitmask = self.mask)
+				_, bg_values, _, _, mask = bgsubtract(spectofit.ramanshift.data, spectofit.data, fitmask = self.mask, **kwargs)
 
 			# extending bg_values to have two more axes, to allow adding to bg
 			bg_values = bg_values[:, np.newaxis, np.newaxis]
@@ -129,6 +135,13 @@ class ramanmap:
 			map_nobg.attrs = self.mapxr.attrs.copy()
 			# update the comments attribute
 			map_nobg.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
+
+		elif mode == 'individual':
+			# Make an individual fit all spectra in the map
+			pass
+		
+		else:
+			pass
 
 		return map_nobg
 
