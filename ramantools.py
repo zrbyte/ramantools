@@ -67,7 +67,7 @@ class ramanmap:
 
 		There are several modes of background fitting, as a function of the optional variables: ``mode`` and ``fitmask``:
 		
-		* ``mode`` = `'const'`: (this is the default) Subtracts the same background from all spectra in the map. The background is determined by either a fitmask calculated by :func:`bgsubtract` and passed to the method using the ``fitmask`` parameter. Additionally, a ``height`` and ``width`` parameter can be passed in which case, the spectrum at those coordinates is used to determine the background. If a fitmask is supplied, it is used instead of the coordinates.
+		* ``mode`` = `'const'`: (this is the default) Subtracts the same background from all spectra in the map. The background is determined by either a fitmask calculated by :func:`bgsubtract` or passed to the method using the ``fitmask`` parameter. Additionally, a ``height`` and ``width`` parameter can be passed in which case, the spectrum at those coordinates is used to determine the background. If a fitmask is supplied, it is used instead of the coordinates.
 		* ``mode`` = `'individual'`: An individual background is subtracted from all spectra.
 
 			* If ``fitmask`` = `None`, :func:`bgsubtract` does a peak search for each Raman spectrum and the fitmask is determined based on the parameters passed to :func:`bgsubtract`.
@@ -113,26 +113,31 @@ class ramanmap:
 		# singlespec_xr_nobg.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
 
 		if mode == 'const':
+			# Set the spectra selected for background fitting
+			middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest')
+			spectofit = middle
+
 			if fitmask is None:
 				# take the spectrum at the middle of the map and fit the background
-				middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest')
-				y_data_nobg, bg_values, coeff, params_used_at_run, mask = bgsubtract(middle.ramanshift.data, middle.data)
+				spectofit = middle
+				_, bg_values, _, _, mask = bgsubtract(spectofit.ramanshift.data, spectofit.data)
 				# add the mask to the `ramanmap` instance
 				self.mask = mask
+			else:
+				self.mask = fitmask
+				_, bg_values, _, _, mask = bgsubtract(spectofit.ramanshift.data, spectofit.data, fitmask = self.mask)
 
-				# extending bg_values to have two more axes, to allow adding to bg
-				bg_values = bg_values[:, np.newaxis, np.newaxis]
-				# subtract these along the ramanshift dimension of bg
-				map_nobg = self.mapxr[:] - bg_values
-				# add the metadata to the new xarray instance
-				map_nobg.attrs = self.mapxr.attrs.copy()
-				# update the comments attribute
-				map_nobg.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
-		
-		# return map_nobg
+			# extending bg_values to have two more axes, to allow adding to bg
+			bg_values = bg_values[:, np.newaxis, np.newaxis]
+			# subtract these along the ramanshift dimension of bg
+			map_nobg = self.mapxr[:] - bg_values
+			# add the metadata to the new xarray instance
+			map_nobg.attrs = self.mapxr.attrs.copy()
+			# update the comments attribute
+			map_nobg.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
+				
 		return map_nobg
 
-			
 
 	# internal functions
 
