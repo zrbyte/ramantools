@@ -1,4 +1,4 @@
-import re
+import re, copy
 import numpy as np
 import matplotlib.pyplot as pl
 from scipy.optimize import curve_fit
@@ -59,11 +59,46 @@ class ramanmap:
 		"""
 		print(self.metadata)
 
+	def plotspec(self, width, height, shift):
+		"""
+		Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
+		Needs width and height coordinates for the single spectrum and the Raman shift where we want to plot the Raman intensity in the map.
+		
+		:return: none
+
+		:param width: 'width' coordinate in um, from :class:`ramanmap.mapxr`
+		:type width: float
+		:param height: 'height' coordinate in um, from :class:`ramanmap.mapxr`
+		:type height: float
+		:param shift: 'ramanshift' coordinate in um, from :class:`ramanmap.mapxr`
+		:type shift: float
+
+		"""
+		spec = self.mapxr.sel(width = width, height = height, method = 'nearest')
+		ramanintensity = self.mapxr.sel(ramanshift = shift, method = 'nearest')
+
+		# Creating a figure with two subplots and a given size
+		fig, [ax0, ax1] = pl.subplots(1, 2, figsize = (9, 4))
+		# plotting the density plot of the 2D peak area ratio
+		ramanintensity.plot(
+			ax = ax0,
+			cmap = 'plasma') # type: ignore
+		# plotting the spectrum at the given coordinates on the right plot
+		spec.plot(ax = ax1, color = 'lime') # type: ignore
+		# plotting a dot on the density map, where the selected spectrum was measured
+		ax0.scatter(
+			spec.coords['width'].data,
+			spec.coords['height'].data,
+			color = 'lime', marker = 'x')
+		ax0.set_aspect('equal', 'box')
+		ax0.axes.title.set_size(10)
+		ax1.axes.title.set_size(10)
+		pl.tight_layout()
+
 	def remove_bg(self, mode = 'const', fitmask = None, height = None, width = None, **kwargs):
 		"""Remove the background of Raman maps.
 		It takes the same optional arguments as :func:`bgsubtract`.
-		Default fit function is a first order polynomial.
-		This can be changed by the ``polyorder`` parameter.
+		Default fit function is a first order polynomial. This can be changed by the ``polyorder`` parameter.
 
 		There are several modes of background fitting, as a function of the optional variables: ``mode`` and ``fitmask``:
 		
@@ -75,17 +110,21 @@ class ramanmap:
 
 		:param mode: Values can be: `'const'`, `'individual'`
 		:type mode: str, optional, default: `'const'`
-		:param fitmask: fitmask as returned by :func:`bgsubtract` or as contained in the `singlespec.mask` variable of the :class:`singlespec` class, ...
-		:type fitmask: :py:mod:`numpy` array
+		:param fitmask: fitmask as returned by :func:`bgsubtract` or as contained in the `singlespec.mask` variable of the :class:`singlespec` class, or in :class:`ramanmap`
+		:type fitmask: :py:mod:`numpy` array, optional
+		:param height: height coordinate of the :class:`ramanmap.mapxr` `xarray`
+		:type height: float, optional
+		:param width: width coordinate of the :class:`ramanmap.mapxr` `xarray`
+		:type width: float, optional
 		
-		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed
-		:rtype: :py:mod:`xarray`
+		:return: ``map_mod``: new :class:`ramanmap` instance, containing the data with background removed. ``coeff``: the coefficients and ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
+		:rtype: tuple: (:class:`ramanmap` :py:mod:`numpy`, :py:mod:`numpy`)
 
 		.. note::
 			If the peaks and background are complicated, it is advised to test the background fit, by selecting the most difficult spectrum from the map and tweaking the fit parameters directly, using :func:`bgsubtract`.
 
-			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.
-			After running, the 'comments' attribute of the returned `xarray` instance is updated with the background fit information.
+			Metadata is copied over to the returned :class:`ramanmap` instance, because there are no unit changes, in removing the background.
+			After running, the 'comments' attribute of the new `xarray` instance is updated with the background fit information.
 
 		:Example:
 		
@@ -100,50 +139,53 @@ class ramanmap:
 			# Loading a single spectrum from files
 			m = rt.ramanmap(spec_path, info_path)
 
-		.. seealso::
-			
-			* Rewrite this for map.
-			* Update the example.
+			# create a new `ramanmap` instance `new_m`, with the background removed
+			new_m, coeff, covar = m.remove_bg(fitmask = mask, toplot = True)
+			# plot the spectrum in the middle of the map
+			new_m.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest').plot()
 
 		"""
-		map_nobg = xr.zeros_like(self.mapxr)
+		# create a copy of the instance
+		map_mod = copy.deepcopy(self)
 
 		if mode == 'const':
 			# Remove the same background for all spectra in the map
 			# Set the spectra selected for background fitting
 			middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest')
+			
+			# check if width and height are specified
 			if (width is None) or (height is None): 
 				spectofit = middle
 			else:
 				spectofit = self.mapxr.sel(width = width, height = height, method = 'nearest')
 
+			# check for fitmask
 			if fitmask is None:
 				# take the spectrum at the middle of the map and fit the background
 				spectofit = middle
-				_, bg_values, _, _, mask = bgsubtract(spectofit.ramanshift.data, spectofit.data, **kwargs)
-				# add the mask to the `ramanmap` instance
-				self.mask = mask
+				_, bg_values, coeff, _, mask, covar = bgsubtract(spectofit.ramanshift.data, spectofit.data, **kwargs)
+				# add the mask to the new `ramanmap` instance
+				map_mod.mask = mask
 			else:
-				self.mask = fitmask
-				_, bg_values, _, _, mask = bgsubtract(spectofit.ramanshift.data, spectofit.data, fitmask = self.mask, **kwargs)
+				map_mod.mask = fitmask
+				_, bg_values, coeff, _, mask, covar = bgsubtract(spectofit.ramanshift.data, spectofit.data, fitmask = map_mod.mask, **kwargs)
 
 			# extending bg_values to have two more axes, to allow adding to bg
 			bg_values = bg_values[:, np.newaxis, np.newaxis]
 			# subtract these along the ramanshift dimension of bg
-			map_nobg = self.mapxr[:] - bg_values
-			# add the metadata to the new xarray instance
-			map_nobg.attrs = self.mapxr.attrs.copy()
+			map_mod.mapxr[:] -= bg_values
 			# update the comments attribute
-			map_nobg.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
+			map_mod.mapxr.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
 
 		elif mode == 'individual':
-			# Make an individual fit all spectra in the map
+			# Make an individual fit to all spectra in the map
+			print('not implemented yet. Sorry')
 			pass
 		
 		else:
 			pass
 
-		return map_nobg
+		return map_mod, coeff, covar
 
 
 	# internal functions
@@ -273,9 +315,6 @@ class singlespec:
 	This is the text next to the map data in the Witec software.
 	It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.
 
-	:return: object containing the data and metadata
-	:rtype: :class:`singlespec` instance
-
 	:param spec_path: Path to the text file, containing the Raman spectrum, exported from Witec
 	:type spec_path: str
 	:param info_path: Path to the info file, containing the metadata, exported from Witec
@@ -291,6 +330,9 @@ class singlespec:
 	:var specname: (type: str) contains the name of the Raman single spectrum, as shown in the Witec software.
 
 	For a complete list see example below.
+
+	:return: :class:`singlespec` instance containing the data and metadata
+	:rtype: :class:`singlespec` instance
 
 	:Example:
 
@@ -318,16 +360,18 @@ class singlespec:
 
 	def remove_bg(self, **kwargs):
 		"""Remove the background of Raman spectra.
+		The :py:mod:`xarray` variable of the :class:`singlespec` instance is updated with the new dataset, with the background removed.
+	
 		It takes the same optional arguments as :func:`bgsubtract`.
 		Default fit function is a first order polynomial.
 		This can be changed by the ``polyorder`` parameter.
 
-		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed
-		:rtype: :py:mod:`xarray`
+		:return: ``singlesp_mod``: new :class:`singlespec` instance, containing the data with background removed. ``coeff``: the coefficients and ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
+		:rtype: tuple: (:class:`singlespec` :py:mod:`numpy`, :py:mod:`numpy`)
 
 		.. note::
-			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.
-			After running, the 'comments' attribute of the `xarray` instance is updated with the background fit information.
+			Metadata is copied over to the returned :class:`singlespec` instance, because there are no unit changes, in removing the background.
+			After running, the 'comments' attribute of the new `xarray` instance is updated with the background fit information.
 
 		:Example:
 		
@@ -344,25 +388,32 @@ class singlespec:
 
 			# Using remove_bg to fit and remove the background
 			# In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.
-			single_spec_nobg = single_spectrum.remove_bg()
+			new_ss, coeff, covar = single_spectrum.remove_bg()
+			# `new_ss` is the new `singlespec` instance containing the ssxr `xarray` object, with the background removed
 
 			# In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.
-			single_spec_nobg = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)
+			new_ss, coeff, covar = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)
 
 			# Fitting a third order polynomial
-			single_spec_nobg = single_spectrum.remove_bg(polyorder = 3)
+			new_ss, coeff, covar = single_spectrum.remove_bg(polyorder = 3)
+
+			# Replot the `xarray` DataArray, which has the background removed
+			new_ss.ssxr.plot()
 
 		"""		
-		data_nobg, bg_values, coeff, fitparams, mask = bgsubtract(self.ssxr.coords['ramanshift'].data, self.ssxr.data, **kwargs)
-		singlespec_xr_nobg = self.ssxr - bg_values
-		# copy the attributes to the xarray with the background removed
-		singlespec_xr_nobg.attrs = self.ssxr.attrs.copy()
-		# adding a note to `xarray` comments attribute
-		singlespec_xr_nobg.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
-		# save the fitmask as a variable of `singlespec`
-		self.mask = mask
+		data_nobg, bg_values, coeff, fitparams, mask, covar = bgsubtract(self.ssxr.coords['ramanshift'].data, self.ssxr.data, **kwargs)
 
-		return singlespec_xr_nobg
+		# create a copy of the instance
+		singlesp_mod = copy.deepcopy(self)
+
+		# remove the background from ssxr
+		singlesp_mod.ssxr -= bg_values
+		# adding a note to `xarray` comments attribute
+		singlesp_mod.ssxr.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
+		# save the fitmask as a variable of `singlespec`
+		singlesp_mod.mask = mask
+
+		return singlesp_mod, coeff, covar
 
 	# internal functions
 
@@ -464,44 +515,6 @@ class singlespec:
 
 ## Tools -----------------------------------------------------------------
 
-def plotspec(xrobject, width, height, shift):
-	"""
-	Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
-	First variable is a `ramanmap` object, followed by the specific width and height coordinates for the single spectrum.
-	
-	:return: none
-
-	:param xrobject: This is a Raman map
-	:type xrobject: :py:mod:`xarray` DataArray
-	:param width: 'width' coordinate in um, from xrobject
-	:type width: float
-	:param height: 'height' coordinate in um, from xrobject
-	:type height: float
-	:param shift: 'ramanshift' coordinate in um, from xrobject
-	:type shift: float
-
-	"""
-	spec = xrobject.sel(width = width, height = height, method = 'nearest')
-	ramanintensity = xrobject.sel(ramanshift = shift, method = 'nearest')
-
-	# Creating a figure with two subplots and a given size
-	fig, [ax0, ax1] = pl.subplots(1, 2, figsize = (9, 4))
-	# plotting the density plot of the 2D peak area ratio
-	ramanintensity.plot(
-		ax = ax0,
-		cmap = 'plasma')
-	# plotting the spectrum at the given coordinates on the right plot
-	spec.plot(ax = ax1, color = 'lime')
-	# plotting a dot on the density map, where the selected spectrum was measured
-	ax0.scatter(
-		spec.coords['width'].data,
-		spec.coords['height'].data,
-		color = 'lime', marker = 'x')
-	ax0.set_aspect('equal', 'box')
-	ax0.axes.title.set_size(10)
-	ax1.axes.title.set_size(10)
-	pl.tight_layout()
-
 def lorentz(x, x0, area, width, offset):
 	"""Single Lorentz function
 
@@ -558,8 +571,9 @@ def polynomial_fit(order, x_data, y_data):
 	:type x_data: :py:mod:`numpy` array
 	:param y_data: y coordinate of the data, this would be Raman intensity
 	:type y_data: :py:mod:`numpy` array
-	:return: coefficients of the polinomial, as used by :py:mod:`numpy.polyval`
-	:rtype: :py:mod:`numpy` array
+
+	:return: coefficients of the polinomial ``coeff``, as used by :py:mod:`numpy.polyval`, covariance matrix ``covar``, as returned by :py:mod:`scipy.optimize.curve_fit`
+	:rtype: tuple: (:py:mod:`numpy` array, :py:mod:`numpy` array)
 
 	"""    
 	# Define polynomial function of given order
@@ -571,15 +585,15 @@ def polynomial_fit(order, x_data, y_data):
 	guess = np.ones(order + 1)
 
 	# Use curve_fit to find best fit parameters
-	coeff, _ = curve_fit(poly_func, x_data, y_data, p0 = guess)
+	coeff, covar = curve_fit(poly_func, x_data, y_data, p0 = guess)
 
-	return coeff
+	return coeff, covar
 
 def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hmin = 50, hmax = 10000, wmin = 4, wmax = 60, prom = 10, exclusion_factor = 6, peak_pos = None):
 	"""Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.
 	These peaks are then used to define the areas of the background signal.
 	In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: ``polyorder``.
-	The fit is performed by :py:mod:`scipy.curvefit`.
+	The fit is performed by :py:mod:`scipy.optimize.curve_fit`.
 	The function returns the Raman intensity counts with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by :py:mod:`numpy.polyval`.
 
 	In cases, where the automatic peak find is not functioning as expected, one can pass the values in ``x_data``, at which peaks appear.
@@ -613,14 +627,15 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 	:param peak_pos: list of the peak positions in ``x_data`` values used for exclusion, defaults to None
 	:type peak_pos: list of floats, optional
 
-	:return: tuple: [``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``, ``mask``]
-	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array, dictionary, :py:mod:`numpy` array
+	:return: ``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``, ``mask``
+	:rtype: tuple: (:py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array, dictionary, :py:mod:`numpy` array, :py:mod:`numpy` array)
 
 	* ``y_data_nobg``: Raman counts, with the background subtracted,
 	* ``bg_values``: the polynomial values of the fit, at the Raman shift positions,
 	* ``coeff``: coefficients of the polynomial fit, as used by: :py:mod:`numpy.polyval`,
 	* ``params_used_at_run``: parameters used at runtime
 	* ``mask``: the calculated fitmask
+	* ``covar``: covariance of the fit parameters
 
 	.. note::
 		Using the option: ``peak_pos``, a ``wmin*exclusion_factor/2`` region (measured in datapoints) on both sides of the peaks is excluded from the background fit.
@@ -679,7 +694,7 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 	uncovered_y_data = y_data[mask]
 
 	# Fit polynomial to the remaining data
-	coeff = polynomial_fit(polyorder, uncovered_x_data, uncovered_y_data)
+	coeff, covar = polynomial_fit(polyorder, uncovered_x_data, uncovered_y_data)
 
 	# Calculate the fitted polynomial values
 	bg_values = np.polyval(coeff, x_data)
@@ -710,4 +725,4 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 	
 	params_used_at_run = {'polyorder': polyorder, 'hmin': hmin, 'hmax': hmax, 'wmin': wmin, 'wmax': wmax, 'prom':prom, 'exclusion_factor': exclusion_factor, 'peak_pos': peak_pos}
 
-	return y_data_nobg, bg_values, coeff, params_used_at_run, mask
+	return y_data_nobg, bg_values, coeff, params_used_at_run, mask, covar

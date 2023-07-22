@@ -69,7 +69,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ramantools</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">re</span>
+<span></span><span class="kn">import</span> <span class="nn">re</span><span class="o">,</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">pl</span>
 <span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">curve_fit</span>
@@ -133,8 +133,7 @@
 <div class="viewcode-block" id="ramanmap.remove_bg"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.remove_bg">[docs]</a>	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Remove the background of Raman maps.</span>
 <span class="sd">		It takes the same optional arguments as :func:`bgsubtract`.</span>
-<span class="sd">		Default fit function is a first order polynomial.</span>
-<span class="sd">		This can be changed by the ``polyorder`` parameter.</span>
+<span class="sd">		Default fit function is a first order polynomial. This can be changed by the ``polyorder`` parameter.</span>
 
 <span class="sd">		There are several modes of background fitting, as a function of the optional variables: ``mode`` and ``fitmask``:</span>
 <span class="sd">		</span>
@@ -146,17 +145,21 @@
 
 <span class="sd">		:param mode: Values can be: `&#39;const&#39;`, `&#39;individual&#39;`</span>
 <span class="sd">		:type mode: str, optional, default: `&#39;const&#39;`</span>
-<span class="sd">		:param fitmask: fitmask as returned by :func:`bgsubtract` or as contained in the `singlespec.mask` variable of the :class:`singlespec` class, ...</span>
-<span class="sd">		:type fitmask: :py:mod:`numpy` array</span>
+<span class="sd">		:param fitmask: fitmask as returned by :func:`bgsubtract` or as contained in the `singlespec.mask` variable of the :class:`singlespec` class, or in :class:`ramanmap`</span>
+<span class="sd">		:type fitmask: :py:mod:`numpy` array, optional</span>
+<span class="sd">		:param height: height coordinate of the :class:`ramanmap.mapxr` `xarray`</span>
+<span class="sd">		:type height: float, optional</span>
+<span class="sd">		:param width: width coordinate of the :class:`ramanmap.mapxr` `xarray`</span>
+<span class="sd">		:type width: float, optional</span>
 <span class="sd">		</span>
-<span class="sd">		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed</span>
-<span class="sd">		:rtype: :py:mod:`xarray`</span>
+<span class="sd">		:return: ``map_mod``: new :class:`ramanmap` instance, containing the data with background removed. ``coeff``: the coefficients and ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+<span class="sd">		:rtype: tuple: (:class:`ramanmap` :py:mod:`numpy`, :py:mod:`numpy`)</span>
 
 <span class="sd">		.. note::</span>
 <span class="sd">			If the peaks and background are complicated, it is advised to test the background fit, by selecting the most difficult spectrum from the map and tweaking the fit parameters directly, using :func:`bgsubtract`.</span>
 
-<span class="sd">			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.</span>
-<span class="sd">			After running, the &#39;comments&#39; attribute of the `xarray` instance is updated with the background fit information.</span>
+<span class="sd">			Metadata is copied over to the returned :class:`ramanmap` instance, because there are no unit changes, in removing the background.</span>
+<span class="sd">			After running, the &#39;comments&#39; attribute of the new `xarray` instance is updated with the background fit information.</span>
 
 <span class="sd">		:Example:</span>
 <span class="sd">		</span>
@@ -171,42 +174,53 @@
 <span class="sd">			# Loading a single spectrum from files</span>
 <span class="sd">			m = rt.ramanmap(spec_path, info_path)</span>
 
-<span class="sd">		.. seealso::</span>
-<span class="sd">			</span>
-<span class="sd">			* Rewrite this for map.</span>
-<span class="sd">			* Update the example.</span>
+<span class="sd">			# create a new `ramanmap` instance `new_m`, with the background removed</span>
+<span class="sd">			new_m, coeff, covar = m.remove_bg(fitmask = mask, toplot = True)</span>
+<span class="sd">			# plot the spectrum in the middle of the map</span>
+<span class="sd">			new_m.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = &#39;nearest&#39;).plot()</span>
 
 <span class="sd">		&quot;&quot;&quot;</span>
-		<span class="n">map_nobg</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">)</span>
+		<span class="c1"># create a copy of the instance</span>
+		<span class="n">map_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
 		<span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;const&#39;</span><span class="p">:</span>
+			<span class="c1"># Remove the same background for all spectra in the map</span>
 			<span class="c1"># Set the spectra selected for background fitting</span>
 			<span class="n">middle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+			
+			<span class="c1"># check if width and height are specified</span>
 			<span class="k">if</span> <span class="p">(</span><span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">height</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span> 
 				<span class="n">spectofit</span> <span class="o">=</span> <span class="n">middle</span>
 			<span class="k">else</span><span class="p">:</span>
 				<span class="n">spectofit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">height</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
 
+			<span class="c1"># check for fitmask</span>
 			<span class="k">if</span> <span class="n">fitmask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 				<span class="c1"># take the spectrum at the middle of the map and fit the background</span>
 				<span class="n">spectofit</span> <span class="o">=</span> <span class="n">middle</span>
-				<span class="n">_</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">spectofit</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">spectofit</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-				<span class="c1"># add the mask to the `ramanmap` instance</span>
-				<span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
+				<span class="n">_</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">spectofit</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">spectofit</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+				<span class="c1"># add the mask to the new `ramanmap` instance</span>
+				<span class="n">map_mod</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
 			<span class="k">else</span><span class="p">:</span>
-				<span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">fitmask</span>
-				<span class="n">_</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">spectofit</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">spectofit</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+				<span class="n">map_mod</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">fitmask</span>
+				<span class="n">_</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">spectofit</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">spectofit</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="n">map_mod</span><span class="o">.</span><span class="n">mask</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 			<span class="c1"># extending bg_values to have two more axes, to allow adding to bg</span>
 			<span class="n">bg_values</span> <span class="o">=</span> <span class="n">bg_values</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
 			<span class="c1"># subtract these along the ramanshift dimension of bg</span>
-			<span class="n">map_nobg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">[:]</span> <span class="o">-</span> <span class="n">bg_values</span>
-			<span class="c1"># add the metadata to the new xarray instance</span>
-			<span class="n">map_nobg</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+			<span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="p">[:]</span> <span class="o">-=</span> <span class="n">bg_values</span>
 			<span class="c1"># update the comments attribute</span>
-			<span class="n">map_nobg</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted - mode == const, background fit: middle spectrum </span><span class="se">\n</span><span class="s1">&#39;</span>
+			<span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted - mode == const, background fit: middle spectrum </span><span class="se">\n</span><span class="s1">&#39;</span>
 
-		<span class="k">return</span> <span class="n">map_nobg</span></div>
+		<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;individual&#39;</span><span class="p">:</span>
+			<span class="c1"># Make an individual fit to all spectra in the map</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;not implemented yet. Sorry&#39;</span><span class="p">)</span>
+			<span class="k">pass</span>
+		
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">pass</span>
+
+		<span class="k">return</span> <span class="n">map_mod</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
 
 
 	<span class="c1"># internal functions</span>
@@ -336,9 +350,6 @@
 <span class="sd">	This is the text next to the map data in the Witec software.</span>
 <span class="sd">	It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.</span>
 
-<span class="sd">	:return: object containing the data and metadata</span>
-<span class="sd">	:rtype: :class:`singlespec` instance</span>
-
 <span class="sd">	:param spec_path: Path to the text file, containing the Raman spectrum, exported from Witec</span>
 <span class="sd">	:type spec_path: str</span>
 <span class="sd">	:param info_path: Path to the info file, containing the metadata, exported from Witec</span>
@@ -354,6 +365,9 @@
 <span class="sd">	:var specname: (type: str) contains the name of the Raman single spectrum, as shown in the Witec software.</span>
 
 <span class="sd">	For a complete list see example below.</span>
+
+<span class="sd">	:return: :class:`singlespec` instance containing the data and metadata</span>
+<span class="sd">	:rtype: :class:`singlespec` instance</span>
 
 <span class="sd">	:Example:</span>
 
@@ -381,16 +395,18 @@
 
 <div class="viewcode-block" id="singlespec.remove_bg"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.remove_bg">[docs]</a>	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Remove the background of Raman spectra.</span>
+<span class="sd">		The :py:mod:`xarray` variable of the :class:`singlespec` instance is updated with the new dataset, with the background removed.</span>
+<span class="sd">	</span>
 <span class="sd">		It takes the same optional arguments as :func:`bgsubtract`.</span>
 <span class="sd">		Default fit function is a first order polynomial.</span>
 <span class="sd">		This can be changed by the ``polyorder`` parameter.</span>
 
-<span class="sd">		:return: Returns an :py:mod:`xarray` instance, with the same data and metadata, but the background removed</span>
-<span class="sd">		:rtype: :py:mod:`xarray`</span>
+<span class="sd">		:return: ``singlesp_mod``: new :class:`singlespec` instance, containing the data with background removed. ``coeff``: the coefficients and ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+<span class="sd">		:rtype: tuple: (:class:`singlespec` :py:mod:`numpy`, :py:mod:`numpy`)</span>
 
 <span class="sd">		.. note::</span>
-<span class="sd">			Metadata is copied over to the returned `xarray` instance, because there are no unit changes, in removing the background.</span>
-<span class="sd">			After running, the &#39;comments&#39; attribute of the `xarray` instance is updated with the background fit information.</span>
+<span class="sd">			Metadata is copied over to the returned :class:`singlespec` instance, because there are no unit changes, in removing the background.</span>
+<span class="sd">			After running, the &#39;comments&#39; attribute of the new `xarray` instance is updated with the background fit information.</span>
 
 <span class="sd">		:Example:</span>
 <span class="sd">		</span>
@@ -407,25 +423,32 @@
 
 <span class="sd">			# Using remove_bg to fit and remove the background</span>
 <span class="sd">			# In this example, we let remove_bg() find the peaks automatically. In this case, if no options are passed, the fit is returned.</span>
-<span class="sd">			single_spec_nobg = single_spectrum.remove_bg()</span>
+<span class="sd">			new_ss, coeff, covar = single_spectrum.remove_bg()</span>
+<span class="sd">			# `new_ss` is the new `singlespec` instance containing the ssxr `xarray` object, with the background removed</span>
 
 <span class="sd">			# In this example, we also want to plot the result and we select the peaks by hand, by using `peak_pos`.</span>
-<span class="sd">			single_spec_nobg = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)</span>
+<span class="sd">			new_ss, coeff, covar = single_spectrum.remove_bg(toplot = True, peak_pos = [520, 1583, 2700], wmin = 15)</span>
 
 <span class="sd">			# Fitting a third order polynomial</span>
-<span class="sd">			single_spec_nobg = single_spectrum.remove_bg(polyorder = 3)</span>
+<span class="sd">			new_ss, coeff, covar = single_spectrum.remove_bg(polyorder = 3)</span>
+
+<span class="sd">			# Replot the `xarray` DataArray, which has the background removed</span>
+<span class="sd">			new_ss.ssxr.plot()</span>
 
 <span class="sd">		&quot;&quot;&quot;</span>		
-		<span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">fitparams</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-		<span class="n">singlespec_xr_nobg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">-</span> <span class="n">bg_values</span>
-		<span class="c1"># copy the attributes to the xarray with the background removed</span>
-		<span class="n">singlespec_xr_nobg</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-		<span class="c1"># adding a note to `xarray` comments attribute</span>
-		<span class="n">singlespec_xr_nobg</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted, with parameters: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fitparams</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
-		<span class="c1"># save the fitmask as a variable of `singlespec`</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
+		<span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">fitparams</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-		<span class="k">return</span> <span class="n">singlespec_xr_nobg</span></div>
+		<span class="c1"># create a copy of the instance</span>
+		<span class="n">singlesp_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+		<span class="c1"># remove the background from ssxr</span>
+		<span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">-=</span> <span class="n">bg_values</span>
+		<span class="c1"># adding a note to `xarray` comments attribute</span>
+		<span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted, with parameters: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fitparams</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+		<span class="c1"># save the fitmask as a variable of `singlespec`</span>
+		<span class="n">singlesp_mod</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
+
+		<span class="k">return</span> <span class="n">singlesp_mod</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
 
 	<span class="c1"># internal functions</span>
 
@@ -621,8 +644,9 @@
 <span class="sd">	:type x_data: :py:mod:`numpy` array</span>
 <span class="sd">	:param y_data: y coordinate of the data, this would be Raman intensity</span>
 <span class="sd">	:type y_data: :py:mod:`numpy` array</span>
-<span class="sd">	:return: coefficients of the polinomial, as used by :py:mod:`numpy.polyval`</span>
-<span class="sd">	:rtype: :py:mod:`numpy` array</span>
+
+<span class="sd">	:return: coefficients of the polinomial ``coeff``, as used by :py:mod:`numpy.polyval`, covariance matrix ``covar``, as returned by :py:mod:`scipy.optimize.curve_fit`</span>
+<span class="sd">	:rtype: tuple: (:py:mod:`numpy` array, :py:mod:`numpy` array)</span>
 
 <span class="sd">	&quot;&quot;&quot;</span>    
 	<span class="c1"># Define polynomial function of given order</span>
@@ -634,15 +658,15 @@
 	<span class="n">guess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">order</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
 
 	<span class="c1"># Use curve_fit to find best fit parameters</span>
-	<span class="n">coeff</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">poly_func</span><span class="p">,</span> <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">p0</span> <span class="o">=</span> <span class="n">guess</span><span class="p">)</span>
+	<span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="n">curve_fit</span><span class="p">(</span><span class="n">poly_func</span><span class="p">,</span> <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">p0</span> <span class="o">=</span> <span class="n">guess</span><span class="p">)</span>
 
-	<span class="k">return</span> <span class="n">coeff</span></div>
+	<span class="k">return</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
 
 <div class="viewcode-block" id="bgsubtract"><a class="viewcode-back" href="../ramantools.html#ramantools.bgsubtract">[docs]</a><span class="k">def</span> <span class="nf">bgsubtract</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">polyorder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hmin</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">hmax</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">wmin</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">wmax</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span> <span class="n">prom</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclusion_factor</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.</span>
 <span class="sd">	These peaks are then used to define the areas of the background signal.</span>
 <span class="sd">	In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: ``polyorder``.</span>
-<span class="sd">	The fit is performed by :py:mod:`scipy.curvefit`.</span>
+<span class="sd">	The fit is performed by :py:mod:`scipy.optimize.curve_fit`.</span>
 <span class="sd">	The function returns the Raman intensity counts with the background removed, the background polinomial values themselves and the coefficients of the background fit results, as used by :py:mod:`numpy.polyval`.</span>
 
 <span class="sd">	In cases, where the automatic peak find is not functioning as expected, one can pass the values in ``x_data``, at which peaks appear.</span>
@@ -676,14 +700,15 @@
 <span class="sd">	:param peak_pos: list of the peak positions in ``x_data`` values used for exclusion, defaults to None</span>
 <span class="sd">	:type peak_pos: list of floats, optional</span>
 
-<span class="sd">	:return: tuple: [``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``, ``mask``]</span>
-<span class="sd">	:rtype: :py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array, dictionary, :py:mod:`numpy` array</span>
+<span class="sd">	:return: ``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``, ``mask``</span>
+<span class="sd">	:rtype: tuple: (:py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array, dictionary, :py:mod:`numpy` array, :py:mod:`numpy` array)</span>
 
 <span class="sd">	* ``y_data_nobg``: Raman counts, with the background subtracted,</span>
 <span class="sd">	* ``bg_values``: the polynomial values of the fit, at the Raman shift positions,</span>
 <span class="sd">	* ``coeff``: coefficients of the polynomial fit, as used by: :py:mod:`numpy.polyval`,</span>
 <span class="sd">	* ``params_used_at_run``: parameters used at runtime</span>
 <span class="sd">	* ``mask``: the calculated fitmask</span>
+<span class="sd">	* ``covar``: covariance of the fit parameters</span>
 
 <span class="sd">	.. note::</span>
 <span class="sd">		Using the option: ``peak_pos``, a ``wmin*exclusion_factor/2`` region (measured in datapoints) on both sides of the peaks is excluded from the background fit.</span>
@@ -742,7 +767,7 @@
 	<span class="n">uncovered_y_data</span> <span class="o">=</span> <span class="n">y_data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
 
 	<span class="c1"># Fit polynomial to the remaining data</span>
-	<span class="n">coeff</span> <span class="o">=</span> <span class="n">polynomial_fit</span><span class="p">(</span><span class="n">polyorder</span><span class="p">,</span> <span class="n">uncovered_x_data</span><span class="p">,</span> <span class="n">uncovered_y_data</span><span class="p">)</span>
+	<span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="n">polynomial_fit</span><span class="p">(</span><span class="n">polyorder</span><span class="p">,</span> <span class="n">uncovered_x_data</span><span class="p">,</span> <span class="n">uncovered_y_data</span><span class="p">)</span>
 
 	<span class="c1"># Calculate the fitted polynomial values</span>
 	<span class="n">bg_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyval</span><span class="p">(</span><span class="n">coeff</span><span class="p">,</span> <span class="n">x_data</span><span class="p">)</span>
@@ -773,7 +798,7 @@
 	
 	<span class="n">params_used_at_run</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;polyorder&#39;</span><span class="p">:</span> <span class="n">polyorder</span><span class="p">,</span> <span class="s1">&#39;hmin&#39;</span><span class="p">:</span> <span class="n">hmin</span><span class="p">,</span> <span class="s1">&#39;hmax&#39;</span><span class="p">:</span> <span class="n">hmax</span><span class="p">,</span> <span class="s1">&#39;wmin&#39;</span><span class="p">:</span> <span class="n">wmin</span><span class="p">,</span> <span class="s1">&#39;wmax&#39;</span><span class="p">:</span> <span class="n">wmax</span><span class="p">,</span> <span class="s1">&#39;prom&#39;</span><span class="p">:</span><span class="n">prom</span><span class="p">,</span> <span class="s1">&#39;exclusion_factor&#39;</span><span class="p">:</span> <span class="n">exclusion_factor</span><span class="p">,</span> <span class="s1">&#39;peak_pos&#39;</span><span class="p">:</span> <span class="n">peak_pos</span><span class="p">}</span>
 
-	<span class="k">return</span> <span class="n">y_data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">params_used_at_run</span><span class="p">,</span> <span class="n">mask</span></div>
+	<span class="k">return</span> <span class="n">y_data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">params_used_at_run</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span></div>
 </pre></div>
 
            </div>
