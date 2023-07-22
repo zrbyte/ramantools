@@ -45,6 +45,7 @@
 <li class="toctree-l1"><a class="reference internal" href="intro.html#examples">Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ramantools module</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ramantools.gaussian"><code class="docutils literal notranslate"><span class="pre">gaussian()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.lorentz"><code class="docutils literal notranslate"><span class="pre">lorentz()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.lorentz2"><code class="docutils literal notranslate"><span class="pre">lorentz2()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
@@ -55,6 +56,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.calibrate"><code class="docutils literal notranslate"><span class="pre">singlespec.calibrate()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.remove_bg"><code class="docutils literal notranslate"><span class="pre">singlespec.remove_bg()</span></code></a></li>
 </ul>
@@ -64,6 +66,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">ramantools</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">ramantools module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.gaussian"><code class="docutils literal notranslate"><span class="pre">gaussian()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.lorentz"><code class="docutils literal notranslate"><span class="pre">lorentz()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.lorentz2"><code class="docutils literal notranslate"><span class="pre">lorentz2()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
@@ -74,6 +77,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.calibrate"><code class="docutils literal notranslate"><span class="pre">singlespec.calibrate()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.remove_bg"><code class="docutils literal notranslate"><span class="pre">singlespec.remove_bg()</span></code></a></li>
 </ul>
@@ -162,8 +166,13 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ramantools.gaussian">
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.gaussian" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ramantools.lorentz">
-<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">lorentz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#lorentz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.lorentz" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">lorentz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#lorentz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.lorentz" title="Permalink to this definition"></a></dt>
 <dd><p>Single Lorentz function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -184,8 +193,8 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 </dl>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The amplitude of the peak can be given by:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">area</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">width</span><span class="p">)</span>
+<p>The area of the peak can be given by:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">width</span> <span class="o">/</span> <span class="mi">2</span>
 </pre></div>
 </div>
 </div>
@@ -193,7 +202,7 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.lorentz2">
-<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">lorentz2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#lorentz2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.lorentz2" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">lorentz2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x02</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#lorentz2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.lorentz2" title="Permalink to this definition"></a></dt>
 <dd><p>Double Lorentz function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -433,6 +442,11 @@ It takes two arguments, the first is the path to the file containing the spectro
 <span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">single_spectrum</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">))</span>
 </pre></div>
 </div>
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.singlespec.calibrate">
+<span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peakshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibfactor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.calibrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.calibrate" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.singlespec.print_metadata">
 <span class="sig-name descname"><span class="pre">print_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.print_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.print_metadata" title="Permalink to this definition"></a></dt>

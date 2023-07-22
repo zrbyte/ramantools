@@ -534,7 +534,11 @@ class singlespec:
 
 ## Tools -----------------------------------------------------------------
 
-def lorentz(x, x0, area, width, offset):
+def gaussian(x, x0, ampl, width, offset):
+	pass
+
+
+def lorentz(x, x0, ampl, width, offset):
 	"""Single Lorentz function
 
 	:return: values of a single Lorentz function
@@ -552,16 +556,17 @@ def lorentz(x, x0, area, width, offset):
 	:type offset: float
 
 	.. note::
-		The amplitude of the peak can be given by:
+		The area of the peak can be given by:
 		
 		.. code-block:: python
 
-			(2*area)/(np.pi*width)
+			area = np.pi * amplitude * width / 2
 	
 	"""
+	area = np.pi * ampl * width / 2
 	return offset + (2/np.pi) * (area * width) / (4*(x - x0)**2 + width**2)
 
-def lorentz2(x, x01, area1, width1, x02, area2, width2, offset):
+def lorentz2(x, x01, ampl1, width1, x02, ampl2, width2, offset):
 	"""Double Lorentz function
 
 	:return: values of a double Lorentz function
@@ -579,6 +584,8 @@ def lorentz2(x, x01, area1, width1, x02, area2, width2, offset):
 	:type offset: float
 	
 	"""
+	area1 = np.pi * ampl1 * width / 2
+	area2 = np.pi * ampl2 * width / 2
 	return offset + (2/np.pi) * (area1 * width1) / (4*(x - x01)**2 + width1**2) + (2/np.pi) * (area2 * width2) / (4*(x - x02)**2 + width2**2)
 
 def polynomial_fit(order, x_data, y_data):
