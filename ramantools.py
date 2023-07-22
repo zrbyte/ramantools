@@ -601,8 +601,8 @@ def lorentz2(x, x01, ampl1, width1, x02, ampl2, width2, offset):
 	:type offset: float
 	
 	"""
-	area1 = np.pi * ampl1 * width / 2
-	area2 = np.pi * ampl2 * width / 2
+	area1 = np.pi * ampl1 * width1 / 2
+	area2 = np.pi * ampl2 * width2 / 2
 	return offset + (2/np.pi) * (area1 * width1) / (4*(x - x01)**2 + width1**2) + (2/np.pi) * (area2 * width2) / (4*(x - x02)**2 + width2**2)
 
 def polynomial_fit(order, x_data, y_data):
