@@ -117,7 +117,12 @@ class ramanmap:
 		:param width: width coordinate of the :class:`ramanmap.mapxr` `xarray`
 		:type width: float, optional
 		
-		:return: ``map_mod``: new :class:`ramanmap` instance, containing the data with background removed. ``coeff``: the coefficients and ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
+		:return:
+			
+			* ``map_mod``: new :class:`ramanmap` instance, containing the data with background removed.
+			* ``coeff``: the coefficients and
+			* ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
+		
 		:rtype: tuple: (:class:`ramanmap` :py:mod:`numpy`, :py:mod:`numpy`)
 
 		.. note::
@@ -180,9 +185,13 @@ class ramanmap:
 		elif mode == 'individual':
 			# Make an individual fit to all spectra in the map
 			print('not implemented yet. Sorry')
+			coeff = 0
+			covar = 0
 			pass
 		
 		else:
+			coeff = 0
+			covar = 0
 			pass
 
 		return map_mod, coeff, covar
@@ -366,7 +375,12 @@ class singlespec:
 		Default fit function is a first order polynomial.
 		This can be changed by the ``polyorder`` parameter.
 
-		:return: ``singlesp_mod``: new :class:`singlespec` instance, containing the data with background removed. ``coeff``: the coefficients and ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
+		:return:
+			
+			* ``singlesp_mod``: new :class:`singlespec` instance, containing the data with background removed.
+			* ``coeff``: the coefficients and
+			* ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
+
 		:rtype: tuple: (:class:`singlespec` :py:mod:`numpy`, :py:mod:`numpy`)
 
 		.. note::
@@ -414,6 +428,11 @@ class singlespec:
 		singlesp_mod.mask = mask
 
 		return singlesp_mod, coeff, covar
+
+	def calibrate(self, peakshift, calibfactor = 0, **kwargs):
+		# create a copy of the instance
+		singlesp_mod = copy.deepcopy(self)
+		pass
 
 	# internal functions
 

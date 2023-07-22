@@ -130,6 +130,42 @@
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="ramanmap.plotspec"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.plotspec">[docs]</a>	<span class="k">def</span> <span class="nf">plotspec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.</span>
+<span class="sd">		Needs width and height coordinates for the single spectrum and the Raman shift where we want to plot the Raman intensity in the map.</span>
+<span class="sd">		</span>
+<span class="sd">		:return: none</span>
+
+<span class="sd">		:param width: &#39;width&#39; coordinate in um, from :class:`ramanmap.mapxr`</span>
+<span class="sd">		:type width: float</span>
+<span class="sd">		:param height: &#39;height&#39; coordinate in um, from :class:`ramanmap.mapxr`</span>
+<span class="sd">		:type height: float</span>
+<span class="sd">		:param shift: &#39;ramanshift&#39; coordinate in um, from :class:`ramanmap.mapxr`</span>
+<span class="sd">		:type shift: float</span>
+
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">height</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+		<span class="n">ramanintensity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">shift</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
+		<span class="c1"># Creating a figure with two subplots and a given size</span>
+		<span class="n">fig</span><span class="p">,</span> <span class="p">[</span><span class="n">ax0</span><span class="p">,</span> <span class="n">ax1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+		<span class="c1"># plotting the density plot of the 2D peak area ratio</span>
+		<span class="n">ramanintensity</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+			<span class="n">ax</span> <span class="o">=</span> <span class="n">ax0</span><span class="p">,</span>
+			<span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;plasma&#39;</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+		<span class="c1"># plotting the spectrum at the given coordinates on the right plot</span>
+		<span class="n">spec</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;lime&#39;</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+		<span class="c1"># plotting a dot on the density map, where the selected spectrum was measured</span>
+		<span class="n">ax0</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+			<span class="n">spec</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+			<span class="n">spec</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+			<span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;lime&#39;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;x&#39;</span><span class="p">)</span>
+		<span class="n">ax0</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">,</span> <span class="s1">&#39;box&#39;</span><span class="p">)</span>
+		<span class="n">ax0</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+		<span class="n">ax1</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+		<span class="n">pl</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span></div>
+
 <div class="viewcode-block" id="ramanmap.remove_bg"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.remove_bg">[docs]</a>	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Remove the background of Raman maps.</span>
 <span class="sd">		It takes the same optional arguments as :func:`bgsubtract`.</span>
@@ -152,7 +188,12 @@
 <span class="sd">		:param width: width coordinate of the :class:`ramanmap.mapxr` `xarray`</span>
 <span class="sd">		:type width: float, optional</span>
 <span class="sd">		</span>
-<span class="sd">		:return: ``map_mod``: new :class:`ramanmap` instance, containing the data with background removed. ``coeff``: the coefficients and ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+<span class="sd">		:return:</span>
+<span class="sd">			</span>
+<span class="sd">			* ``map_mod``: new :class:`ramanmap` instance, containing the data with background removed.</span>
+<span class="sd">			* ``coeff``: the coefficients and</span>
+<span class="sd">			* ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+<span class="sd">		</span>
 <span class="sd">		:rtype: tuple: (:class:`ramanmap` :py:mod:`numpy`, :py:mod:`numpy`)</span>
 
 <span class="sd">		.. note::</span>
@@ -401,7 +442,12 @@
 <span class="sd">		Default fit function is a first order polynomial.</span>
 <span class="sd">		This can be changed by the ``polyorder`` parameter.</span>
 
-<span class="sd">		:return: ``singlesp_mod``: new :class:`singlespec` instance, containing the data with background removed. ``coeff``: the coefficients and ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+<span class="sd">		:return:</span>
+<span class="sd">			</span>
+<span class="sd">			* ``singlesp_mod``: new :class:`singlespec` instance, containing the data with background removed.</span>
+<span class="sd">			* ``coeff``: the coefficients and</span>
+<span class="sd">			* ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+<span class="sd">			</span>
 <span class="sd">		:rtype: tuple: (:class:`singlespec` :py:mod:`numpy`, :py:mod:`numpy`)</span>
 
 <span class="sd">		.. note::</span>
@@ -549,44 +595,6 @@
 <span class="c1"># nothing here yet</span>
 
 <span class="c1">## Tools -----------------------------------------------------------------</span>
-
-<div class="viewcode-block" id="plotspec"><a class="viewcode-back" href="../ramantools.html#ramantools.plotspec">[docs]</a><span class="k">def</span> <span class="nf">plotspec</span><span class="p">(</span><span class="n">xrobject</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
-	<span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">	Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.</span>
-<span class="sd">	First variable is a `ramanmap` object, followed by the specific width and height coordinates for the single spectrum.</span>
-<span class="sd">	</span>
-<span class="sd">	:return: none</span>
-
-<span class="sd">	:param xrobject: This is a Raman map</span>
-<span class="sd">	:type xrobject: :py:mod:`xarray` DataArray</span>
-<span class="sd">	:param width: &#39;width&#39; coordinate in um, from xrobject</span>
-<span class="sd">	:type width: float</span>
-<span class="sd">	:param height: &#39;height&#39; coordinate in um, from xrobject</span>
-<span class="sd">	:type height: float</span>
-<span class="sd">	:param shift: &#39;ramanshift&#39; coordinate in um, from xrobject</span>
-<span class="sd">	:type shift: float</span>
-
-<span class="sd">	&quot;&quot;&quot;</span>
-	<span class="n">spec</span> <span class="o">=</span> <span class="n">xrobject</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">height</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
-	<span class="n">ramanintensity</span> <span class="o">=</span> <span class="n">xrobject</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">shift</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
-
-	<span class="c1"># Creating a figure with two subplots and a given size</span>
-	<span class="n">fig</span><span class="p">,</span> <span class="p">[</span><span class="n">ax0</span><span class="p">,</span> <span class="n">ax1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
-	<span class="c1"># plotting the density plot of the 2D peak area ratio</span>
-	<span class="n">ramanintensity</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-		<span class="n">ax</span> <span class="o">=</span> <span class="n">ax0</span><span class="p">,</span>
-		<span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;plasma&#39;</span><span class="p">)</span>
-	<span class="c1"># plotting the spectrum at the given coordinates on the right plot</span>
-	<span class="n">spec</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;lime&#39;</span><span class="p">)</span>
-	<span class="c1"># plotting a dot on the density map, where the selected spectrum was measured</span>
-	<span class="n">ax0</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-		<span class="n">spec</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-		<span class="n">spec</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-		<span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;lime&#39;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;x&#39;</span><span class="p">)</span>
-	<span class="n">ax0</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">,</span> <span class="s1">&#39;box&#39;</span><span class="p">)</span>
-	<span class="n">ax0</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-	<span class="n">ax1</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-	<span class="n">pl</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="lorentz"><a class="viewcode-back" href="../ramantools.html#ramantools.lorentz">[docs]</a><span class="k">def</span> <span class="nf">lorentz</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;Single Lorentz function</span>

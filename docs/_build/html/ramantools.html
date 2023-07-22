@@ -47,9 +47,9 @@
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.lorentz"><code class="docutils literal notranslate"><span class="pre">lorentz()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.lorentz2"><code class="docutils literal notranslate"><span class="pre">lorentz2()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#ramantools.plotspec"><code class="docutils literal notranslate"><span class="pre">plotspec()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.remove_bg"><code class="docutils literal notranslate"><span class="pre">ramanmap.remove_bg()</span></code></a></li>
 </ul>
@@ -66,9 +66,9 @@
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.lorentz"><code class="docutils literal notranslate"><span class="pre">lorentz()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.lorentz2"><code class="docutils literal notranslate"><span class="pre">lorentz2()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#ramantools.plotspec"><code class="docutils literal notranslate"><span class="pre">plotspec()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.remove_bg"><code class="docutils literal notranslate"><span class="pre">ramanmap.remove_bg()</span></code></a></li>
 </ul>
@@ -215,26 +215,6 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="ramantools.plotspec">
-<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">plotspec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xrobject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#plotspec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.plotspec" title="Permalink to this definition"></a></dt>
-<dd><p>Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
-First variable is a <cite>ramanmap</cite> object, followed by the specific width and height coordinates for the single spectrum.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>none</p>
-</dd>
-<dt class="field-even">Parameters</dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>xrobject</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray) – This is a Raman map</p></li>
-<li><p><strong>width</strong> (<em>float</em>) – ‘width’ coordinate in um, from xrobject</p></li>
-<li><p><strong>height</strong> (<em>float</em>) – ‘height’ coordinate in um, from xrobject</p></li>
-<li><p><strong>shift</strong> (<em>float</em>) – ‘ramanshift’ coordinate in um, from xrobject</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="ramantools.polynomial_fit">
 <span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">polynomial_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#polynomial_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.polynomial_fit" title="Permalink to this definition"></a></dt>
 <dd><p>Polinomial fit to <cite>x_data</cite>, <cite>y_data</cite></p>
@@ -304,6 +284,25 @@ This is the text next to the map data in the Witec software.</p>
 </pre></div>
 </div>
 <dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramanmap.plotspec">
+<span class="sig-name descname"><span class="pre">plotspec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.plotspec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.plotspec" title="Permalink to this definition"></a></dt>
+<dd><p>Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
+Needs width and height coordinates for the single spectrum and the Raman shift where we want to plot the Raman intensity in the map.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>none</p>
+</dd>
+<dt class="field-even">Parameters</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>width</strong> (<em>float</em>) – ‘width’ coordinate in um, from <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code></p></li>
+<li><p><strong>height</strong> (<em>float</em>) – ‘height’ coordinate in um, from <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code></p></li>
+<li><p><strong>shift</strong> (<em>float</em>) – ‘ramanshift’ coordinate in um, from <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramanmap.print_metadata">
 <span class="sig-name descname"><span class="pre">print_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.print_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.print_metadata" title="Permalink to this definition"></a></dt>
 <dd><p>Prints the metadata of the <a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance, imported from the info file.</p>
@@ -342,7 +341,12 @@ Default fit function is a first order polynomial. This can be changed by the <co
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">map_mod</span></code>: new <a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance, containing the data with background removed. <code class="docutils literal notranslate"><span class="pre">coeff</span></code>: the coefficients and <code class="docutils literal notranslate"><span class="pre">covar</span></code>: covariance of the polynomial fit, as supplied by <a class="reference internal" href="#ramantools.polynomial_fit" title="ramantools.polynomial_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a>.</p>
+<dd class="field-even"><p><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">map_mod</span></code>: new <a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance, containing the data with background removed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">coeff</span></code>: the coefficients and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">covar</span></code>: covariance of the polynomial fit, as supplied by <a class="reference internal" href="#ramantools.polynomial_fit" title="ramantools.polynomial_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a>.</p></li>
+</ul>
+</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>tuple: (<a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>)</p>
@@ -450,7 +454,12 @@ Default fit function is a first order polynomial.
 This can be changed by the <code class="docutils literal notranslate"><span class="pre">polyorder</span></code> parameter.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">singlesp_mod</span></code>: new <a class="reference internal" href="#ramantools.singlespec" title="ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> instance, containing the data with background removed. <code class="docutils literal notranslate"><span class="pre">coeff</span></code>: the coefficients and <code class="docutils literal notranslate"><span class="pre">covar</span></code>: covariance of the polynomial fit, as supplied by <a class="reference internal" href="#ramantools.polynomial_fit" title="ramantools.polynomial_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a>.</p>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">singlesp_mod</span></code>: new <a class="reference internal" href="#ramantools.singlespec" title="ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> instance, containing the data with background removed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">coeff</span></code>: the coefficients and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">covar</span></code>: covariance of the polynomial fit, as supplied by <a class="reference internal" href="#ramantools.polynomial_fit" title="ramantools.polynomial_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a>.</p></li>
+</ul>
+</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>tuple: (<a class="reference internal" href="#ramantools.singlespec" title="ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>)</p>
