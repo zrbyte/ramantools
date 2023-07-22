@@ -191,7 +191,12 @@
 <span class="sd">		:param width: width coordinate of the :class:`ramanmap.mapxr` `xarray`</span>
 <span class="sd">		:type width: float, optional</span>
 <span class="sd">		</span>
-<span class="sd">		:return: ``map_mod``: new :class:`ramanmap` instance, containing the data with background removed. ``coeff``: the coefficients and ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+<span class="sd">		:return:</span>
+<span class="sd">			</span>
+<span class="sd">			* ``map_mod``: new :class:`ramanmap` instance, containing the data with background removed.</span>
+<span class="sd">			* ``coeff``: the coefficients and</span>
+<span class="sd">			* ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+<span class="sd">		</span>
 <span class="sd">		:rtype: tuple: (:class:`ramanmap` :py:mod:`numpy`, :py:mod:`numpy`)</span>
 
 <span class="sd">		.. note::</span>
@@ -254,9 +259,13 @@
 		<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;individual&#39;</span><span class="p">:</span>
 			<span class="c1"># Make an individual fit to all spectra in the map</span>
 			<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;not implemented yet. Sorry&#39;</span><span class="p">)</span>
+			<span class="n">coeff</span> <span class="o">=</span> <span class="mi">0</span>
+			<span class="n">covar</span> <span class="o">=</span> <span class="mi">0</span>
 			<span class="k">pass</span>
 		
 		<span class="k">else</span><span class="p">:</span>
+			<span class="n">coeff</span> <span class="o">=</span> <span class="mi">0</span>
+			<span class="n">covar</span> <span class="o">=</span> <span class="mi">0</span>
 			<span class="k">pass</span>
 
 		<span class="k">return</span> <span class="n">map_mod</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
@@ -440,7 +449,12 @@
 <span class="sd">		Default fit function is a first order polynomial.</span>
 <span class="sd">		This can be changed by the ``polyorder`` parameter.</span>
 
-<span class="sd">		:return: ``singlesp_mod``: new :class:`singlespec` instance, containing the data with background removed. ``coeff``: the coefficients and ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+<span class="sd">		:return:</span>
+<span class="sd">			</span>
+<span class="sd">			* ``singlesp_mod``: new :class:`singlespec` instance, containing the data with background removed.</span>
+<span class="sd">			* ``coeff``: the coefficients and</span>
+<span class="sd">			* ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+
 <span class="sd">		:rtype: tuple: (:class:`singlespec` :py:mod:`numpy`, :py:mod:`numpy`)</span>
 
 <span class="sd">		.. note::</span>
@@ -488,6 +502,11 @@
 		<span class="n">singlesp_mod</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
 
 		<span class="k">return</span> <span class="n">singlesp_mod</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
+
+<div class="viewcode-block" id="singlespec.calibrate"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.calibrate">[docs]</a>	<span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+		<span class="c1"># create a copy of the instance</span>
+		<span class="n">singlesp_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+		<span class="k">pass</span></div>
 
 	<span class="c1"># internal functions</span>
 
