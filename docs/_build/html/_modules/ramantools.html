@@ -606,25 +606,42 @@
 <span class="c1">## Tools -----------------------------------------------------------------</span>
 
 <div class="viewcode-block" id="gaussian"><a class="viewcode-back" href="../ramantools.html#ramantools.gaussian">[docs]</a><span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">ampl</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
-	<span class="k">pass</span></div>
-
-
-<div class="viewcode-block" id="lorentz"><a class="viewcode-back" href="../ramantools.html#ramantools.lorentz">[docs]</a><span class="k">def</span> <span class="nf">lorentz</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">ampl</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
-	<span class="sd">&quot;&quot;&quot;Single Lorentz function</span>
-
-<span class="sd">	:return: values of a single Lorentz function</span>
-<span class="sd">	:rtype: float, :py:mod:`numpy` array, etc.</span>
+	<span class="sd">&quot;&quot;&quot;Gaussian function. Width and amplitude parameters have the same meaning as for :func:`lorentz`.</span>
 
 <span class="sd">	:param x: values for the x coordinate</span>
 <span class="sd">	:type x: float, :py:mod:`numpy` array, etc.</span>
 <span class="sd">	:param x0: shift along the `x` corrdinate</span>
 <span class="sd">	:type x0: float</span>
-<span class="sd">	:param area: area of the peak</span>
-<span class="sd">	:type area: float</span>
-<span class="sd">	:param width: width (FWHM) of the peak</span>
+<span class="sd">	:param ampl: amplitude of the peak</span>
+<span class="sd">	:type ampl: float</span>
+<span class="sd">	:param width: FWHM of the peak</span>
 <span class="sd">	:type width: float</span>
 <span class="sd">	:param offset: offset along the function value</span>
 <span class="sd">	:type offset: float</span>
+
+<span class="sd">	:return: values of a Gaussian function</span>
+<span class="sd">	:rtype: float, :py:mod:`numpy` array, etc.</span>
+<span class="sd">	&quot;&quot;&quot;</span>	
+	<span class="c1"># using the FWHM for the width</span>
+	<span class="k">return</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">ampl</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">width</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="lorentz"><a class="viewcode-back" href="../ramantools.html#ramantools.lorentz">[docs]</a><span class="k">def</span> <span class="nf">lorentz</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">ampl</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;Single Lorentz function</span>
+
+<span class="sd">	:param x: values for the x coordinate</span>
+<span class="sd">	:type x: float, :py:mod:`numpy` array, etc.</span>
+<span class="sd">	:param x0: shift along the `x` corrdinate</span>
+<span class="sd">	:type x0: float</span>
+<span class="sd">	:param ampl: amplitude of the peak</span>
+<span class="sd">	:type ampl: float</span>
+<span class="sd">	:param width: FWHM of the peak</span>
+<span class="sd">	:type width: float</span>
+<span class="sd">	:param offset: offset along the function value</span>
+<span class="sd">	:type offset: float</span>
+
+<span class="sd">	:return: values of a single Lorentz function</span>
+<span class="sd">	:rtype: float, :py:mod:`numpy` array, etc.</span>
 
 <span class="sd">	.. note::</span>
 <span class="sd">		The area of the peak can be given by:</span>

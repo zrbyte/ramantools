@@ -535,25 +535,42 @@ class singlespec:
 ## Tools -----------------------------------------------------------------
 
 def gaussian(x, x0, ampl, width, offset):
-	pass
-
-
-def lorentz(x, x0, ampl, width, offset):
-	"""Single Lorentz function
-
-	:return: values of a single Lorentz function
-	:rtype: float, :py:mod:`numpy` array, etc.
+	"""Gaussian function. Width and amplitude parameters have the same meaning as for :func:`lorentz`.
 
 	:param x: values for the x coordinate
 	:type x: float, :py:mod:`numpy` array, etc.
 	:param x0: shift along the `x` corrdinate
 	:type x0: float
-	:param area: area of the peak
-	:type area: float
-	:param width: width (FWHM) of the peak
+	:param ampl: amplitude of the peak
+	:type ampl: float
+	:param width: FWHM of the peak
 	:type width: float
 	:param offset: offset along the function value
 	:type offset: float
+
+	:return: values of a Gaussian function
+	:rtype: float, :py:mod:`numpy` array, etc.
+	"""	
+	# using the FWHM for the width
+	return offset + ampl * np.exp(-2*np.log(2)*(x - x0)**2 / (width**2))
+
+
+def lorentz(x, x0, ampl, width, offset):
+	"""Single Lorentz function
+
+	:param x: values for the x coordinate
+	:type x: float, :py:mod:`numpy` array, etc.
+	:param x0: shift along the `x` corrdinate
+	:type x0: float
+	:param ampl: amplitude of the peak
+	:type ampl: float
+	:param width: FWHM of the peak
+	:type width: float
+	:param offset: offset along the function value
+	:type offset: float
+
+	:return: values of a single Lorentz function
+	:rtype: float, :py:mod:`numpy` array, etc.
 
 	.. note::
 		The area of the peak can be given by:
