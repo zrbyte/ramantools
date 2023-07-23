@@ -82,6 +82,39 @@ Source is available from <a class="reference external" href="https://github.com/
 <section id="examples">
 <h1>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h1>
 <p>Take a look at the <code class="docutils literal notranslate"><span class="pre">ramantools</span> <span class="pre">tutorial.ipynb</span></code> Jupyter notebook in the ramantools <a class="reference external" href="https://github.com/zrbyte/ramantools/">GitHub repository</a>.</p>
+<p>Below is a simple example for loading a Raman map and doing some basic analysis.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
+
+<span class="n">map_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
+<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+
+<span class="c1"># Load a map</span>
+<span class="nb">map</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
+
+<span class="c1"># plot a density plot of the Raman intensity at 2750 cm^-1</span>
+<span class="nb">map</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="mi">2750</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+
+<span class="c1"># plot the middle spectrum (using &quot;numpy-like&quot; index based slicing) of the mapxr `xarray` instance</span>
+<span class="nb">map</span><span class="o">.</span><span class="n">mapxr</span><span class="p">[:,</span> <span class="nb">int</span><span class="p">(</span><span class="nb">map</span><span class="o">.</span><span class="n">size_x</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="nb">map</span><span class="o">.</span><span class="n">size_y</span><span class="o">/</span><span class="mi">2</span><span class="p">)]</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+
+<span class="c1"># remove background</span>
+<span class="n">map_nobg</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="nb">map</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">()</span>
+
+<span class="c1"># plot a spectrum from the `ramanmap` instance, with the background removed, at the specified coordinates, using the `sel()` method of `xarray`</span>
+<span class="n">map_nobg</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="mi">31</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+
+<span class="c1"># fit a Lorenzian to the peak at ~2750</span>
+<span class="n">fit</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">peakfit</span><span class="p">(</span><span class="n">map_nobg</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="mi">2750</span><span class="p">,</span> <span class="s1">&#39;ampl&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="mi">900</span><span class="p">})</span>
+
+<span class="c1"># plot the width of the peak on a density plot</span>
+<span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;width&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">vmin</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mi">80</span><span class="p">)</span>
+
+<span class="c1"># export the fit results and the map without the background to NetCDF format for easy loading later</span>
+<span class="n">map_nobg</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">data_path</span> <span class="o">+</span> <span class="s1">&#39;map - no backgroung.nc&#39;</span><span class="p">)</span>
+<span class="n">fit</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">data_path</span> <span class="o">+</span> <span class="s1">&#39;map - no backgroung_Lorentz fit.nc&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
 
 
