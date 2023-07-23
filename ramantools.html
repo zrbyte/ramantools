@@ -48,9 +48,11 @@
 <li class="toctree-l1"><a class="reference internal" href="intro.html#examples">Examples</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ramantools module</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ramantools.drawmask"><code class="docutils literal notranslate"><span class="pre">drawmask()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.gaussian"><code class="docutils literal notranslate"><span class="pre">gaussian()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.lorentz"><code class="docutils literal notranslate"><span class="pre">lorentz()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.lorentz2"><code class="docutils literal notranslate"><span class="pre">lorentz2()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ramantools.peakfit"><code class="docutils literal notranslate"><span class="pre">peakfit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
@@ -69,9 +71,11 @@
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">ramantools</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">ramantools module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.drawmask"><code class="docutils literal notranslate"><span class="pre">drawmask()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.gaussian"><code class="docutils literal notranslate"><span class="pre">gaussian()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.lorentz"><code class="docutils literal notranslate"><span class="pre">lorentz()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.lorentz2"><code class="docutils literal notranslate"><span class="pre">lorentz2()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.peakfit"><code class="docutils literal notranslate"><span class="pre">peakfit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
@@ -169,6 +173,11 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ramantools.drawmask">
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">drawmask</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#drawmask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.drawmask" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ramantools.gaussian">
 <span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.gaussian" title="Permalink to this definition"></a></dt>
 <dd><p>Gaussian function. Width and amplitude parameters have the same meaning as for <a class="reference internal" href="#ramantools.lorentz" title="ramantools.lorentz"><code class="xref py py-func docutils literal notranslate"><span class="pre">lorentz()</span></code></a>.</p>
@@ -245,6 +254,50 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="ramantools.peakfit">
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">peakfit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xrobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func=&lt;function</span> <span class="pre">lorentz&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stval={'ampl':</span> <span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'offset':</span> <span class="pre">900</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'width':</span> <span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'x0':</span> <span class="pre">1580}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#peakfit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.peakfit" title="Permalink to this definition"></a></dt>
+<dd><p>Fitting a function to peaks in the data contained in <code class="docutils literal notranslate"><span class="pre">xrobj</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xrobj</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code>) – <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> object, of a single spectrum or a map.</p></li>
+<li><p><strong>func</strong> (<em>function</em><em>, </em><em>optional</em>) – function to be used for fitting, defaults to lorentz</p></li>
+<li><p><strong>stval</strong> (dictionary of <code class="docutils literal notranslate"><span class="pre">func</span></code> parameters, optional) – starting values for the fit parameters of <code class="docutils literal notranslate"><span class="pre">func</span></code>, defaults to dict({‘x0’: 1580, ‘ampl’: 100, ‘width’: 15, ‘offset’: 900})</p></li>
+<li><p><strong>bounds</strong> (dictionary of <code class="docutils literal notranslate"><span class="pre">func</span></code> parameters, with tuples containing lower and upper bounds, optional) – bounds for the fit parameters, used by <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray.curvefit</span></code>. Simlar dictionary, like <code class="docutils literal notranslate"><span class="pre">stval</span></code>, but the values area a list, with lower and upper components. Defaults to None</p></li>
+<li><p><strong>toplot</strong> (<em>boolean</em><em>, </em><em>optional</em>) – plot the fit result, defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>width</strong> (<cite>int</cite> or <cite>float</cite>) – width parameter of an <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> map to be used in conjunction with <code class="docutils literal notranslate"><span class="pre">toplot</span> <span class="pre">=</span> <span class="pre">True</span></code></p></li>
+<li><p><strong>height</strong> (<cite>int</cite> or <cite>float</cite>) – height parameter of an <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> map to be used in conjunction with <code class="docutils literal notranslate"><span class="pre">toplot</span> <span class="pre">=</span> <span class="pre">True</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>fitted parameters of <code class="docutils literal notranslate"><span class="pre">func</span></code> and covariances in a Dataset</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> Dataset</p>
+</dd>
+<dt class="field-even">Example<span class="colon">:</span></dt>
+<dd class="field-even"><p></p></dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
+
+<span class="n">map_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
+<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+
+<span class="c1"># Load a map</span>
+<span class="nb">map</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
+
+<span class="c1">#</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">toplot</span></code> = <cite>True</cite> to tweak the starting values.
+If <code class="docutils literal notranslate"><span class="pre">toplot</span></code> = <cite>True</cite>, in case of a map, if no <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> are specified, the middle of the map is used for plotting.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="ramantools.polynomial_fit">
 <span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">polynomial_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#polynomial_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.polynomial_fit" title="Permalink to this definition"></a></dt>
 <dd><p>Polinomial fit to <cite>x_data</cite>, <cite>y_data</cite></p>
@@ -301,8 +354,11 @@ This is the text next to the map data in the Witec software.</p>
 </dd>
 </dl>
 <p>For a compete list see example below.</p>
-<p>Examples:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
+<dl class="field-list simple">
+<dt class="field-odd">Example<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ramantools</span> <span class="k">as</span> <span class="nn">rt</span>
 
 <span class="n">map_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
 <span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
