@@ -772,7 +772,7 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 
 	return y_data_nobg, bg_values, coeff, params_used_at_run, mask, covar
 
-def peakfit(xrobj, func = lorentz, stval = dict({'x0': 1580, 'ampl': 100, 'width': 15, 'offset': 900}), bounds = None, toplot = False, width = None, height = None, **kwargs):
+def peakfit(xrobj, func = lorentz, fitresult = None, stval = dict({'x0': 1580, 'ampl': 100, 'width': 15, 'offset': 900}), bounds = None, toplot = False, width = None, height = None, **kwargs):
 	"""Fitting a function to peaks in the data contained in ``xrobj``.
 
 	:param xrobj: :py:mod:`xarray` object, of a single spectrum or a map.
@@ -823,7 +823,10 @@ def peakfit(xrobj, func = lorentz, stval = dict({'x0': 1580, 'ampl': 100, 'width
 	# the `xrobj` should have a 'ramanshift' coordinate
 	# `nan_policy = omit` skips values with NaN. This is passed to scipy.optimize.curve_fit
 	# `max_nfev` is passed to leastsq(). It determines the number of function calls, before quitting.
-	fit = xrobj.curvefit('ramanshift', func, p0 = stval, bounds = bounds, errors = 'ignore', kwargs = {'maxfev': 1000})
+	if fitresult is None:
+		fit = xrobj.curvefit('ramanshift', func, p0 = stval, bounds = bounds, errors = 'ignore', kwargs = {'maxfev': 1000})
+	else:
+		fit = fitresult
 
 	# plot the resulting fit
 	if toplot is True:
@@ -866,7 +869,7 @@ def peakfit(xrobj, func = lorentz, stval = dict({'x0': 1580, 'ampl': 100, 'width
 		dataplot # type: ignore
 		pl.plot(shift, func(shift, *funcparams), color = 'red', lw = 3, alpha = 0.5, label = 'fit')
 		pl.xlim([fitpeakpos - 2.5*plotarea_x, fitpeakpos + 2.5*plotarea_x])
-		plotarea_y = [peakoffset - 50, peakoffset + 1.2*peakheight]
+		plotarea_y = [peakoffset - 20, peakoffset + 1.2*peakheight]
 		pl.ylim(plotarea_y)
 		pl.legend()
 	
