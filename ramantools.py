@@ -806,11 +806,18 @@ def peakfit(xrobj, func = lorentz, stval = dict({'x0': 1580, 'ampl': 100, 'width
 		# Load a map
 		map = rt.ramanmap(map_path, info_path)
 
-		# 
+		# Creating the dictionary for the starting values and the bounds
+		p = {'x0': 2724, 'ampl': 313, 'width': 49, 'offset': 0}
+		# passing the starting values contained in `p` and bounds: `b` to the `peakfit()` method. 
+		b = {'x0': [2500, 2900], 'ampl': [0, 900], 'width': [20, 100], 'offset': [-10, 50]}
+		mapfit = rt.peakfit(m_nobg.mapxr, stval = p, bounds = b, toplot = True)
 
 	.. note::
 		Use ``toplot`` = `True` to tweak the starting values.
 		If ``toplot`` = `True`, in case of a map, if no ``width`` and ``height`` are specified, the middle of the map is used for plotting.
+
+		Passing a ``bounds`` dictionary to :func:`peakfit` seems to increase the fitting time significantly. This might be an issue with :py:mod:`xarray.DataArray.curvefit`.
+
 	"""	
 	# fit
 	# the `xrobj` should have a 'ramanshift' coordinate
@@ -859,7 +866,7 @@ def peakfit(xrobj, func = lorentz, stval = dict({'x0': 1580, 'ampl': 100, 'width
 		dataplot # type: ignore
 		pl.plot(shift, func(shift, *funcparams), color = 'red', lw = 3, alpha = 0.5, label = 'fit')
 		pl.xlim([fitpeakpos - 2.5*plotarea_x, fitpeakpos + 2.5*plotarea_x])
-		plotarea_y = [0.95*peakoffset, peakoffset + 1.2*peakheight]
+		plotarea_y = [peakoffset - 50, peakoffset + 1.2*peakheight]
 		pl.ylim(plotarea_y)
 		pl.legend()
 	
