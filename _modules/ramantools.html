@@ -849,10 +849,12 @@
 <div class="viewcode-block" id="peakfit"><a class="viewcode-back" href="../ramantools.html#ramantools.peakfit">[docs]</a><span class="k">def</span> <span class="nf">peakfit</span><span class="p">(</span><span class="n">xrobj</span><span class="p">,</span> <span class="n">func</span> <span class="o">=</span> <span class="n">lorentz</span><span class="p">,</span> <span class="n">fitresult</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">({</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="mi">1580</span><span class="p">,</span> <span class="s1">&#39;ampl&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="mi">900</span><span class="p">}),</span> <span class="n">bounds</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">	</span><span class="sd">&quot;&quot;&quot;Fitting a function to peaks in the data contained in ``xrobj``.</span>
 
-<span class="sd">	:param xrobj: :py:mod:`xarray` object, of a single spectrum or a map.</span>
+<span class="sd">	:param xrobj: :py:mod:`xarray` DataArray, of a single spectrum or a map.</span>
 <span class="sd">	:type xrobj: :py:mod:`xarray`</span>
 <span class="sd">	:param func: function to be used for fitting, defaults to lorentz</span>
 <span class="sd">	:type func: function, optional</span>
+<span class="sd">	:param fitresult: an :py:mod:`xarray` Dataset of a previous fit calculation, with matching dimensions. If this is passed to :func:`peakfit`, the fit calculation in skipped and the passed Dataset is used.</span>
+<span class="sd">	:type fitresult: :py:mod:`xarray` Dataset, optional</span>
 <span class="sd">	:param stval: starting values for the fit parameters of ``func``, defaults to dict({&#39;x0&#39;: 1580, &#39;ampl&#39;: 100, &#39;width&#39;: 15, &#39;offset&#39;: 900})</span>
 <span class="sd">	:type stval: dictionary of ``func`` parameters, optional</span>
 <span class="sd">	:param bounds: bounds for the fit parameters, used by :py:mod:`xarray.curvefit`. Simlar dictionary, like ``stval``, but the values area a list, with lower and upper components. Defaults to None</span>
@@ -891,6 +893,8 @@
 <span class="sd">		If ``toplot`` = `True`, in case of a map, if no ``width`` and ``height`` are specified, the middle of the map is used for plotting.</span>
 
 <span class="sd">		Passing a ``bounds`` dictionary to :func:`peakfit` seems to increase the fitting time significantly. This might be an issue with :py:mod:`xarray.DataArray.curvefit`.</span>
+
+<span class="sd">		By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.</span>
 
 <span class="sd">	&quot;&quot;&quot;</span>	
 	<span class="c1"># fit</span>
