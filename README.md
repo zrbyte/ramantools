@@ -3,4 +3,4 @@ Tools for analyzing Raman spectroscopy data, measured by a Witec confocal Raman 
 
 Documentation can be found here: [zrbyte.github.io/ramantools](https://zrbyte.github.io/ramantools/)
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/zrbyte/ramantools/HEAD?labpath=ramantools%20tutorial.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/zrbyte/ramantools/HEAD?labpath=ramantools%20demo.ipynb)
