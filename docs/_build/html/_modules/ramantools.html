@@ -843,13 +843,15 @@
 
 	<span class="k">return</span> <span class="n">y_data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">params_used_at_run</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span></div>
 
-<div class="viewcode-block" id="peakfit"><a class="viewcode-back" href="../ramantools.html#ramantools.peakfit">[docs]</a><span class="k">def</span> <span class="nf">peakfit</span><span class="p">(</span><span class="n">xrobj</span><span class="p">,</span> <span class="n">func</span> <span class="o">=</span> <span class="n">lorentz</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">({</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="mi">1580</span><span class="p">,</span> <span class="s1">&#39;ampl&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="mi">900</span><span class="p">}),</span> <span class="n">bounds</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="peakfit"><a class="viewcode-back" href="../ramantools.html#ramantools.peakfit">[docs]</a><span class="k">def</span> <span class="nf">peakfit</span><span class="p">(</span><span class="n">xrobj</span><span class="p">,</span> <span class="n">func</span> <span class="o">=</span> <span class="n">lorentz</span><span class="p">,</span> <span class="n">fitresult</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">({</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="mi">1580</span><span class="p">,</span> <span class="s1">&#39;ampl&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="mi">900</span><span class="p">}),</span> <span class="n">bounds</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;Fitting a function to peaks in the data contained in ``xrobj``.</span>
 
-<span class="sd">	:param xrobj: :py:mod:`xarray` object, of a single spectrum or a map.</span>
+<span class="sd">	:param xrobj: :py:mod:`xarray` DataArray, of a single spectrum or a map.</span>
 <span class="sd">	:type xrobj: :py:mod:`xarray`</span>
 <span class="sd">	:param func: function to be used for fitting, defaults to lorentz</span>
 <span class="sd">	:type func: function, optional</span>
+<span class="sd">	:param fitresult: an :py:mod:`xarray` Dataset of a previous fit calculation, with matching dimensions. If this is passed to :func:`peakfit`, the fit calculation in skipped and the passed Dataset is used.</span>
+<span class="sd">	:type fitresult: :py:mod:`xarray` Dataset, optional</span>
 <span class="sd">	:param stval: starting values for the fit parameters of ``func``, defaults to dict({&#39;x0&#39;: 1580, &#39;ampl&#39;: 100, &#39;width&#39;: 15, &#39;offset&#39;: 900})</span>
 <span class="sd">	:type stval: dictionary of ``func`` parameters, optional</span>
 <span class="sd">	:param bounds: bounds for the fit parameters, used by :py:mod:`xarray.curvefit`. Simlar dictionary, like ``stval``, but the values area a list, with lower and upper components. Defaults to None</span>
@@ -877,17 +879,29 @@
 <span class="sd">		# Load a map</span>
 <span class="sd">		map = rt.ramanmap(map_path, info_path)</span>
 
-<span class="sd">		# </span>
+<span class="sd">		# Creating the dictionary for the starting values and the bounds</span>
+<span class="sd">		p = {&#39;x0&#39;: 2724, &#39;ampl&#39;: 313, &#39;width&#39;: 49, &#39;offset&#39;: 0}</span>
+<span class="sd">		# passing the starting values contained in `p` and bounds: `b` to the `peakfit()` method. </span>
+<span class="sd">		b = {&#39;x0&#39;: [2500, 2900], &#39;ampl&#39;: [0, 900], &#39;width&#39;: [20, 100], &#39;offset&#39;: [-10, 50]}</span>
+<span class="sd">		mapfit = rt.peakfit(m_nobg.mapxr, stval = p, bounds = b, toplot = True)</span>
 
 <span class="sd">	.. note::</span>
 <span class="sd">		Use ``toplot`` = `True` to tweak the starting values.</span>
 <span class="sd">		If ``toplot`` = `True`, in case of a map, if no ``width`` and ``height`` are specified, the middle of the map is used for plotting.</span>
+
+<span class="sd">		Passing a ``bounds`` dictionary to :func:`peakfit` seems to increase the fitting time significantly. This might be an issue with :py:mod:`xarray.DataArray.curvefit`.</span>
+
+<span class="sd">		By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.</span>
+
 <span class="sd">	&quot;&quot;&quot;</span>	
 	<span class="c1"># fit</span>
 	<span class="c1"># the `xrobj` should have a &#39;ramanshift&#39; coordinate</span>
 	<span class="c1"># `nan_policy = omit` skips values with NaN. This is passed to scipy.optimize.curve_fit</span>
 	<span class="c1"># `max_nfev` is passed to leastsq(). It determines the number of function calls, before quitting.</span>
-	<span class="n">fit</span> <span class="o">=</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">curvefit</span><span class="p">(</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">p0</span> <span class="o">=</span> <span class="n">stval</span><span class="p">,</span> <span class="n">bounds</span> <span class="o">=</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;maxfev&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">})</span>
+	<span class="k">if</span> <span class="n">fitresult</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="n">fit</span> <span class="o">=</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">curvefit</span><span class="p">(</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">p0</span> <span class="o">=</span> <span class="n">stval</span><span class="p">,</span> <span class="n">bounds</span> <span class="o">=</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;maxfev&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">})</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">fit</span> <span class="o">=</span> <span class="n">fitresult</span>
 
 	<span class="c1"># plot the resulting fit</span>
 	<span class="k">if</span> <span class="n">toplot</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
@@ -930,7 +944,7 @@
 		<span class="n">dataplot</span> <span class="c1"># type: ignore</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="n">func</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="o">*</span><span class="n">funcparams</span><span class="p">),</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">lw</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;fit&#39;</span><span class="p">)</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="n">fitpeakpos</span> <span class="o">-</span> <span class="mf">2.5</span><span class="o">*</span><span class="n">plotarea_x</span><span class="p">,</span> <span class="n">fitpeakpos</span> <span class="o">+</span> <span class="mf">2.5</span><span class="o">*</span><span class="n">plotarea_x</span><span class="p">])</span>
-		<span class="n">plotarea_y</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.95</span><span class="o">*</span><span class="n">peakoffset</span><span class="p">,</span> <span class="n">peakoffset</span> <span class="o">+</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">peakheight</span><span class="p">]</span>
+		<span class="n">plotarea_y</span> <span class="o">=</span> <span class="p">[</span><span class="n">peakoffset</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="n">peakoffset</span> <span class="o">+</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">peakheight</span><span class="p">]</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">plotarea_y</span><span class="p">)</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 	

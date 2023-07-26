@@ -775,10 +775,12 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 def peakfit(xrobj, func = lorentz, fitresult = None, stval = dict({'x0': 1580, 'ampl': 100, 'width': 15, 'offset': 900}), bounds = None, toplot = False, width = None, height = None, **kwargs):
 	"""Fitting a function to peaks in the data contained in ``xrobj``.
 
-	:param xrobj: :py:mod:`xarray` object, of a single spectrum or a map.
+	:param xrobj: :py:mod:`xarray` DataArray, of a single spectrum or a map.
 	:type xrobj: :py:mod:`xarray`
 	:param func: function to be used for fitting, defaults to lorentz
 	:type func: function, optional
+	:param fitresult: an :py:mod:`xarray` Dataset of a previous fit calculation, with matching dimensions. If this is passed to :func:`peakfit`, the fit calculation in skipped and the passed Dataset is used.
+	:type fitresult: :py:mod:`xarray` Dataset, optional
 	:param stval: starting values for the fit parameters of ``func``, defaults to dict({'x0': 1580, 'ampl': 100, 'width': 15, 'offset': 900})
 	:type stval: dictionary of ``func`` parameters, optional
 	:param bounds: bounds for the fit parameters, used by :py:mod:`xarray.curvefit`. Simlar dictionary, like ``stval``, but the values area a list, with lower and upper components. Defaults to None
@@ -817,6 +819,8 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = dict({'x0': 1580, '
 		If ``toplot`` = `True`, in case of a map, if no ``width`` and ``height`` are specified, the middle of the map is used for plotting.
 
 		Passing a ``bounds`` dictionary to :func:`peakfit` seems to increase the fitting time significantly. This might be an issue with :py:mod:`xarray.DataArray.curvefit`.
+
+		By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.
 
 	"""	
 	# fit
@@ -876,5 +880,5 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = dict({'x0': 1580, '
 	return fit
 
 def drawmask():
-	# create a bool mask, to use with peakfitting.
+	# create a bool mask for a peak, to use with peakfitting.
 	pass
