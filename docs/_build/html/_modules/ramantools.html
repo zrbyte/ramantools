@@ -204,6 +204,9 @@
 <span class="sd">			Metadata is copied over to the returned :class:`ramanmap` instance, because there are no unit changes, in removing the background.</span>
 <span class="sd">			After running, the &#39;comments&#39; attribute of the new `xarray` instance is updated with the background fit information.</span>
 
+<span class="sd">		.. seealso::</span>
+<span class="sd">			``mode = &#39;individual&#39;`` is not implemented yet.</span>
+
 <span class="sd">		:Example:</span>
 <span class="sd">		</span>
 <span class="sd">		.. code-block:: python</span>
@@ -948,10 +951,14 @@
 		<span class="n">pl</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">plotarea_y</span><span class="p">)</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 	
+	<span class="c1"># copy attributes to the fit dataset, update the &#39;comments&#39;</span>
+	<span class="n">fit</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+	<span class="c1"># update the comments</span>
+	<span class="n">xrobj</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;peak fitting, using &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
 	<span class="k">return</span> <span class="n">fit</span></div>
 
 <div class="viewcode-block" id="drawmask"><a class="viewcode-back" href="../ramantools.html#ramantools.drawmask">[docs]</a><span class="k">def</span> <span class="nf">drawmask</span><span class="p">():</span>
-	<span class="c1"># create a bool mask, to use with peakfitting.</span>
+	<span class="c1"># create a bool mask for a peak, to use with peakfitting.</span>
 	<span class="k">pass</span></div>
 </pre></div>
 

@@ -133,6 +133,9 @@ class ramanmap:
 			Metadata is copied over to the returned :class:`ramanmap` instance, because there are no unit changes, in removing the background.
 			After running, the 'comments' attribute of the new `xarray` instance is updated with the background fit information.
 
+		.. seealso::
+			``mode = 'individual'`` is not implemented yet.
+
 		:Example:
 		
 		.. code-block:: python
@@ -880,7 +883,7 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = dict({'x0': 1580, '
 	# copy attributes to the fit dataset, update the 'comments'
 	fit.attrs = xrobj.attrs.copy()
 	# update the comments
-	xrobj.attrs['comments'] += 'peak fitting, using ' + str(func) + '\n'
+	fit.attrs['comments'] += 'peak fitting, using ' + str(func.__name__) + '\n'
 	return fit
 
 def drawmask():
