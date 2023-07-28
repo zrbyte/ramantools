@@ -606,8 +606,9 @@
 
 <div class="viewcode-block" id="singlespec.calibrate"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.calibrate">[docs]</a>	<span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="c1"># create a copy of the instance</span>
-		<span class="n">singlesp_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-		<span class="k">pass</span></div>
+		<span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakshift</span><span class="p">})</span>
+
+		<span class="k">return</span> <span class="n">fit</span></div>
 
 <div class="viewcode-block" id="singlespec.normalize"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
