@@ -532,8 +532,9 @@ class singlespec:
 
 	def calibrate(self, peakshift, calibfactor = 0, **kwargs):
 		# create a copy of the instance
-		singlesp_mod = copy.deepcopy(self)
-		pass
+		fit = peakfit(self.ssxr, stval = {'x0': peakshift})
+
+		return fit
 
 	def normalize(self, peakshift):
 		"""Normalize the Raman spectrum to the peak at ``peakshift``.
