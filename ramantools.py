@@ -204,8 +204,83 @@ class ramanmap:
 
 		return map_mod, coeff, covar
 
+	def normalize(self, peakshift, width = None, height = None, mode = 'const', **kwargs):
+		"""Normalize the Raman spectrum to the peak at ``peakshift``.
+		An exception will be raised if the background has not been removed.
 
-	# internal functions
+		:param peakshift: rough position of the peak in :class:`singlespec.ssxr.ramanshift` dimension
+		:type peakshift: float
+		:param mode: Has two modes: 'const' and 'individual'. defaults to 'const'.
+		:type mode: str, optional
+		:param width: width coordinate of the spectrum, which will be used for normalization in 'const' mode, defaults to the middle of the map.
+		:type width: float, optional
+		:param height: height coordinate of the spectrum, which will be used for normalization in 'const' mode, defaults to the middle of the map.
+		:type height: float, optional
+
+		:raises ValueError: Background needs to be removed for normalization to make sense.
+		:raises ValueError: `mode` parameter must be either: 'const' or 'individual'.
+
+		.. note::
+			Attributes of :class:`ramanmap.ssxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.
+
+			In ``mode == 'individual'``, each spectrum in the map will be normalized to the local peak amplitude. In ``mode == 'const'``, the peak at the position specified by ``width`` and ``height`` is used for normalization.
+			If ``mode == 'individual'``, the ``width`` and ``height`` parameters are ignored.
+		"""
+
+		# get the middle of the map
+		if (width is not None) and (height is not None):
+			mapwidth = width
+			mapheight = height
+		else:
+			# if no width and height parameters are supplied, take the middle spectrum
+			wmin = min(self.mapxr.width.data)
+			wmax = max(self.mapxr.width.data)
+			hmin = min(self.mapxr.height.data)
+			hmax = max(self.mapxr.height.data)
+			mapwidth = (wmax - wmin)/2 + wmin
+			mapheight = (hmax - hmin)/2 + hmin
+
+		# crop the data to around the peak specified
+		cropregion = 100
+		cropped = self.mapxr.sel(ramanshift = slice(peakshift - cropregion, peakshift + cropregion))
+
+		if mode == 'const':
+			# pick the spectrum to normalize to
+			cropped = cropped.sel(width = mapwidth, height = mapheight, method = 'nearest')
+
+			# take the offset value, as the intensity value near the peak edge
+			bgoffset_low = cropped[0].data
+			bgoffset_high = cropped[-1].data
+
+			# check to see of if the background was removed for the spectrum
+			if ((bgoffset_high + bgoffset_low)/2 > 500) or ('background subtracted' not in self.mapxr.attrs['comments']):
+				raise ValueError("The background was not removed, or the peak selected is not suitable for normalization. This should be done in case of normalizing to a peak amplitude")
+				return
+
+			# fit to the cropped region
+			fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2})
+			peakampl = fit['curvefit_coefficients'].sel(param = 'ampl').data
+			peakpos = fit['curvefit_coefficients'].sel(param = 'x0').data
+
+			# normalize to the peak amplitde
+			normalized = self.mapxr / peakampl
+
+			# copy attributes and change them acccordingly
+			normalized.attrs = self.mapxr.attrs.copy()
+			normalized.attrs['units'] = ' '
+			normalized.attrs['long_name'] = 'normalized Raman intensity'
+			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == const' + '\n'
+
+			self.mapxr = normalized
+		elif mode == 'individual':
+			# TODO implement individual normalization.
+			print('This is not implemented yet, sorry.')
+			pass
+		else:
+			raise ValueError('`mode` parameter must be either: \'const\' or \'individual\'')
+			return
+
+	# internal functions --------------------------
 
 	def __init__(self, map_path, info_path):
 		"""Constructor for :class:`ramanmap`
@@ -446,14 +521,45 @@ class singlespec:
 		pass
 
 	def normalize(self, peakshift):
-		"""_summary_
+		"""Normalize the Raman spectrum to the peak at ``peakshift``.
+		An exception will be raised if the background has not been removed.
 
-		:param peakshift: _description_
-		:type peakshift: _type_
-		:return: _description_
-		:rtype: _type_
+		:param peakshift: rough position of the peak in :class:`singlespec.ssxr.ramanshift` dimension
+		:type peakshift: float
+		:raises ValueError: Background needs to be removed for normalization to make sense.
+
+		.. note::
+			Attributes of :class:`singlespec.ssxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.
 		"""
-		pass
+
+		# crop the data to around the peak specified
+		cropregion = 100
+		cropped = self.ssxr.sel(ramanshift = slice(peakshift - cropregion, peakshift + cropregion))
+		# take the offset value, as the intensity value near the peak edge
+		bgoffset_low = cropped[0].data
+		bgoffset_high = cropped[-1].data
+
+		# check to see of if the background was removed for the spectrum
+		if ((bgoffset_high + bgoffset_low)/2 > 500) or ('background subtracted' not in self.ssxr.attrs['comments']):
+			raise ValueError("The background was not removed, or the peak selected is not suitable for normalization. This should be done in case of normalizing to a peak amplitude")
+			return
+
+		# fit to the cropped region
+		fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2})
+		peakampl = fit['curvefit_coefficients'].sel(param = 'ampl').data
+		peakpos = fit['curvefit_coefficients'].sel(param = 'x0').data
+
+		# normalize to the peak amplitde
+		normalized = self.ssxr / peakampl
+
+		# copy attributes and change them acccordingly
+		normalized.attrs = self.ssxr.attrs.copy()
+		normalized.attrs['units'] = ' '
+		normalized.attrs['long_name'] = 'normalized Raman intensity'
+		normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + '\n'
+
+		self.ssxr = normalized
+
 
 	# internal functions ----------------------------------
 
@@ -791,7 +897,7 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 
 	return y_data_nobg, bg_values, coeff, params_used_at_run, mask, covar
 
-def peakfit(xrobj, func = lorentz, fitresult = None, stval = dict({'x0': 1580, 'ampl': 100, 'width': 15, 'offset': 900}), bounds = None, toplot = False, width = None, height = None, **kwargs):
+def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None, toplot = False, width = None, height = None, **kwargs):
 	"""Fitting a function to peaks in the data contained in ``xrobj``.
 
 	:param xrobj: :py:mod:`xarray` DataArray, of a single spectrum or a map.
@@ -800,7 +906,7 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = dict({'x0': 1580, '
 	:type func: function, optional
 	:param fitresult: an :py:mod:`xarray` Dataset of a previous fit calculation, with matching dimensions. If this is passed to :func:`peakfit`, the fit calculation in skipped and the passed Dataset is used.
 	:type fitresult: :py:mod:`xarray` Dataset, optional
-	:param stval: starting values for the fit parameters of ``func``, defaults to dict({'x0': 1580, 'ampl': 100, 'width': 15, 'offset': 900})
+	:param stval: starting values for the fit parameters of ``func``. You are free to specify only some of the values, the rest will be filled by defaults. Defaults to {'x0': 1580, 'ampl': 500, 'width': 15, 'offset': 900}
 	:type stval: dictionary of ``func`` parameters, optional
 	:param bounds: bounds for the fit parameters, used by :py:mod:`xarray.curvefit`. Simlar dictionary, like ``stval``, but the values area a list, with lower and upper components. Defaults to None
 	:type bounds: dictionary of ``func`` parameters, with tuples containing lower and upper bounds, optional
@@ -842,6 +948,16 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = dict({'x0': 1580, '
 		By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.
 
 	"""	
+	# defining starting parameters
+	stval_defaults = dict({'x0': 1580, 'ampl': 500, 'width': 15, 'offset': 900})
+	# loop over the keys in stval and fill missing values with defaults
+	if stval is None:
+		stval = stval_defaults
+	else:
+		for key in stval_defaults.keys():
+			if key not in stval:
+				stval[key] = stval_defaults[key]
+
 	# fit
 	# the `xrobj` should have a 'ramanshift' coordinate
 	# `nan_policy = omit` skips values with NaN. This is passed to scipy.optimize.curve_fit
