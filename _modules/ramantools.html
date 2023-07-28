@@ -282,7 +282,7 @@
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
 <span class="sd">		An exception will be raised if the background has not been removed.</span>
 
-<span class="sd">		:param peakshift: rough position of the peak in :class:`singlespec.ssxr.ramanshift` dimension</span>
+<span class="sd">		:param peakshift: rough position of the peak in :class:`ramanmap.mapxr.ramanshift` dimension</span>
 <span class="sd">		:type peakshift: float</span>
 <span class="sd">		:param mode: Has two modes: &#39;const&#39; and &#39;individual&#39;. defaults to &#39;const&#39;.</span>
 <span class="sd">		:type mode: str, optional</span>
@@ -295,7 +295,7 @@
 <span class="sd">		:raises ValueError: `mode` parameter must be either: &#39;const&#39; or &#39;individual&#39;.</span>
 
 <span class="sd">		.. note::</span>
-<span class="sd">			Attributes of :class:`ramanmap.ssxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.</span>
+<span class="sd">			Attributes of :class:`ramanmap.mapxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.</span>
 
 <span class="sd">			In ``mode == &#39;individual&#39;``, each spectrum in the map will be normalized to the local peak amplitude. In ``mode == &#39;const&#39;``, the peak at the position specified by ``width`` and ``height`` is used for normalization.</span>
 <span class="sd">			If ``mode == &#39;individual&#39;``, the ``width`` and ``height`` parameters are ignored.</span>

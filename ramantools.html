@@ -388,7 +388,7 @@ An exception will be raised if the background has not been removed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>peakshift</strong> (<em>float</em>) – rough position of the peak in <code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec.ssxr.ramanshift</span></code> dimension</p></li>
+<li><p><strong>peakshift</strong> (<em>float</em>) – rough position of the peak in <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr.ramanshift</span></code> dimension</p></li>
 <li><p><strong>mode</strong> (<em>str</em><em>, </em><em>optional</em>) – Has two modes: ‘const’ and ‘individual’. defaults to ‘const’.</p></li>
 <li><p><strong>width</strong> (<em>float</em><em>, </em><em>optional</em>) – width coordinate of the spectrum, which will be used for normalization in ‘const’ mode, defaults to the middle of the map.</p></li>
 <li><p><strong>height</strong> (<em>float</em><em>, </em><em>optional</em>) – height coordinate of the spectrum, which will be used for normalization in ‘const’ mode, defaults to the middle of the map.</p></li>
@@ -403,7 +403,7 @@ An exception will be raised if the background has not been removed.</p>
 </dl>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Attributes of <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.ssxr</span></code> are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new <cite>long_name</cite>.</p>
+<p>Attributes of <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code> are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new <cite>long_name</cite>.</p>
 <p>In <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'individual'</span></code>, each spectrum in the map will be normalized to the local peak amplitude. In <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'const'</span></code>, the peak at the position specified by <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> is used for normalization.
 If <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'individual'</span></code>, the <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> parameters are ignored.</p>
 </div>
