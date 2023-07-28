@@ -59,6 +59,9 @@ class ramanmap:
 
 		:return: none
 		"""
+		print('Comments of the `xarray` DataArray \n')
+		print(self.ssxr.attrs['comments'])
+		print('------------------')
 		print(self.metadata)
 
 	def plotspec(self, width, height, shift):
@@ -370,6 +373,9 @@ class singlespec:
 
 		:return: none
 		"""
+		print('Comments of the `xarray` DataArray \n')
+		print(self.ssxr.attrs['comments'])
+		print('------------------')
 		print(self.metadata)
 
 	def remove_bg(self, **kwargs):
@@ -439,7 +445,17 @@ class singlespec:
 		singlesp_mod = copy.deepcopy(self)
 		pass
 
-	# internal functions
+	def normalize(self, peakshift):
+		"""_summary_
+
+		:param peakshift: _description_
+		:type peakshift: _type_
+		:return: _description_
+		:rtype: _type_
+		"""
+		pass
+
+	# internal functions ----------------------------------
 
 	def __init__(self, spec_path, info_path):
 		"""Constructor for :class:`singlespec`
