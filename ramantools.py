@@ -244,18 +244,19 @@ class ramanmap:
 		cropregion = 100
 		cropped = self.mapxr.sel(ramanshift = slice(peakshift - cropregion, peakshift + cropregion))
 
+		# take the offset value, as the intensity value near the peak edge
+		cropped_middle = cropped.sel(width = mapwidth, height = mapheight, method = 'nearest')
+		bgoffset_low = cropped_middle[0].data
+		bgoffset_high = cropped_middle[-1].data
+
+		# check to see of if the background was removed for the spectrum
+		if ((bgoffset_high + bgoffset_low)/2 > 500) or ('background subtracted' not in self.mapxr.attrs['comments']):
+			raise ValueError("The background was not removed, or the peak selected is not suitable for normalization. This should be done in case of normalizing to a peak amplitude")
+			return
+
 		if mode == 'const':
 			# pick the spectrum to normalize to
 			cropped = cropped.sel(width = mapwidth, height = mapheight, method = 'nearest')
-
-			# take the offset value, as the intensity value near the peak edge
-			bgoffset_low = cropped[0].data
-			bgoffset_high = cropped[-1].data
-
-			# check to see of if the background was removed for the spectrum
-			if ((bgoffset_high + bgoffset_low)/2 > 500) or ('background subtracted' not in self.mapxr.attrs['comments']):
-				raise ValueError("The background was not removed, or the peak selected is not suitable for normalization. This should be done in case of normalizing to a peak amplitude")
-				return
 
 			# fit to the cropped region
 			fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2})
@@ -272,10 +273,24 @@ class ramanmap:
 			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == const' + '\n'
 
 			self.mapxr = normalized
+
 		elif mode == 'individual':
-			# TODO implement individual normalization.
-			print('This is not implemented yet, sorry.')
-			pass
+			# fit to the cropped region
+			fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2})
+			peakampl = fit['curvefit_coefficients'].sel(param = 'ampl').data
+			peakpos = fit['curvefit_coefficients'].sel(param = 'x0').sel(width = mapwidth, height = mapheight).data
+
+			# normalize to the peak amplitde
+			normalized = self.mapxr / peakampl
+
+			# copy attributes and change them acccordingly
+			normalized.attrs = self.mapxr.attrs.copy()
+			normalized.attrs['units'] = ' '
+			normalized.attrs['long_name'] = 'normalized Raman intensity'
+			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == individual' + '\n'
+
+			self.mapxr = normalized
+			
 		else:
 			raise ValueError('`mode` parameter must be either: \'const\' or \'individual\'')
 			return
