@@ -55,6 +55,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.peakfit"><code class="docutils literal notranslate"><span class="pre">peakfit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.normalize"><code class="docutils literal notranslate"><span class="pre">ramanmap.normalize()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.remove_bg"><code class="docutils literal notranslate"><span class="pre">ramanmap.remove_bg()</span></code></a></li>
@@ -62,6 +63,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.calibrate"><code class="docutils literal notranslate"><span class="pre">singlespec.calibrate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.normalize"><code class="docutils literal notranslate"><span class="pre">singlespec.normalize()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.remove_bg"><code class="docutils literal notranslate"><span class="pre">singlespec.remove_bg()</span></code></a></li>
 </ul>
@@ -78,6 +80,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.peakfit"><code class="docutils literal notranslate"><span class="pre">peakfit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.normalize"><code class="docutils literal notranslate"><span class="pre">ramanmap.normalize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.remove_bg"><code class="docutils literal notranslate"><span class="pre">ramanmap.remove_bg()</span></code></a></li>
@@ -85,6 +88,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.calibrate"><code class="docutils literal notranslate"><span class="pre">singlespec.calibrate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.normalize"><code class="docutils literal notranslate"><span class="pre">singlespec.normalize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.remove_bg"><code class="docutils literal notranslate"><span class="pre">singlespec.remove_bg()</span></code></a></li>
 </ul>
@@ -255,7 +259,7 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.peakfit">
-<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">peakfit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xrobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func=&lt;function</span> <span class="pre">lorentz&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitresult=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stval={'ampl':</span> <span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'offset':</span> <span class="pre">900</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'width':</span> <span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'x0':</span> <span class="pre">1580}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#peakfit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.peakfit" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ramantools.</span></span><span class="sig-name descname"><span class="pre">peakfit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xrobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func=&lt;function</span> <span class="pre">lorentz&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitresult=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stval=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#peakfit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.peakfit" title="Permalink to this definition"></a></dt>
 <dd><p>Fitting a function to peaks in the data contained in <code class="docutils literal notranslate"><span class="pre">xrobj</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -263,7 +267,7 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 <li><p><strong>xrobj</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code>) – <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray, of a single spectrum or a map.</p></li>
 <li><p><strong>func</strong> (<em>function</em><em>, </em><em>optional</em>) – function to be used for fitting, defaults to lorentz</p></li>
 <li><p><strong>fitresult</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> Dataset, optional) – an <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> Dataset of a previous fit calculation, with matching dimensions. If this is passed to <a class="reference internal" href="#ramantools.peakfit" title="ramantools.peakfit"><code class="xref py py-func docutils literal notranslate"><span class="pre">peakfit()</span></code></a>, the fit calculation in skipped and the passed Dataset is used.</p></li>
-<li><p><strong>stval</strong> (dictionary of <code class="docutils literal notranslate"><span class="pre">func</span></code> parameters, optional) – starting values for the fit parameters of <code class="docutils literal notranslate"><span class="pre">func</span></code>, defaults to dict({‘x0’: 1580, ‘ampl’: 100, ‘width’: 15, ‘offset’: 900})</p></li>
+<li><p><strong>stval</strong> (dictionary of <code class="docutils literal notranslate"><span class="pre">func</span></code> parameters, optional) – starting values for the fit parameters of <code class="docutils literal notranslate"><span class="pre">func</span></code>. You are free to specify only some of the values, the rest will be filled by defaults. Defaults to {‘x0’: 1580, ‘ampl’: 500, ‘width’: 15, ‘offset’: 900}</p></li>
 <li><p><strong>bounds</strong> (dictionary of <code class="docutils literal notranslate"><span class="pre">func</span></code> parameters, with tuples containing lower and upper bounds, optional) – bounds for the fit parameters, used by <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray.curvefit</span></code>. Simlar dictionary, like <code class="docutils literal notranslate"><span class="pre">stval</span></code>, but the values area a list, with lower and upper components. Defaults to None</p></li>
 <li><p><strong>toplot</strong> (<em>boolean</em><em>, </em><em>optional</em>) – plot the fit result, defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 <li><p><strong>width</strong> (<cite>int</cite> or <cite>float</cite>) – width parameter of an <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> map to be used in conjunction with <code class="docutils literal notranslate"><span class="pre">toplot</span> <span class="pre">=</span> <span class="pre">True</span></code></p></li>
@@ -377,6 +381,35 @@ This is the text next to the map data in the Witec software.</p>
 </pre></div>
 </div>
 <dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramanmap.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peakshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'const'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.normalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.normalize" title="Permalink to this definition"></a></dt>
+<dd><p>Normalize the Raman spectrum to the peak at <code class="docutils literal notranslate"><span class="pre">peakshift</span></code>.
+An exception will be raised if the background has not been removed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>peakshift</strong> (<em>float</em>) – rough position of the peak in <code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec.ssxr.ramanshift</span></code> dimension</p></li>
+<li><p><strong>mode</strong> (<em>str</em><em>, </em><em>optional</em>) – Has two modes: ‘const’ and ‘individual’. defaults to ‘const’.</p></li>
+<li><p><strong>width</strong> (<em>float</em><em>, </em><em>optional</em>) – width coordinate of the spectrum, which will be used for normalization in ‘const’ mode, defaults to the middle of the map.</p></li>
+<li><p><strong>height</strong> (<em>float</em><em>, </em><em>optional</em>) – height coordinate of the spectrum, which will be used for normalization in ‘const’ mode, defaults to the middle of the map.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – Background needs to be removed for normalization to make sense.</p></li>
+<li><p><strong>ValueError</strong> – <cite>mode</cite> parameter must be either: ‘const’ or ‘individual’.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Attributes of <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.ssxr</span></code> are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new <cite>long_name</cite>.</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'individual'</span></code>, each spectrum in the map will be normalized to the local peak amplitude. In <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'const'</span></code>, the peak at the position specified by <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> is used for normalization.
+If <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'individual'</span></code>, the <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> parameters are ignored.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramanmap.plotspec">
 <span class="sig-name descname"><span class="pre">plotspec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.plotspec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.plotspec" title="Permalink to this definition"></a></dt>
 <dd><p>Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
@@ -450,6 +483,10 @@ Default fit function is a first order polynomial. This can be changed by the <co
 <p>If the peaks and background are complicated, it is advised to test the background fit, by selecting the most difficult spectrum from the map and tweaking the fit parameters directly, using <a class="reference internal" href="#ramantools.bgsubtract" title="ramantools.bgsubtract"><code class="xref py py-func docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a>.</p>
 <p>Metadata is copied over to the returned <a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance, because there are no unit changes, in removing the background.
 After running, the ‘comments’ attribute of the new <cite>xarray</cite> instance is updated with the background fit information.</p>
+</div>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">'individual'</span></code> is not implemented yet.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Example<span class="colon">:</span></dt>
@@ -530,6 +567,25 @@ It takes two arguments, the first is the path to the file containing the spectro
 <dt class="sig sig-object py" id="ramantools.singlespec.calibrate">
 <span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peakshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibfactor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.calibrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.calibrate" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.singlespec.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peakshift</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.normalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.normalize" title="Permalink to this definition"></a></dt>
+<dd><p>Normalize the Raman spectrum to the peak at <code class="docutils literal notranslate"><span class="pre">peakshift</span></code>.
+An exception will be raised if the background has not been removed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>peakshift</strong> (<em>float</em>) – rough position of the peak in <code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec.ssxr.ramanshift</span></code> dimension</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – Background needs to be removed for normalization to make sense.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Attributes of <code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec.ssxr</span></code> are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new <cite>long_name</cite>.</p>
+</div>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.singlespec.print_metadata">
