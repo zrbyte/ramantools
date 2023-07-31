@@ -31,7 +31,7 @@ class ramanmap:
 	:var mapxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata
 	:var map: (type :py:mod:`numpy` array) Raman intensity values
 	:var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`
-	:var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It's only available if :py:meth:`singlespec.remove_bg` is called.
+	:var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It's only available if :py:meth:`singlespec.remove_bg` or :py:meth:`ramanmap.remove_bg` is called.
 	:var samplename: (type: str) name of the sample, as shown in the Witec software.
 	:var mapname: (type: str) contains the name of the Raman map, as shown in the Witec software.
 
