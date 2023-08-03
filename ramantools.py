@@ -60,7 +60,7 @@ class ramanmap:
 		:return: none
 		"""
 		print('Comments of the `xarray` DataArray \n')
-		print(self.ssxr.attrs['comments'])
+		print(self.mapxr.attrs['comments'])
 		print('------------------')
 		print(self.metadata)
 
