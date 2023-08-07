@@ -204,6 +204,53 @@ class ramanmap:
 
 		return map_mod, coeff, covar
 
+	def calibrate(self, peakshift, calibfactor = 0, width = None, height = None, **kwargs):
+		"""Calibrating a Raman map.
+		It uses :func:`peakfit` to find the Raman peak closest to ``peakshift`` and returns a new :class:`ramanmap` instance, with the ramanshift coordinate offset to have the position of the peak at ``peakshift``.
+		If the optional argument ``calibfactor`` is passed, ``peakshift`` is ignored and the data is shifted by the given value.
+		All possible keyword arguments of :func:`peakfit` can be passed.
+
+		:param peakshift: expected position, in 1/cm, of the peak used for calibration
+		:type peakshift: float
+		:param calibfactor: If the calibration factor is known it can be passed directly. In this case ``peakshift`` is ignored, defaults to 0
+		:type calibfactor: int, optional
+		:param width: width coordinate of the spectrum, which will be used for calibration. Defaults to the middle of the map.
+		:type width: float, optional
+		:param height: height coordinate of the spectrum, which will be used for calibration. Defaults to the middle of the map.
+		:type height: float, optional
+
+		:return: calibrated :class:`ramanmap` instance
+		:rtype: :class:`ramanmap`
+		"""
+		# Get the middle spectrum
+		middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest')
+		
+		# check if width and height are specified
+		if (width is None) or (height is None): 
+			spectofit = middle
+		else:
+			spectofit = self.mapxr.sel(width = width, height = height, method = 'nearest')
+
+		# if a calibration factor is specified, don't fit just shift the values by calibfactor
+		if calibfactor == 0:
+			# fit to the peak around `peakshift`
+			fit = peakfit(spectofit, stval = {'x0': peakshift}, **kwargs)
+			# correction factor relative to the expected value: peakshift
+			calibshift = fit['curvefit_coefficients'].sel(param = 'x0').data - peakshift
+		else:
+			calibshift = calibfactor
+
+		# create a copy of the instance
+		map_mod = copy.deepcopy(self)
+
+		# shift the ramanshift values by the correction factor in the new singlespec instance
+		map_mod.mapxr = self.mapxr.assign_coords(ramanshift = self.mapxr['ramanshift'] + calibshift)
+
+		# add to the comments attribute of the new instance
+		map_mod.mapxr.attrs['comments'] += 'Calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift'
+
+		return map_mod
+
 	def normalize(self, peakshift, width = None, height = None, mode = 'const', **kwargs):
 		"""Normalize the Raman spectrum to the peak at ``peakshift``.
 		An exception will be raised if the background has not been removed.
@@ -532,10 +579,38 @@ class singlespec:
 		return singlesp_mod, coeff, covar
 
 	def calibrate(self, peakshift, calibfactor = 0, **kwargs):
-		# create a copy of the instance
-		fit = peakfit(self.ssxr, stval = {'x0': peakshift})
+		"""Calibrating a single Raman spectrum.
+		It uses :func:`peakfit` to find the Raman peak closest to ``peakshift`` and returns a new :class:`singlespec` instance, with the ramanshift coordinate offset to have the position of the peak at ``peakshift``.
+		If the optional argument ``calibfactor`` is passed, ``peakshift`` is ignored and the data is shifted by the given value.
+		All possible keyword arguments of :func:`peakfit` can be passed.
 
-		return fit
+		:param peakshift: expected position, in 1/cm, of the peak used for calibration
+		:type peakshift: float
+		:param calibfactor: If the calibration factor is known it can be passed directly. In this case ``peakshift`` is ignored, defaults to 0
+		:type calibfactor: int, optional
+		:return: calibrated :class:`singlespec` instance
+		:rtype: :class:`singlespec`
+		"""		
+
+		# if a calibration factor is specified, don't fit just shift the values by calibfactor
+		if calibfactor == 0:
+			# fit to the peak around `peakshift`
+			fit = peakfit(self.ssxr, stval = {'x0': peakshift}, **kwargs)
+			# correction factor relative to the expected value: peakshift
+			calibshift = fit['curvefit_coefficients'].sel(param = 'x0').data - peakshift
+		else:
+			calibshift = calibfactor
+
+		# create a copy of the instance
+		ss_mod = copy.deepcopy(self)
+
+		# shift the ramanshift values by the correction factor in the new singlespec instance
+		ss_mod.ssxr = self.ssxr.assign_coords(ramanshift = self.ssxr['ramanshift'] + calibshift)
+
+		# add to the comments attribute of the new instance
+		ss_mod.ssxr.attrs['comments'] += 'Calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift'
+
+		return ss_mod
 
 	def normalize(self, peakshift, **kwargs):
 		"""Normalize the Raman spectrum to the peak at ``peakshift``.
