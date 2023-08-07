@@ -240,7 +240,7 @@ class ramanmap:
 			mapwidth = (wmax - wmin)/2 + wmin
 			mapheight = (hmax - hmin)/2 + hmin
 
-		# crop the data to around the peak specified
+		# crop the data in ramanshift to around the peak specified
 		cropregion = 100
 		cropped = self.mapxr.sel(ramanshift = slice(peakshift - cropregion, peakshift + cropregion))
 
@@ -259,7 +259,7 @@ class ramanmap:
 			cropped = cropped.sel(width = mapwidth, height = mapheight, method = 'nearest')
 
 			# fit to the cropped region
-			fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2})
+			fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2}, **kwargs)
 			peakampl = fit['curvefit_coefficients'].sel(param = 'ampl').data
 			peakpos = fit['curvefit_coefficients'].sel(param = 'x0').data
 
@@ -276,7 +276,7 @@ class ramanmap:
 
 		elif mode == 'individual':
 			# fit to the cropped region
-			fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2})
+			fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2}, **kwargs)
 			peakampl = fit['curvefit_coefficients'].sel(param = 'ampl').data
 			peakpos = fit['curvefit_coefficients'].sel(param = 'x0').sel(width = mapwidth, height = mapheight).data
 
@@ -535,7 +535,7 @@ class singlespec:
 		singlesp_mod = copy.deepcopy(self)
 		pass
 
-	def normalize(self, peakshift):
+	def normalize(self, peakshift, **kwargs):
 		"""Normalize the Raman spectrum to the peak at ``peakshift``.
 		An exception will be raised if the background has not been removed.
 
@@ -560,7 +560,7 @@ class singlespec:
 			return
 
 		# fit to the cropped region
-		fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2})
+		fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2}, **kwargs)
 		peakampl = fit['curvefit_coefficients'].sel(param = 'ampl').data
 		peakpos = fit['curvefit_coefficients'].sel(param = 'x0').data
 
@@ -963,12 +963,13 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 		By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.
 
 	"""	
-	# defining starting parameters
+	# defining starting parameters for the fit
 	stval_defaults = dict({'x0': 1580, 'ampl': 500, 'width': 15, 'offset': 900})
 	# loop over the keys in stval and fill missing values with defaults
 	if stval is None:
 		stval = stval_defaults
 	else:
+		# if only some values are missing, fill in the rest
 		for key in stval_defaults.keys():
 			if key not in stval:
 				stval[key] = stval_defaults[key]
@@ -985,17 +986,16 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 	# plot the resulting fit
 	if toplot is True:
 		#check if the xrobj is a single spectrum or map
-		if 'width' in xrobj.coords:
+		if 'width' in xrobj.dims:
 			# it's a map
 			if (width is not None) and (height is not None):
 				plotwidth = width
 				plotheight = height
 			else:
-				# if no width and height parameters are supplied, take the middle spectrum
-				wmin = min(xrobj.width.data)
-				wmax = max(xrobj.width.data)
-				hmin = min(xrobj.height.data)
-				hmax = max(xrobj.height.data)
+				wmin = np.min(xrobj.width.data)
+				wmax = np.max(xrobj.width.data)
+				hmin = np.min(xrobj.height.data)
+				hmax = np.max(xrobj.height.data)
 				plotwidth = (wmax - wmin)/2 + wmin
 				plotheight = (hmax - hmin)/2 + hmin
 
@@ -1008,7 +1008,7 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 			peakoffset = fit['curvefit_coefficients'].sel(param = 'offset').sel(width = plotwidth, height = plotheight, method = 'nearest').data
 			peakheight = fit['curvefit_coefficients'].sel(param = 'ampl').sel(width = plotwidth, height = plotheight, method = 'nearest').data
 		else:
-			# it's a single spectrum
+			# it's a single spectrum or a selected single spectrum from a map
 			fitpeakpos = fit['curvefit_coefficients'].sel(param = 'x0').data
 			dataplot = xrobj.plot(color = 'black', marker = '.', lw = 0, label = 'data')
 			funcparams = fit['curvefit_coefficients'].data
@@ -1023,7 +1023,7 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 		dataplot # type: ignore
 		pl.plot(shift, func(shift, *funcparams), color = 'red', lw = 3, alpha = 0.5, label = 'fit')
 		pl.xlim([fitpeakpos - 2.5*plotarea_x, fitpeakpos + 2.5*plotarea_x])
-		plotarea_y = [peakoffset - 20, peakoffset + 1.2*peakheight]
+		plotarea_y = [peakoffset*0.95, peakoffset + 1.2*peakheight]
 		pl.ylim(plotarea_y)
 		pl.legend()
 	
