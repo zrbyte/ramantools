@@ -281,6 +281,7 @@
 <div class="viewcode-block" id="ramanmap.normalize"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
 <span class="sd">		An exception will be raised if the background has not been removed.</span>
+<span class="sd">		It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.</span>
 
 <span class="sd">		:param peakshift: rough position of the peak in :class:`ramanmap.mapxr.ramanshift` dimension</span>
 <span class="sd">		:type peakshift: float</span>
@@ -613,6 +614,7 @@
 <div class="viewcode-block" id="singlespec.normalize"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
 <span class="sd">		An exception will be raised if the background has not been removed.</span>
+<span class="sd">		It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.</span>
 
 <span class="sd">		:param peakshift: rough position of the peak in :class:`singlespec.ssxr.ramanshift` dimension</span>
 <span class="sd">		:type peakshift: float</span>
