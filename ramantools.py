@@ -526,7 +526,6 @@ class singlespec:
 		print('Data modification history:\n')
 		print(self.ssxr.attrs['comments'])
 
-
 	def print_metadata(self):
 		"""
 		Prints the metadata of the :class:`singlespec` instance, imported from the info file.
