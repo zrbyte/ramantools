@@ -53,6 +53,12 @@ class ramanmap:
 	
 	"""	
 
+	def history(self):
+		"""Display the notes accumulated in the 'comments' attribute of the :class:`ramanmap.mapxr` `xarray` variable.
+		"""		
+		print('Data modification history:\n')
+		print(self.mapxr.attrs['comments'])
+
 	def print_metadata(self):
 		"""
 		Prints the metadata of the :class:`ramanmap` instance, imported from the info file.
@@ -513,6 +519,13 @@ class singlespec:
 		print(list(single_spectrum.__dict__))
 
 	"""
+
+	def history(self):
+		"""Display the notes accumulated in the 'comments' attribute of the :class:`singlespec.ssxr` `xarray` variable.
+		"""		
+		print('Data modification history:\n')
+		print(self.ssxr.attrs['comments'])
+
 
 	def print_metadata(self):
 		"""

@@ -124,6 +124,12 @@
 <span class="sd">	</span>
 <span class="sd">	&quot;&quot;&quot;</span>	
 
+<div class="viewcode-block" id="ramanmap.history"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.history">[docs]</a>	<span class="k">def</span> <span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;Display the notes accumulated in the &#39;comments&#39; attribute of the :class:`ramanmap.mapxr` `xarray` variable.</span>
+<span class="sd">		&quot;&quot;&quot;</span>		
+		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Data modification history:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span></div>
+
 <div class="viewcode-block" id="ramanmap.print_metadata"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Prints the metadata of the :class:`ramanmap` instance, imported from the info file.</span>
@@ -668,6 +674,7 @@
 <span class="sd">		:type peakshift: float</span>
 <span class="sd">		:param calibfactor: If the calibration factor is known it can be passed directly. In this case ``peakshift`` is ignored, defaults to 0</span>
 <span class="sd">		:type calibfactor: int, optional</span>
+<span class="sd">		</span>
 <span class="sd">		:return: calibrated :class:`singlespec` instance</span>
 <span class="sd">		:rtype: :class:`singlespec`</span>
 <span class="sd">		&quot;&quot;&quot;</span>		
@@ -694,11 +701,16 @@
 
 <div class="viewcode-block" id="singlespec.normalize"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
+<span class="sd">		Returns a normalized :class:`singlespec` instance.</span>
 <span class="sd">		An exception will be raised if the background has not been removed.</span>
 <span class="sd">		It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.</span>
 
 <span class="sd">		:param peakshift: rough position of the peak in :class:`singlespec.ssxr.ramanshift` dimension</span>
 <span class="sd">		:type peakshift: float</span>
+
+<span class="sd">		:return: normalized :class:`singlespec` instance</span>
+<span class="sd">		:rtype: :class:`singlespec`</span>
+
 <span class="sd">		:raises ValueError: Background needs to be removed for normalization to make sense.</span>
 
 <span class="sd">		.. note::</span>
@@ -731,7 +743,11 @@
 		<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;normalized Raman intensity&#39;</span>
 		<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;normalized to peak at: &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakpos</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
 
-		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="n">normalized</span></div>
+		<span class="c1"># copy the singlespec instance</span>
+		<span class="n">ss_norm</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+		<span class="n">ss_norm</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="n">normalized</span>
+
+		<span class="k">return</span> <span class="n">ss_norm</span></div>
 
 
 	<span class="c1"># internal functions ----------------------------------</span>
