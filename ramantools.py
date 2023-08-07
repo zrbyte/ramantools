@@ -253,6 +253,7 @@ class ramanmap:
 
 	def normalize(self, peakshift, width = None, height = None, mode = 'const', **kwargs):
 		"""Normalize the Raman spectrum to the peak at ``peakshift``.
+		Returns a normalized :class:`ramanmap` instance.
 		An exception will be raised if the background has not been removed.
 		It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.
 
@@ -264,6 +265,9 @@ class ramanmap:
 		:type width: float, optional
 		:param height: height coordinate of the spectrum, which will be used for normalization in 'const' mode, defaults to the middle of the map.
 		:type height: float, optional
+
+		:return: normalized :class:`ramanmap` instance
+		:rtype: :class:`ramanmap`
 
 		:raises ValueError: Background needs to be removed for normalization to make sense.
 		:raises ValueError: `mode` parameter must be either: 'const' or 'individual'.
@@ -320,7 +324,7 @@ class ramanmap:
 			normalized.attrs['long_name'] = 'normalized Raman intensity'
 			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == const' + '\n'
 
-			self.mapxr = normalized
+			map_norm = normalized
 
 		elif mode == 'individual':
 			# fit to the cropped region
@@ -336,12 +340,17 @@ class ramanmap:
 			normalized.attrs['units'] = ' '
 			normalized.attrs['long_name'] = 'normalized Raman intensity'
 			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == individual' + '\n'
-
-			self.mapxr = normalized
 			
 		else:
 			raise ValueError('`mode` parameter must be either: \'const\' or \'individual\'')
 			return
+		
+		# create a copy of the instance
+		map_norm = copy.deepcopy(self)
+		# replace the xarray variable with the normalized one
+		map_norm.mapxr = normalized
+
+		return map_norm
 
 	# internal functions --------------------------
 
@@ -588,6 +597,7 @@ class singlespec:
 		:type peakshift: float
 		:param calibfactor: If the calibration factor is known it can be passed directly. In this case ``peakshift`` is ignored, defaults to 0
 		:type calibfactor: int, optional
+		
 		:return: calibrated :class:`singlespec` instance
 		:rtype: :class:`singlespec`
 		"""		
@@ -614,11 +624,16 @@ class singlespec:
 
 	def normalize(self, peakshift, **kwargs):
 		"""Normalize the Raman spectrum to the peak at ``peakshift``.
+		Returns a normalized :class:`singlespec` instance.
 		An exception will be raised if the background has not been removed.
 		It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.
 
 		:param peakshift: rough position of the peak in :class:`singlespec.ssxr.ramanshift` dimension
 		:type peakshift: float
+
+		:return: normalized :class:`singlespec` instance
+		:rtype: :class:`singlespec`
+
 		:raises ValueError: Background needs to be removed for normalization to make sense.
 
 		.. note::
@@ -651,7 +666,11 @@ class singlespec:
 		normalized.attrs['long_name'] = 'normalized Raman intensity'
 		normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + '\n'
 
-		self.ssxr = normalized
+		# copy the singlespec instance
+		ss_norm = copy.deepcopy(self)
+		ss_norm.ssxr = normalized
+
+		return ss_norm
 
 
 	# internal functions ----------------------------------

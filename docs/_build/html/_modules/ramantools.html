@@ -324,6 +324,7 @@
 
 <div class="viewcode-block" id="ramanmap.normalize"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
+<span class="sd">		Returns a normalized :class:`ramanmap` instance.</span>
 <span class="sd">		An exception will be raised if the background has not been removed.</span>
 <span class="sd">		It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.</span>
 
@@ -335,6 +336,9 @@
 <span class="sd">		:type width: float, optional</span>
 <span class="sd">		:param height: height coordinate of the spectrum, which will be used for normalization in &#39;const&#39; mode, defaults to the middle of the map.</span>
 <span class="sd">		:type height: float, optional</span>
+
+<span class="sd">		:return: normalized :class:`ramanmap` instance</span>
+<span class="sd">		:rtype: :class:`ramanmap`</span>
 
 <span class="sd">		:raises ValueError: Background needs to be removed for normalization to make sense.</span>
 <span class="sd">		:raises ValueError: `mode` parameter must be either: &#39;const&#39; or &#39;individual&#39;.</span>
@@ -391,7 +395,7 @@
 			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;normalized Raman intensity&#39;</span>
 			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;normalized to peak at: &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakpos</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; in mode == const&#39;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
 
-			<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">normalized</span>
+			<span class="n">map_norm</span> <span class="o">=</span> <span class="n">normalized</span>
 
 		<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;individual&#39;</span><span class="p">:</span>
 			<span class="c1"># fit to the cropped region</span>
@@ -407,12 +411,17 @@
 			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
 			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;normalized Raman intensity&#39;</span>
 			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;normalized to peak at: &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakpos</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; in mode == individual&#39;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
-
-			<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">normalized</span>
 			
 		<span class="k">else</span><span class="p">:</span>
 			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;`mode` parameter must be either: </span><span class="se">\&#39;</span><span class="s1">const</span><span class="se">\&#39;</span><span class="s1"> or </span><span class="se">\&#39;</span><span class="s1">individual</span><span class="se">\&#39;</span><span class="s1">&#39;</span><span class="p">)</span>
-			<span class="k">return</span></div>
+			<span class="k">return</span>
+		
+		<span class="c1"># create a copy of the instance</span>
+		<span class="n">map_norm</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+		<span class="c1"># replace the xarray variable with the normalized one</span>
+		<span class="n">map_norm</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">normalized</span>
+
+		<span class="k">return</span> <span class="n">map_norm</span></div>
 
 	<span class="c1"># internal functions --------------------------</span>
 
