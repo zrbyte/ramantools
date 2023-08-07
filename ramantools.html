@@ -56,6 +56,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.calibrate"><code class="docutils literal notranslate"><span class="pre">ramanmap.calibrate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.history"><code class="docutils literal notranslate"><span class="pre">ramanmap.history()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.normalize"><code class="docutils literal notranslate"><span class="pre">ramanmap.normalize()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
@@ -64,6 +65,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.calibrate"><code class="docutils literal notranslate"><span class="pre">singlespec.calibrate()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.history"><code class="docutils literal notranslate"><span class="pre">singlespec.history()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.normalize"><code class="docutils literal notranslate"><span class="pre">singlespec.normalize()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec.remove_bg"><code class="docutils literal notranslate"><span class="pre">singlespec.remove_bg()</span></code></a></li>
@@ -82,6 +84,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.calibrate"><code class="docutils literal notranslate"><span class="pre">ramanmap.calibrate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.history"><code class="docutils literal notranslate"><span class="pre">ramanmap.history()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.normalize"><code class="docutils literal notranslate"><span class="pre">ramanmap.normalize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
@@ -90,6 +93,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.calibrate"><code class="docutils literal notranslate"><span class="pre">singlespec.calibrate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.history"><code class="docutils literal notranslate"><span class="pre">singlespec.history()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.normalize"><code class="docutils literal notranslate"><span class="pre">singlespec.normalize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.singlespec.remove_bg"><code class="docutils literal notranslate"><span class="pre">singlespec.remove_bg()</span></code></a></li>
@@ -408,6 +412,12 @@ All possible keyword arguments of <a class="reference internal" href="#ramantool
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramanmap.history">
+<span class="sig-name descname"><span class="pre">history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.history" title="Permalink to this definition"></a></dt>
+<dd><p>Display the notes accumulated in the ‘comments’ attribute of the <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code> <cite>xarray</cite> variable.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramanmap.normalize">
 <span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peakshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'const'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.normalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.normalize" title="Permalink to this definition"></a></dt>
 <dd><p>Normalize the Raman spectrum to the peak at <code class="docutils literal notranslate"><span class="pre">peakshift</span></code>.
@@ -619,6 +629,12 @@ All possible keyword arguments of <a class="reference internal" href="#ramantool
 <dd class="field-odd"><p><a class="reference internal" href="#ramantools.singlespec" title="ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.singlespec.history">
+<span class="sig-name descname"><span class="pre">history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.history" title="Permalink to this definition"></a></dt>
+<dd><p>Display the notes accumulated in the ‘comments’ attribute of the <code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec.ssxr</span></code> <cite>xarray</cite> variable.</p>
 </dd></dl>
 
 <dl class="py method">

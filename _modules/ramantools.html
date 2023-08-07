@@ -127,6 +127,12 @@
 <span class="sd">	</span>
 <span class="sd">	&quot;&quot;&quot;</span>	
 
+<div class="viewcode-block" id="ramanmap.history"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.history">[docs]</a>	<span class="k">def</span> <span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;Display the notes accumulated in the &#39;comments&#39; attribute of the :class:`ramanmap.mapxr` `xarray` variable.</span>
+<span class="sd">		&quot;&quot;&quot;</span>		
+		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Data modification history:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span></div>
+
 <div class="viewcode-block" id="ramanmap.print_metadata"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Prints the metadata of the :class:`ramanmap` instance, imported from the info file.</span>
@@ -587,6 +593,13 @@
 <span class="sd">		print(list(single_spectrum.__dict__))</span>
 
 <span class="sd">	&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="singlespec.history"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.history">[docs]</a>	<span class="k">def</span> <span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;Display the notes accumulated in the &#39;comments&#39; attribute of the :class:`singlespec.ssxr` `xarray` variable.</span>
+<span class="sd">		&quot;&quot;&quot;</span>		
+		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Data modification history:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span></div>
+
 
 <div class="viewcode-block" id="singlespec.print_metadata"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
