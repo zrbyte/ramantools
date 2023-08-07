@@ -278,6 +278,53 @@
 
 		<span class="k">return</span> <span class="n">map_mod</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
 
+<div class="viewcode-block" id="ramanmap.calibrate"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.calibrate">[docs]</a>	<span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;Calibrating a Raman map.</span>
+<span class="sd">		It uses :func:`peakfit` to find the Raman peak closest to ``peakshift`` and returns a new :class:`ramanmap` instance, with the ramanshift coordinate offset to have the position of the peak at ``peakshift``.</span>
+<span class="sd">		If the optional argument ``calibfactor`` is passed, ``peakshift`` is ignored and the data is shifted by the given value.</span>
+<span class="sd">		All possible keyword arguments of :func:`peakfit` can be passed.</span>
+
+<span class="sd">		:param peakshift: expected position, in 1/cm, of the peak used for calibration</span>
+<span class="sd">		:type peakshift: float</span>
+<span class="sd">		:param calibfactor: If the calibration factor is known it can be passed directly. In this case ``peakshift`` is ignored, defaults to 0</span>
+<span class="sd">		:type calibfactor: int, optional</span>
+<span class="sd">		:param width: width coordinate of the spectrum, which will be used for calibration. Defaults to the middle of the map.</span>
+<span class="sd">		:type width: float, optional</span>
+<span class="sd">		:param height: height coordinate of the spectrum, which will be used for calibration. Defaults to the middle of the map.</span>
+<span class="sd">		:type height: float, optional</span>
+
+<span class="sd">		:return: calibrated :class:`ramanmap` instance</span>
+<span class="sd">		:rtype: :class:`ramanmap`</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="c1"># Get the middle spectrum</span>
+		<span class="n">middle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+		
+		<span class="c1"># check if width and height are specified</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">height</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span> 
+			<span class="n">spectofit</span> <span class="o">=</span> <span class="n">middle</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">spectofit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">height</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
+		<span class="c1"># if a calibration factor is specified, don&#39;t fit just shift the values by calibfactor</span>
+		<span class="k">if</span> <span class="n">calibfactor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="c1"># fit to the peak around `peakshift`</span>
+			<span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="n">spectofit</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakshift</span><span class="p">},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+			<span class="c1"># correction factor relative to the expected value: peakshift</span>
+			<span class="n">calibshift</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;x0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="o">-</span> <span class="n">peakshift</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">calibshift</span> <span class="o">=</span> <span class="n">calibfactor</span>
+
+		<span class="c1"># create a copy of the instance</span>
+		<span class="n">map_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+		<span class="c1"># shift the ramanshift values by the correction factor in the new singlespec instance</span>
+		<span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">calibshift</span><span class="p">)</span>
+
+		<span class="c1"># add to the comments attribute of the new instance</span>
+		<span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;Calibrated Raman shift by adding &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">calibshift</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; cm^-1 to the raw ramanshift&#39;</span>
+
+		<span class="k">return</span> <span class="n">map_mod</span></div>
+
 <div class="viewcode-block" id="ramanmap.normalize"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
 <span class="sd">		An exception will be raised if the background has not been removed.</span>
@@ -606,10 +653,38 @@
 		<span class="k">return</span> <span class="n">singlesp_mod</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
 
 <div class="viewcode-block" id="singlespec.calibrate"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.calibrate">[docs]</a>	<span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-		<span class="c1"># create a copy of the instance</span>
-		<span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakshift</span><span class="p">})</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;Calibrating a single Raman spectrum.</span>
+<span class="sd">		It uses :func:`peakfit` to find the Raman peak closest to ``peakshift`` and returns a new :class:`singlespec` instance, with the ramanshift coordinate offset to have the position of the peak at ``peakshift``.</span>
+<span class="sd">		If the optional argument ``calibfactor`` is passed, ``peakshift`` is ignored and the data is shifted by the given value.</span>
+<span class="sd">		All possible keyword arguments of :func:`peakfit` can be passed.</span>
 
-		<span class="k">return</span> <span class="n">fit</span></div>
+<span class="sd">		:param peakshift: expected position, in 1/cm, of the peak used for calibration</span>
+<span class="sd">		:type peakshift: float</span>
+<span class="sd">		:param calibfactor: If the calibration factor is known it can be passed directly. In this case ``peakshift`` is ignored, defaults to 0</span>
+<span class="sd">		:type calibfactor: int, optional</span>
+<span class="sd">		:return: calibrated :class:`singlespec` instance</span>
+<span class="sd">		:rtype: :class:`singlespec`</span>
+<span class="sd">		&quot;&quot;&quot;</span>		
+
+		<span class="c1"># if a calibration factor is specified, don&#39;t fit just shift the values by calibfactor</span>
+		<span class="k">if</span> <span class="n">calibfactor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="c1"># fit to the peak around `peakshift`</span>
+			<span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakshift</span><span class="p">},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+			<span class="c1"># correction factor relative to the expected value: peakshift</span>
+			<span class="n">calibshift</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;x0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="o">-</span> <span class="n">peakshift</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">calibshift</span> <span class="o">=</span> <span class="n">calibfactor</span>
+
+		<span class="c1"># create a copy of the instance</span>
+		<span class="n">ss_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+		<span class="c1"># shift the ramanshift values by the correction factor in the new singlespec instance</span>
+		<span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">calibshift</span><span class="p">)</span>
+
+		<span class="c1"># add to the comments attribute of the new instance</span>
+		<span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;Calibrated Raman shift by adding &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">calibshift</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; cm^-1 to the raw ramanshift&#39;</span>
+
+		<span class="k">return</span> <span class="n">ss_mod</span></div>
 
 <div class="viewcode-block" id="singlespec.normalize"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>

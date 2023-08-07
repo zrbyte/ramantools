@@ -55,6 +55,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.peakfit"><code class="docutils literal notranslate"><span class="pre">peakfit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.calibrate"><code class="docutils literal notranslate"><span class="pre">ramanmap.calibrate()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.normalize"><code class="docutils literal notranslate"><span class="pre">ramanmap.normalize()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
@@ -80,6 +81,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.peakfit"><code class="docutils literal notranslate"><span class="pre">peakfit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.calibrate"><code class="docutils literal notranslate"><span class="pre">ramanmap.calibrate()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.normalize"><code class="docutils literal notranslate"><span class="pre">ramanmap.normalize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
@@ -381,6 +383,31 @@ This is the text next to the map data in the Witec software.</p>
 </pre></div>
 </div>
 <dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramanmap.calibrate">
+<span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peakshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibfactor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.calibrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.calibrate" title="Permalink to this definition"></a></dt>
+<dd><p>Calibrating a Raman map.
+It uses <a class="reference internal" href="#ramantools.peakfit" title="ramantools.peakfit"><code class="xref py py-func docutils literal notranslate"><span class="pre">peakfit()</span></code></a> to find the Raman peak closest to <code class="docutils literal notranslate"><span class="pre">peakshift</span></code> and returns a new <a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance, with the ramanshift coordinate offset to have the position of the peak at <code class="docutils literal notranslate"><span class="pre">peakshift</span></code>.
+If the optional argument <code class="docutils literal notranslate"><span class="pre">calibfactor</span></code> is passed, <code class="docutils literal notranslate"><span class="pre">peakshift</span></code> is ignored and the data is shifted by the given value.
+All possible keyword arguments of <a class="reference internal" href="#ramantools.peakfit" title="ramantools.peakfit"><code class="xref py py-func docutils literal notranslate"><span class="pre">peakfit()</span></code></a> can be passed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>peakshift</strong> (<em>float</em>) – expected position, in 1/cm, of the peak used for calibration</p></li>
+<li><p><strong>calibfactor</strong> (<em>int</em><em>, </em><em>optional</em>) – If the calibration factor is known it can be passed directly. In this case <code class="docutils literal notranslate"><span class="pre">peakshift</span></code> is ignored, defaults to 0</p></li>
+<li><p><strong>width</strong> (<em>float</em><em>, </em><em>optional</em>) – width coordinate of the spectrum, which will be used for calibration. Defaults to the middle of the map.</p></li>
+<li><p><strong>height</strong> (<em>float</em><em>, </em><em>optional</em>) – height coordinate of the spectrum, which will be used for calibration. Defaults to the middle of the map.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>calibrated <a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramanmap.normalize">
 <span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peakshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'const'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.normalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.normalize" title="Permalink to this definition"></a></dt>
 <dd><p>Normalize the Raman spectrum to the peak at <code class="docutils literal notranslate"><span class="pre">peakshift</span></code>.
@@ -567,7 +594,25 @@ It takes two arguments, the first is the path to the file containing the spectro
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.singlespec.calibrate">
 <span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peakshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">calibfactor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#singlespec.calibrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.singlespec.calibrate" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Calibrating a single Raman spectrum.
+It uses <a class="reference internal" href="#ramantools.peakfit" title="ramantools.peakfit"><code class="xref py py-func docutils literal notranslate"><span class="pre">peakfit()</span></code></a> to find the Raman peak closest to <code class="docutils literal notranslate"><span class="pre">peakshift</span></code> and returns a new <a class="reference internal" href="#ramantools.singlespec" title="ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> instance, with the ramanshift coordinate offset to have the position of the peak at <code class="docutils literal notranslate"><span class="pre">peakshift</span></code>.
+If the optional argument <code class="docutils literal notranslate"><span class="pre">calibfactor</span></code> is passed, <code class="docutils literal notranslate"><span class="pre">peakshift</span></code> is ignored and the data is shifted by the given value.
+All possible keyword arguments of <a class="reference internal" href="#ramantools.peakfit" title="ramantools.peakfit"><code class="xref py py-func docutils literal notranslate"><span class="pre">peakfit()</span></code></a> can be passed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>peakshift</strong> (<em>float</em>) – expected position, in 1/cm, of the peak used for calibration</p></li>
+<li><p><strong>calibfactor</strong> (<em>int</em><em>, </em><em>optional</em>) – If the calibration factor is known it can be passed directly. In this case <code class="docutils literal notranslate"><span class="pre">peakshift</span></code> is ignored, defaults to 0</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>calibrated <a class="reference internal" href="#ramantools.singlespec" title="ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> instance</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ramantools.singlespec" title="ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.singlespec.normalize">
