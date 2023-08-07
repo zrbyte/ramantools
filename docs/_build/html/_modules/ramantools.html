@@ -102,7 +102,7 @@
 <span class="sd">	:var mapxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata</span>
 <span class="sd">	:var map: (type :py:mod:`numpy` array) Raman intensity values</span>
 <span class="sd">	:var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`</span>
-<span class="sd">	:var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It&#39;s only available if :py:meth:`singlespec.remove_bg` is called.</span>
+<span class="sd">	:var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It&#39;s only available if :py:meth:`singlespec.remove_bg` or :py:meth:`ramanmap.remove_bg` is called.</span>
 <span class="sd">	:var samplename: (type: str) name of the sample, as shown in the Witec software.</span>
 <span class="sd">	:var mapname: (type: str) contains the name of the Raman map, as shown in the Witec software.</span>
 
@@ -131,7 +131,7 @@
 <span class="sd">		:return: none</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Comments of the `xarray` DataArray </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
-		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span>
+		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span>
 		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;------------------&#39;</span><span class="p">)</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
@@ -278,8 +278,9 @@
 <div class="viewcode-block" id="ramanmap.normalize"><a class="viewcode-back" href="../ramantools.html#ramantools.ramanmap.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
 <span class="sd">		An exception will be raised if the background has not been removed.</span>
+<span class="sd">		It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.</span>
 
-<span class="sd">		:param peakshift: rough position of the peak in :class:`singlespec.ssxr.ramanshift` dimension</span>
+<span class="sd">		:param peakshift: rough position of the peak in :class:`ramanmap.mapxr.ramanshift` dimension</span>
 <span class="sd">		:type peakshift: float</span>
 <span class="sd">		:param mode: Has two modes: &#39;const&#39; and &#39;individual&#39;. defaults to &#39;const&#39;.</span>
 <span class="sd">		:type mode: str, optional</span>
@@ -289,9 +290,10 @@
 <span class="sd">		:type height: float, optional</span>
 
 <span class="sd">		:raises ValueError: Background needs to be removed for normalization to make sense.</span>
+<span class="sd">		:raises ValueError: `mode` parameter must be either: &#39;const&#39; or &#39;individual&#39;.</span>
 
 <span class="sd">		.. note::</span>
-<span class="sd">			Attributes of :class:`ramanmap.ssxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.</span>
+<span class="sd">			Attributes of :class:`ramanmap.mapxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.</span>
 
 <span class="sd">			In ``mode == &#39;individual&#39;``, each spectrum in the map will be normalized to the local peak amplitude. In ``mode == &#39;const&#39;``, the peak at the position specified by ``width`` and ``height`` is used for normalization.</span>
 <span class="sd">			If ``mode == &#39;individual&#39;``, the ``width`` and ``height`` parameters are ignored.</span>
@@ -303,42 +305,67 @@
 			<span class="n">mapheight</span> <span class="o">=</span> <span class="n">height</span>
 		<span class="k">else</span><span class="p">:</span>
 			<span class="c1"># if no width and height parameters are supplied, take the middle spectrum</span>
-			<span class="n">wmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">width</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-			<span class="n">wmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">width</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-			<span class="n">hmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-			<span class="n">hmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+			<span class="n">wmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">width</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+			<span class="n">wmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">width</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+			<span class="n">hmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+			<span class="n">hmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 			<span class="n">mapwidth</span> <span class="o">=</span> <span class="p">(</span><span class="n">wmax</span> <span class="o">-</span> <span class="n">wmin</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">wmin</span>
 			<span class="n">mapheight</span> <span class="o">=</span> <span class="p">(</span><span class="n">hmax</span> <span class="o">-</span> <span class="n">hmin</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">hmin</span>
 
-		<span class="c1"># crop the data to around the peak specified</span>
+		<span class="c1"># crop the data in ramanshift to around the peak specified</span>
 		<span class="n">cropregion</span> <span class="o">=</span> <span class="mi">100</span>
-		<span class="n">cropped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">peakshift</span> <span class="o">-</span> <span class="n">cropregion</span><span class="p">,</span> <span class="n">peakshift</span> <span class="o">+</span> <span class="n">cropregion</span><span class="p">))</span>
+		<span class="n">cropped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">peakshift</span> <span class="o">-</span> <span class="n">cropregion</span><span class="p">,</span> <span class="n">peakshift</span> <span class="o">+</span> <span class="n">cropregion</span><span class="p">))</span>
+
 		<span class="c1"># take the offset value, as the intensity value near the peak edge</span>
-		<span class="n">bgoffset_low</span> <span class="o">=</span> <span class="n">cropped</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
-		<span class="n">bgoffset_high</span> <span class="o">=</span> <span class="n">cropped</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+		<span class="n">cropped_middle</span> <span class="o">=</span> <span class="n">cropped</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">mapwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">mapheight</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+		<span class="n">bgoffset_low</span> <span class="o">=</span> <span class="n">cropped_middle</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+		<span class="n">bgoffset_high</span> <span class="o">=</span> <span class="n">cropped_middle</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
 
 		<span class="c1"># check to see of if the background was removed for the spectrum</span>
-		<span class="k">if</span> <span class="p">((</span><span class="n">bgoffset_high</span> <span class="o">+</span> <span class="n">bgoffset_low</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="s1">&#39;background subtracted&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]):</span>
+		<span class="k">if</span> <span class="p">((</span><span class="n">bgoffset_high</span> <span class="o">+</span> <span class="n">bgoffset_low</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="s1">&#39;background subtracted&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]):</span>
 			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The background was not removed, or the peak selected is not suitable for normalization. This should be done in case of normalizing to a peak amplitude&quot;</span><span class="p">)</span>
 			<span class="k">return</span>
 
-		<span class="c1"># if mode == &#39;const&#39;:</span>
+		<span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;const&#39;</span><span class="p">:</span>
+			<span class="c1"># pick the spectrum to normalize to</span>
+			<span class="n">cropped</span> <span class="o">=</span> <span class="n">cropped</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">mapwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">mapheight</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
 
-		<span class="c1"># fit to the cropped region</span>
-		<span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="n">cropped</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakshift</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">bgoffset_high</span> <span class="o">+</span> <span class="n">bgoffset_low</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">})</span>
-		<span class="n">peakampl</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;ampl&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
-		<span class="n">peakpos</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;x0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+			<span class="c1"># fit to the cropped region</span>
+			<span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="n">cropped</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakshift</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">bgoffset_high</span> <span class="o">+</span> <span class="n">bgoffset_low</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+			<span class="n">peakampl</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;ampl&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+			<span class="n">peakpos</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;x0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
 
-		<span class="c1"># normalize to the peak amplitde</span>
-		<span class="n">normalized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">/</span> <span class="n">peakampl</span>
+			<span class="c1"># normalize to the peak amplitde</span>
+			<span class="n">normalized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">/</span> <span class="n">peakampl</span>
 
-		<span class="c1"># copy attributes and change them acccordingly</span>
-		<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-		<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
-		<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;normalized Raman intensity&#39;</span>
-		<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;normalized to peak at: &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakpos</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+			<span class="c1"># copy attributes and change them acccordingly</span>
+			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;normalized Raman intensity&#39;</span>
+			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;normalized to peak at: &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakpos</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; in mode == const&#39;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
 
-		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="n">normalized</span></div>
+			<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">normalized</span>
+
+		<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;individual&#39;</span><span class="p">:</span>
+			<span class="c1"># fit to the cropped region</span>
+			<span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="n">cropped</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakshift</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">bgoffset_high</span> <span class="o">+</span> <span class="n">bgoffset_low</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+			<span class="n">peakampl</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;ampl&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+			<span class="n">peakpos</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;x0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">mapwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">mapheight</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
+			<span class="c1"># normalize to the peak amplitde</span>
+			<span class="n">normalized</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">/</span> <span class="n">peakampl</span>
+
+			<span class="c1"># copy attributes and change them acccordingly</span>
+			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span>
+			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;normalized Raman intensity&#39;</span>
+			<span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;normalized to peak at: &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakpos</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; in mode == individual&#39;</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+			<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">normalized</span>
+			
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;`mode` parameter must be either: </span><span class="se">\&#39;</span><span class="s1">const</span><span class="se">\&#39;</span><span class="s1"> or </span><span class="se">\&#39;</span><span class="s1">individual</span><span class="se">\&#39;</span><span class="s1">&#39;</span><span class="p">)</span>
+			<span class="k">return</span></div>
 
 	<span class="c1"># internal functions --------------------------</span>
 
@@ -577,10 +604,11 @@
 
 <div class="viewcode-block" id="singlespec.calibrate"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.calibrate">[docs]</a>	<span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="c1"># create a copy of the instance</span>
-		<span class="n">singlesp_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-		<span class="k">pass</span></div>
+		<span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakshift</span><span class="p">})</span>
 
-<div class="viewcode-block" id="singlespec.normalize"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">):</span>
+		<span class="k">return</span> <span class="n">fit</span></div>
+
+<div class="viewcode-block" id="singlespec.normalize"><a class="viewcode-back" href="../ramantools.html#ramantools.singlespec.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 		<span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
 <span class="sd">		An exception will be raised if the background has not been removed.</span>
 
@@ -605,7 +633,7 @@
 			<span class="k">return</span>
 
 		<span class="c1"># fit to the cropped region</span>
-		<span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="n">cropped</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakshift</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">bgoffset_high</span> <span class="o">+</span> <span class="n">bgoffset_low</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">})</span>
+		<span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="n">cropped</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakshift</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">bgoffset_high</span> <span class="o">+</span> <span class="n">bgoffset_low</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 		<span class="n">peakampl</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;ampl&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
 		<span class="n">peakpos</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;x0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
 
@@ -1008,12 +1036,13 @@
 <span class="sd">		By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.</span>
 
 <span class="sd">	&quot;&quot;&quot;</span>	
-	<span class="c1"># defining starting parameters</span>
+	<span class="c1"># defining starting parameters for the fit</span>
 	<span class="n">stval_defaults</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">({</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="mi">1580</span><span class="p">,</span> <span class="s1">&#39;ampl&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="mi">900</span><span class="p">})</span>
 	<span class="c1"># loop over the keys in stval and fill missing values with defaults</span>
 	<span class="k">if</span> <span class="n">stval</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 		<span class="n">stval</span> <span class="o">=</span> <span class="n">stval_defaults</span>
 	<span class="k">else</span><span class="p">:</span>
+		<span class="c1"># if only some values are missing, fill in the rest</span>
 		<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">stval_defaults</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
 			<span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stval</span><span class="p">:</span>
 				<span class="n">stval</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">stval_defaults</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
@@ -1030,17 +1059,16 @@
 	<span class="c1"># plot the resulting fit</span>
 	<span class="k">if</span> <span class="n">toplot</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
 		<span class="c1">#check if the xrobj is a single spectrum or map</span>
-		<span class="k">if</span> <span class="s1">&#39;width&#39;</span> <span class="ow">in</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
+		<span class="k">if</span> <span class="s1">&#39;width&#39;</span> <span class="ow">in</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
 			<span class="c1"># it&#39;s a map</span>
 			<span class="k">if</span> <span class="p">(</span><span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
 				<span class="n">plotwidth</span> <span class="o">=</span> <span class="n">width</span>
 				<span class="n">plotheight</span> <span class="o">=</span> <span class="n">height</span>
 			<span class="k">else</span><span class="p">:</span>
-				<span class="c1"># if no width and height parameters are supplied, take the middle spectrum</span>
-				<span class="n">wmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">width</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-				<span class="n">wmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">width</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-				<span class="n">hmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-				<span class="n">hmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+				<span class="n">wmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">width</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+				<span class="n">wmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">width</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+				<span class="n">hmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+				<span class="n">hmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 				<span class="n">plotwidth</span> <span class="o">=</span> <span class="p">(</span><span class="n">wmax</span> <span class="o">-</span> <span class="n">wmin</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">wmin</span>
 				<span class="n">plotheight</span> <span class="o">=</span> <span class="p">(</span><span class="n">hmax</span> <span class="o">-</span> <span class="n">hmin</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span> <span class="o">+</span> <span class="n">hmin</span>
 
@@ -1053,7 +1081,7 @@
 			<span class="n">peakoffset</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;offset&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">plotwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">plotheight</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
 			<span class="n">peakheight</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;ampl&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">plotwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">plotheight</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
 		<span class="k">else</span><span class="p">:</span>
-			<span class="c1"># it&#39;s a single spectrum</span>
+			<span class="c1"># it&#39;s a single spectrum or a selected single spectrum from a map</span>
 			<span class="n">fitpeakpos</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;x0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
 			<span class="n">dataplot</span> <span class="o">=</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">lw</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span><span class="p">)</span>
 			<span class="n">funcparams</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
@@ -1068,7 +1096,7 @@
 		<span class="n">dataplot</span> <span class="c1"># type: ignore</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="n">func</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="o">*</span><span class="n">funcparams</span><span class="p">),</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">lw</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">&#39;fit&#39;</span><span class="p">)</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="n">fitpeakpos</span> <span class="o">-</span> <span class="mf">2.5</span><span class="o">*</span><span class="n">plotarea_x</span><span class="p">,</span> <span class="n">fitpeakpos</span> <span class="o">+</span> <span class="mf">2.5</span><span class="o">*</span><span class="n">plotarea_x</span><span class="p">])</span>
-		<span class="n">plotarea_y</span> <span class="o">=</span> <span class="p">[</span><span class="n">peakoffset</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="n">peakoffset</span> <span class="o">+</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">peakheight</span><span class="p">]</span>
+		<span class="n">plotarea_y</span> <span class="o">=</span> <span class="p">[</span><span class="n">peakoffset</span><span class="o">*</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">peakoffset</span> <span class="o">+</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">peakheight</span><span class="p">]</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">plotarea_y</span><span class="p">)</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 	

@@ -4,6 +4,8 @@ Introduction
 Tools to analize Raman spectroscopy data, measured using the Witec 300rsa+ confocal Raman spectrometer.
 Source is available from `GitHub <https://github.com/zrbyte/ramantools/>`_.
 
+Requires python 3.10 or later.
+
 .. Operations made to the xarray instances, using the methods of the `ramanmap` and `singlespec` classes are appended to the 'comments' attribute.
 
 Examples

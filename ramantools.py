@@ -207,6 +207,7 @@ class ramanmap:
 	def normalize(self, peakshift, width = None, height = None, mode = 'const', **kwargs):
 		"""Normalize the Raman spectrum to the peak at ``peakshift``.
 		An exception will be raised if the background has not been removed.
+		It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.
 
 		:param peakshift: rough position of the peak in :class:`ramanmap.mapxr.ramanshift` dimension
 		:type peakshift: float
@@ -539,6 +540,7 @@ class singlespec:
 	def normalize(self, peakshift, **kwargs):
 		"""Normalize the Raman spectrum to the peak at ``peakshift``.
 		An exception will be raised if the background has not been removed.
+		It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.
 
 		:param peakshift: rough position of the peak in :class:`singlespec.ssxr.ramanshift` dimension
 		:type peakshift: float
