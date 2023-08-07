@@ -31,7 +31,7 @@ class ramanmap:
 	:var mapxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata
 	:var map: (type :py:mod:`numpy` array) Raman intensity values
 	:var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`
-	:var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It's only available if :py:meth:`singlespec.remove_bg` is called.
+	:var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It's only available if :py:meth:`singlespec.remove_bg` or :py:meth:`ramanmap.remove_bg` is called.
 	:var samplename: (type: str) name of the sample, as shown in the Witec software.
 	:var mapname: (type: str) contains the name of the Raman map, as shown in the Witec software.
 
@@ -60,7 +60,7 @@ class ramanmap:
 		:return: none
 		"""
 		print('Comments of the `xarray` DataArray \n')
-		print(self.ssxr.attrs['comments'])
+		print(self.mapxr.attrs['comments'])
 		print('------------------')
 		print(self.metadata)
 
@@ -208,7 +208,7 @@ class ramanmap:
 		"""Normalize the Raman spectrum to the peak at ``peakshift``.
 		An exception will be raised if the background has not been removed.
 
-		:param peakshift: rough position of the peak in :class:`singlespec.ssxr.ramanshift` dimension
+		:param peakshift: rough position of the peak in :class:`ramanmap.mapxr.ramanshift` dimension
 		:type peakshift: float
 		:param mode: Has two modes: 'const' and 'individual'. defaults to 'const'.
 		:type mode: str, optional
@@ -221,7 +221,7 @@ class ramanmap:
 		:raises ValueError: `mode` parameter must be either: 'const' or 'individual'.
 
 		.. note::
-			Attributes of :class:`ramanmap.ssxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.
+			Attributes of :class:`ramanmap.mapxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.
 
 			In ``mode == 'individual'``, each spectrum in the map will be normalized to the local peak amplitude. In ``mode == 'const'``, the peak at the position specified by ``width`` and ``height`` is used for normalization.
 			If ``mode == 'individual'``, the ``width`` and ``height`` parameters are ignored.
@@ -532,8 +532,9 @@ class singlespec:
 
 	def calibrate(self, peakshift, calibfactor = 0, **kwargs):
 		# create a copy of the instance
-		singlesp_mod = copy.deepcopy(self)
-		pass
+		fit = peakfit(self.ssxr, stval = {'x0': peakshift})
+
+		return fit
 
 	def normalize(self, peakshift, **kwargs):
 		"""Normalize the Raman spectrum to the peak at ``peakshift``.
