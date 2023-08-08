@@ -1181,7 +1181,6 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 
 	# plot the resulting fit
 	if toplot is True:
-		print('Values of starting parameters: \n', stval, '\n')
 		#check if the xrobj is a single spectrum or map
 		if 'width' in xrobj.dims:
 			# it's a map
@@ -1197,15 +1196,21 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 				plotwidth = (wmax - wmin)/2 + wmin
 				plotheight = (hmax - hmin)/2 + hmin
 			
-			print('Fitted parameters: \n', fit['curvefit_coefficients'].sel(width = plotwidth, height = plotheight, method = 'nearest').values)
+			paramnames = fit['curvefit_coefficients'].sel(width = plotwidth, height = plotheight, method = 'nearest').param.values
 			funcparams = fit['curvefit_coefficients'].sel(width = plotwidth, height = plotheight, method = 'nearest').data
 			# plot the data
 			xrobj.sel(width = plotwidth, height = plotheight, method = 'nearest').plot(color = 'black', marker = '.', lw = 0, label = 'data')			
 		else:
-			print('Fitted parameters: \n', fit['curvefit_coefficients'].values)
+			paramnames = fit['curvefit_coefficients'].param.values
 			funcparams = fit['curvefit_coefficients'].data
 			# plot the data
 			xrobj.plot(color = 'black', marker = '.', lw = 0, label = 'data')
+
+		# print the starting and fitted values of the parameters
+		print('Values of starting parameters: \n', stval, '\n')
+		print('Values of fitted parameters:\n')
+		for name, fitvalues in zip(paramnames, funcparams):
+			print(name, ':', f'{fitvalues:.2f}')
 
 		shiftmin = min(xrobj.ramanshift.data)
 		shiftmax = max(xrobj.ramanshift.data)
