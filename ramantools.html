@@ -57,6 +57,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.calibrate"><code class="docutils literal notranslate"><span class="pre">ramanmap.calibrate()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.history"><code class="docutils literal notranslate"><span class="pre">ramanmap.history()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.normalize"><code class="docutils literal notranslate"><span class="pre">ramanmap.normalize()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.peakmask"><code class="docutils literal notranslate"><span class="pre">ramanmap.peakmask()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramanmap.remove_bg"><code class="docutils literal notranslate"><span class="pre">ramanmap.remove_bg()</span></code></a></li>
@@ -84,6 +85,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.calibrate"><code class="docutils literal notranslate"><span class="pre">ramanmap.calibrate()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.history"><code class="docutils literal notranslate"><span class="pre">ramanmap.history()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.normalize"><code class="docutils literal notranslate"><span class="pre">ramanmap.normalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.peakmask"><code class="docutils literal notranslate"><span class="pre">ramanmap.peakmask()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramanmap.remove_bg"><code class="docutils literal notranslate"><span class="pre">ramanmap.remove_bg()</span></code></a></li>
@@ -159,7 +161,7 @@ This can decrease the runtime.</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">y_data_nobg</span></code>, <code class="docutils literal notranslate"><span class="pre">bg_values</span></code>, <code class="docutils literal notranslate"><span class="pre">coeff</span></code>, <code class="docutils literal notranslate"><span class="pre">params_used_at_run</span></code>, <code class="docutils literal notranslate"><span class="pre">mask</span></code></p>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">y_data_nobg</span></code>, <code class="docutils literal notranslate"><span class="pre">bg_values</span></code>, <code class="docutils literal notranslate"><span class="pre">coeff</span></code>, <code class="docutils literal notranslate"><span class="pre">params_used_at_run</span></code>, <code class="docutils literal notranslate"><span class="pre">mask</span></code>, <code class="docutils literal notranslate"><span class="pre">covar</span></code></p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>tuple: (<code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, dictionary, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array)</p>
@@ -444,6 +446,46 @@ It uses <a class="reference internal" href="#ramantools.peakfit" title="ramantoo
 <p>Attributes of <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code> are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new <cite>long_name</cite>.</p>
 <p>In <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'individual'</span></code>, each spectrum in the map will be normalized to the local peak amplitude. In <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'const'</span></code>, the peak at the position specified by <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> is used for normalization.
 If <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'individual'</span></code>, the <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> parameters are ignored.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramanmap.peakmask">
+<span class="sig-name descname"><span class="pre">peakmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">peakpos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools.html#ramanmap.peakmask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramanmap.peakmask" title="Permalink to this definition"></a></dt>
+<dd><p>Create a boolean mask for the map, where the mean Raman intensity of the peak at <code class="docutils literal notranslate"><span class="pre">peakpos</span></code> is larger than the peak mean in the selected spectrum by the <code class="docutils literal notranslate"><span class="pre">cutoff</span></code> value.
+The method also returns the cropped <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray, with the values that are cropped replaced by NaNs.
+The method needs a reference spectrum for  determining the “typical” mean of the peak amplitude.
+This is also used to determine the cutoff value for the rest of the map as:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;selected spectrum mean value&#39;</span> <span class="o">*</span> <span class="n">cutoff</span>
+</pre></div>
+</div>
+<p>The optional <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> parameters can be passed, which selects that spectrum for reference.
+If these are not passed, the spectrum in the middle of the map is taken as reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>peakpos</strong> (<em>float</em>) – position in 1/cm of the peak we want to create the mask for</p></li>
+<li><p><strong>cutoff</strong> (<em>float</em><em>, </em><em>optional</em>) – cutoff value, interpreted as a percentage. Values between 0 and 1. Defaults to 0.1</p></li>
+<li><p><strong>width</strong> (<em>float</em><em>, </em><em>optional</em>) – width parameter of the spectrum in the map we want to have as a reference, defaults to None</p></li>
+<li><p><strong>height</strong> (<em>float</em><em>, </em><em>optional</em>) – height parameter of the spectrum in the map we want to have as a reference, defaults to None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mapmasked</span></code>: <a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance containing the cropped map</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">peakmask</span></code>: <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray containing the mask</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple: (<a class="reference internal" href="#ramantools.ramanmap" title="ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code>)</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The peak position specified by <code class="docutils literal notranslate"><span class="pre">peakpos</span></code> must not be exact.
+The method uses <a class="reference internal" href="#ramantools.peakfit" title="ramantools.peakfit"><code class="xref py py-func docutils literal notranslate"><span class="pre">peakfit()</span></code></a> to find the peak near <code class="docutils literal notranslate"><span class="pre">peakpos</span></code>.
+Keyword arguments used by <a class="reference internal" href="#ramantools.peakfit" title="ramantools.peakfit"><code class="xref py py-func docutils literal notranslate"><span class="pre">peakfit()</span></code></a> can be passed to the method.</p>
 </div>
 </dd></dl>
 
