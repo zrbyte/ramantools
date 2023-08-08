@@ -516,6 +516,9 @@
 	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Constructor for :class:`ramanmap`</span>
 <span class="sd">		&quot;&quot;&quot;</span>		
+		<span class="c1"># filename</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">map_path</span>
+		<span class="c1"># fitmask</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
 		<span class="c1"># Load the metadata</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_load_info</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
@@ -842,7 +845,10 @@
 
 	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Constructor for :class:`singlespec`</span>
-<span class="sd">		&quot;&quot;&quot;</span>		
+<span class="sd">		&quot;&quot;&quot;</span>	
+		<span class="c1"># filename</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">spec_path</span>
+		<span class="c1"># fit mask	</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
 		<span class="c1"># Load the metadata</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_load_info</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
