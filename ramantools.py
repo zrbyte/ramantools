@@ -442,6 +442,9 @@ class ramanmap:
 	def __init__(self, map_path, info_path):
 		"""Constructor for :class:`ramanmap`
 		"""		
+		# filename
+		self.filename = map_path
+		# fitmask
 		self.mask = None
 		# Load the metadata
 		self._load_info(info_path)
@@ -768,7 +771,10 @@ class singlespec:
 
 	def __init__(self, spec_path, info_path):
 		"""Constructor for :class:`singlespec`
-		"""		
+		"""	
+		# filename
+		self.filename = spec_path
+		# fit mask	
 		self.mask = None
 		# Load the metadata
 		self._load_info(info_path)
