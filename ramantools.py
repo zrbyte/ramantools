@@ -1142,6 +1142,3 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 	fit.attrs['comments'] += 'peak fitting, using ' + str(func.__name__) + '\n'
 	return fit
 
-def drawmask():
-	# create a bool mask for a peak, to use with peakfitting.
-	pass
