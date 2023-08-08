@@ -253,7 +253,7 @@ class ramanmap:
 		map_mod.mapxr = self.mapxr.assign_coords(ramanshift = self.mapxr['ramanshift'] + calibshift)
 
 		# add to the comments attribute of the new instance
-		map_mod.mapxr.attrs['comments'] += 'Calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift \n'
+		map_mod.mapxr.attrs['comments'] += 'calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift \n'
 
 		return map_mod
 
@@ -357,6 +357,85 @@ class ramanmap:
 		map_norm.mapxr = normalized
 
 		return map_norm
+
+	def peakmask(self, peakpos, cutoff = 0.1, width = None, height = None, **kwargs):
+		"""Create a boolean mask for the map, where the mean Raman intensity of the peak at ``peakpos`` is larger than the peak mean in the selected spectrum by the ``cutoff`` value.
+		The method also returns the cropped :py:mod:`xarray` DataArray, with the values that are cropped replaced by NaNs.
+		The method needs a reference spectrum for  determining the "typical" mean of the peak amplitude.
+		This is also used to determine the cutoff value for the rest of the map as:
+		
+		.. code-block:: python
+
+			'selected spectrum mean value' * cutoff
+		
+		The optional ``width`` and ``height`` parameters can be passed, which selects that spectrum for reference.
+		If these are not passed, the spectrum in the middle of the map is taken as reference.
+
+		:param peakpos: position in 1/cm of the peak we want to create the mask for
+		:type peakpos: float
+		:param cutoff: cutoff value, interpreted as a percentage. Values between 0 and 1. Defaults to 0.1
+		:type cutoff: float, optional
+		:param width: width parameter of the spectrum in the map we want to have as a reference, defaults to None
+		:type width: float, optional
+		:param height: height parameter of the spectrum in the map we want to have as a reference, defaults to None
+		:type height: float, optional
+		
+		:return:
+			- ``mapmasked``: :class:`ramanmap` instance containing the cropped map
+			- ``peakmask``: :py:mod:`xarray` DataArray containing the mask
+		:rtype: tuple: (:class:`ramanmap`, :py:mod:`xarray`)
+
+		.. note::
+			The peak position specified by ``peakpos`` must not be exact.
+			The method uses :func:`peakfit` to find the peak near ``peakpos``.
+			Keyword arguments used by :func:`peakfit` can be passed to the method.
+		"""
+		# get the middle of the map
+		if (width is not None) and (height is not None):
+			mapwidth = width
+			mapheight = height
+		else:
+			# if no width and height parameters are supplied, take the middle spectrum
+			wmin = min(self.mapxr.width.data)
+			wmax = max(self.mapxr.width.data)
+			hmin = min(self.mapxr.height.data)
+			hmax = max(self.mapxr.height.data)
+			mapwidth = (wmax - wmin)/2 + wmin
+			mapheight = (hmax - hmin)/2 + hmin
+
+		# first we fit a Lorentzian to the peak at peakpos to determine its width
+		spectofit = self.mapxr.sel(width = mapwidth, height = mapheight, method = 'nearest')
+		fit = peakfit(spectofit, stval = {'x0': peakpos}, **kwargs)
+		peakx0 = fit['curvefit_coefficients'].sel(param = 'x0').data
+		peakwidth = fit['curvefit_coefficients'].sel(param = 'width').data
+
+		# vicinity of the peak
+		# this needs to be larger than the exclusion_factor used by bgsubtract()
+		peakvicinity = slice(peakx0 - 5*peakwidth, peakx0 + 5*peakwidth)
+
+		# crop the data around the peak
+		cropped = self.mapxr.sel(ramanshift = peakvicinity)
+
+		# determine the background, by using a 0th order polynomial
+		xx = cropped.ramanshift.data
+		yy = cropped.sel(width = mapwidth, height = mapheight, method = 'nearest').data
+		_, _, background, _, _, _ = bgsubtract(xx, yy, polyorder = 0, peak_pos = [peakx0], exclusion_factor = 3)
+
+		# get the mean value of the peak in the region we cropped and subtract the background
+		selected_peakmean = spectofit.sel(ramanshift = peakvicinity).mean(dim = 'ramanshift').data - background
+		peakmean = cropped.mean(dim = 'ramanshift') - background
+
+		# make the boolean mask where the value of the mean is more than the cutoff times the selected peak mean
+		peakmask = peakmean > cutoff*selected_peakmean
+
+		# crop the data with the mask
+		mapmasked = copy.deepcopy(self)
+		mapmasked.mapxr = mapmasked.mapxr.where(peakmask)
+
+		# update the comment attributes
+		mapmasked.mapxr.attrs['comments'] += 'cropped regions, where mean Raman int. of peak: ' + f'{peakx0:.2f}' + ' is less than ' + f'{cutoff:.2f}' + ' of selected peak\n'
+
+		return mapmasked, peakmask
 
 	# internal functions --------------------------
 
@@ -630,7 +709,7 @@ class singlespec:
 		ss_mod.ssxr = self.ssxr.assign_coords(ramanshift = self.ssxr['ramanshift'] + calibshift)
 
 		# add to the comments attribute of the new instance
-		ss_mod.ssxr.attrs['comments'] += 'Calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift\n'
+		ss_mod.ssxr.attrs['comments'] += 'calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift\n'
 
 		return ss_mod
 
@@ -921,7 +1000,7 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 	:param peak_pos: list of the peak positions in ``x_data`` values used for exclusion, defaults to None
 	:type peak_pos: list of floats, optional
 
-	:return: ``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``, ``mask``
+	:return: ``y_data_nobg``, ``bg_values``, ``coeff``, ``params_used_at_run``, ``mask``, ``covar``
 	:rtype: tuple: (:py:mod:`numpy` array, :py:mod:`numpy` array, :py:mod:`numpy` array, dictionary, :py:mod:`numpy` array, :py:mod:`numpy` array)
 
 	* ``y_data_nobg``: Raman counts, with the background subtracted,

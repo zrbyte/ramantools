@@ -11,7 +11,7 @@ Requires python 3.10 or later.
 Examples
 =============
 
-Take a look at the ``ramantools tutorial.ipynb`` Jupyter notebook in the ramantools `GitHub repository <https://github.com/zrbyte/ramantools/>`_.
+Take a look at the ``ramantools demo.ipynb`` and ``ramantools tutorial.ipynb`` Jupyter notebooks in the `GitHub repository <https://github.com/zrbyte/ramantools/>`_.
 
 Below is a simple example for loading a Raman map and doing some basic analysis.
 
