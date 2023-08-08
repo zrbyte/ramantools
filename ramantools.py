@@ -864,7 +864,7 @@ class singlespec:
 
 ## Tools -----------------------------------------------------------------
 
-def gaussian(x, x0, ampl, width, offset):
+def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 900):
 	"""Gaussian function. Width and amplitude parameters have the same meaning as for :func:`lorentz`.
 
 	:param x: values for the x coordinate
@@ -885,7 +885,7 @@ def gaussian(x, x0, ampl, width, offset):
 	return offset + ampl * np.exp(-2*np.log(2)*(x - x0)**2 / (width**2))
 
 
-def lorentz(x, x0, ampl, width, offset):
+def lorentz(x, x0 = 1580, ampl = 10, width = 15, offset = 900):
 	"""Single Lorentz function
 
 	:param x: values for the x coordinate
@@ -913,7 +913,7 @@ def lorentz(x, x0, ampl, width, offset):
 	area = np.pi * ampl * width / 2
 	return offset + (2/np.pi) * (area * width) / (4*(x - x0)**2 + width**2)
 
-def lorentz2(x, x01, ampl1, width1, x02, ampl2, width2, offset):
+def lorentz2(x, x01 = 2700, ampl1 = 1, width1 = 15, x02 = 2730, ampl2 = 1, width2 = 15, offset = 900):
 	"""Double Lorentz function
 
 	:return: values of a double Lorentz function
@@ -1109,7 +1109,7 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 	:type func: function, optional
 	:param fitresult: an :py:mod:`xarray` Dataset of a previous fit calculation, with matching dimensions. If this is passed to :func:`peakfit`, the fit calculation in skipped and the passed Dataset is used.
 	:type fitresult: :py:mod:`xarray` Dataset, optional
-	:param stval: starting values for the fit parameters of ``func``. You are free to specify only some of the values, the rest will be filled by defaults. Defaults to {'x0': 1580, 'ampl': 500, 'width': 15, 'offset': 900}
+	:param stval: starting values for the fit parameters of ``func``. You are free to specify only some of the values, the rest will be filled by defaults. Defaults are given in the starting values for keyword arguments in ``func``.
 	:type stval: dictionary of ``func`` parameters, optional
 	:param bounds: bounds for the fit parameters, used by :py:mod:`xarray.curvefit`. Simlar dictionary, like ``stval``, but the values area a list, with lower and upper components. Defaults to None
 	:type bounds: dictionary of ``func`` parameters, with tuples containing lower and upper bounds, optional
@@ -1137,31 +1137,39 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 		map = rt.ramanmap(map_path, info_path)
 
 		# Creating the dictionary for the starting values and the bounds
+		# The default function is `lorentz`, with parameters:
 		p = {'x0': 2724, 'ampl': 313, 'width': 49, 'offset': 0}
 		# passing the starting values contained in `p` and bounds: `b` to the `peakfit()` method. 
 		b = {'x0': [2500, 2900], 'ampl': [0, 900], 'width': [20, 100], 'offset': [-10, 50]}
 		mapfit = rt.peakfit(m_nobg.mapxr, stval = p, bounds = b, toplot = True)
 
 	.. note::
-		Use ``toplot`` = `True` to tweak the starting values.
-		If ``toplot`` = `True`, in case of a map, if no ``width`` and ``height`` are specified, the middle of the map is used for plotting.
 
-		Passing a ``bounds`` dictionary to :func:`peakfit` seems to increase the fitting time significantly. This might be an issue with :py:mod:`xarray.DataArray.curvefit`.
-
-		By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.
+		- Use ``toplot`` = `True` to tweak the starting values. If ``toplot`` = `True`, in case of a map, if no ``width`` and ``height`` are specified, the middle of the map is used for plotting.
+		- Passing a ``bounds`` dictionary to :func:`peakfit` seems to increase the fitting time significantly. This might be an issue with :py:mod:`xarray.DataArray.curvefit`.
+		- By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.
+		- In case of using double Lorentz fitting, the names of the parameters change! See: :func:`lorentz2`.
 
 	"""	
-	# defining starting parameters for the fit
-	stval_defaults = dict({'x0': 1580, 'ampl': 500, 'width': 15, 'offset': 900})
+	# get the parameters used by the function: func
+	# and also get the default values for the keyword arguments
+	param_count = func.__code__.co_argcount
+	param_names = func.__code__.co_varnames[:param_count]
+	defaults = func.__defaults__
+	# get the starting index for the keyword arguments
+	kwargs_start_index = param_count - len(defaults)
+	# make a dictionary with the keyword arguments (parameters) and their default values specified in the function: func
+	kwargs_with_defaults = dict(zip(param_names[kwargs_start_index:], defaults))
+
 	# loop over the keys in stval and fill missing values with defaults
 	if stval is None:
-		stval = stval_defaults
+		stval = kwargs_with_defaults
 	else:
 		# if only some values are missing, fill in the rest
-		for key in stval_defaults.keys():
+		for key in kwargs_with_defaults.keys():
 			if key not in stval:
-				stval[key] = stval_defaults[key]
-
+				stval[key] = kwargs_with_defaults[key]
+	
 	# fit
 	# the `xrobj` should have a 'ramanshift' coordinate
 	# `nan_policy = omit` skips values with NaN. This is passed to scipy.optimize.curve_fit
@@ -1173,10 +1181,12 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 
 	# plot the resulting fit
 	if toplot is True:
+		print('Values of starting parameters: \n', stval, '\n')
 		#check if the xrobj is a single spectrum or map
 		if 'width' in xrobj.dims:
 			# it's a map
 			if (width is not None) and (height is not None):
+				# get coordinates to plot, or take the middle spectrum
 				plotwidth = width
 				plotheight = height
 			else:
@@ -1186,32 +1196,30 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 				hmax = np.max(xrobj.height.data)
 				plotwidth = (wmax - wmin)/2 + wmin
 				plotheight = (hmax - hmin)/2 + hmin
-
-			# set some plotting variables
-			fitpeakpos = fit['curvefit_coefficients'].sel(param = 'x0').sel(width = plotwidth, height = plotheight, method = 'nearest').data
-			dataplot = xrobj.sel(width = plotwidth, height = plotheight, method = 'nearest').plot(color = 'black', marker = '.', lw = 0, label = 'data')
+			
+			print('Fitted parameters: \n', fit['curvefit_coefficients'].sel(width = plotwidth, height = plotheight, method = 'nearest').values)
 			funcparams = fit['curvefit_coefficients'].sel(width = plotwidth, height = plotheight, method = 'nearest').data
-			# determine the plot range for the peak
-			plotarea_x = fit['curvefit_coefficients'].sel(param = 'width').sel(width = plotwidth, height = plotheight, method = 'nearest').data
-			peakoffset = fit['curvefit_coefficients'].sel(param = 'offset').sel(width = plotwidth, height = plotheight, method = 'nearest').data
-			peakheight = fit['curvefit_coefficients'].sel(param = 'ampl').sel(width = plotwidth, height = plotheight, method = 'nearest').data
+			# plot the data
+			xrobj.sel(width = plotwidth, height = plotheight, method = 'nearest').plot(color = 'black', marker = '.', lw = 0, label = 'data')			
 		else:
-			# it's a single spectrum or a selected single spectrum from a map
-			fitpeakpos = fit['curvefit_coefficients'].sel(param = 'x0').data
-			dataplot = xrobj.plot(color = 'black', marker = '.', lw = 0, label = 'data')
+			print('Fitted parameters: \n', fit['curvefit_coefficients'].values)
 			funcparams = fit['curvefit_coefficients'].data
-			# determine the plot range for the peak
-			plotarea_x = fit['curvefit_coefficients'].sel(param = 'width').data
-			peakheight = fit['curvefit_coefficients'].sel(param = 'ampl').data
-			peakoffset = fit['curvefit_coefficients'].sel(param = 'offset').data
+			# plot the data
+			xrobj.plot(color = 'black', marker = '.', lw = 0, label = 'data')
 
 		shiftmin = min(xrobj.ramanshift.data)
 		shiftmax = max(xrobj.ramanshift.data)
 		shift = np.linspace(shiftmin, shiftmax, num = int((shiftmax - shiftmin)*100))
-		dataplot # type: ignore
-		pl.plot(shift, func(shift, *funcparams), color = 'red', lw = 3, alpha = 0.5, label = 'fit')
-		pl.xlim([fitpeakpos - 2.5*plotarea_x, fitpeakpos + 2.5*plotarea_x])
-		plotarea_y = [peakoffset*0.95, peakoffset + 1.2*peakheight]
+		
+		funcvalues = func(shift, *funcparams)
+		# set plotting variables based on the datapoints
+		# this should be the ramanshift of the peak maximum if the fit was successful
+		fitpeakpos = shift[np.argmax(funcvalues)]
+		plotarea_x = 100
+		plotarea_y = [0.8*np.min(funcvalues), 1.1*np.max(funcvalues)]
+
+		pl.plot(shift, funcvalues, color = 'red', lw = 3, alpha = 0.5, label = 'fit')
+		pl.xlim([fitpeakpos - plotarea_x, fitpeakpos + plotarea_x])
 		pl.ylim(plotarea_y)
 		pl.legend()
 	
