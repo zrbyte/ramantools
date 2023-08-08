@@ -242,7 +242,7 @@ class ramanmap:
 			# fit to the peak around `peakshift`
 			fit = peakfit(spectofit, stval = {'x0': peakshift}, **kwargs)
 			# correction factor relative to the expected value: peakshift
-			calibshift = fit['curvefit_coefficients'].sel(param = 'x0').data - peakshift
+			calibshift = peakshift - fit['curvefit_coefficients'].sel(param = 'x0').data
 		else:
 			calibshift = calibfactor
 
@@ -253,7 +253,7 @@ class ramanmap:
 		map_mod.mapxr = self.mapxr.assign_coords(ramanshift = self.mapxr['ramanshift'] + calibshift)
 
 		# add to the comments attribute of the new instance
-		map_mod.mapxr.attrs['comments'] += 'Calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift'
+		map_mod.mapxr.attrs['comments'] += 'Calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift \n'
 
 		return map_mod
 
@@ -619,7 +619,7 @@ class singlespec:
 			# fit to the peak around `peakshift`
 			fit = peakfit(self.ssxr, stval = {'x0': peakshift}, **kwargs)
 			# correction factor relative to the expected value: peakshift
-			calibshift = fit['curvefit_coefficients'].sel(param = 'x0').data - peakshift
+			calibshift = peakshift - fit['curvefit_coefficients'].sel(param = 'x0').data
 		else:
 			calibshift = calibfactor
 
@@ -630,7 +630,7 @@ class singlespec:
 		ss_mod.ssxr = self.ssxr.assign_coords(ramanshift = self.ssxr['ramanshift'] + calibshift)
 
 		# add to the comments attribute of the new instance
-		ss_mod.ssxr.attrs['comments'] += 'Calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift'
+		ss_mod.ssxr.attrs['comments'] += 'Calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift\n'
 
 		return ss_mod
 
