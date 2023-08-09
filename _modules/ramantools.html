@@ -267,8 +267,9 @@
 			<span class="n">bg_values</span> <span class="o">=</span> <span class="n">bg_values</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
 			<span class="c1"># subtract these along the ramanshift dimension of bg</span>
 			<span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="p">[:]</span> <span class="o">-=</span> <span class="n">bg_values</span>
-			<span class="c1"># update the comments attribute</span>
-			<span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted - mode == const, background fit: middle spectrum </span><span class="se">\n</span><span class="s1">&#39;</span>
+			<span class="c1"># update the comments attribute if it exists</span>
+			<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
+				<span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted - mode == const, background fit: middle spectrum </span><span class="se">\n</span><span class="s1">&#39;</span>
 
 		<span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;individual&#39;</span><span class="p">:</span>
 			<span class="c1"># Make an individual fit to all spectra in the map</span>
@@ -326,8 +327,9 @@
 		<span class="c1"># shift the ramanshift values by the correction factor in the new singlespec instance</span>
 		<span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">calibshift</span><span class="p">)</span>
 
-		<span class="c1"># add to the comments attribute of the new instance</span>
-		<span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;calibrated Raman shift by adding &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">calibshift</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; cm^-1 to the raw ramanshift </span><span class="se">\n</span><span class="s1">&#39;</span>
+		<span class="c1"># add to the comments attribute of the new instance if it exists</span>
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
+			<span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;calibrated Raman shift by adding &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">calibshift</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; cm^-1 to the raw ramanshift </span><span class="se">\n</span><span class="s1">&#39;</span>
 
 		<span class="k">return</span> <span class="n">map_mod</span></div>
 
@@ -506,8 +508,9 @@
 		<span class="n">mapmasked</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 		<span class="n">mapmasked</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">mapmasked</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">peakmask</span><span class="p">)</span>
 
-		<span class="c1"># update the comment attributes</span>
-		<span class="n">mapmasked</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;cropped regions, where mean Raman int. of peak: &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakx0</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; is less than &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">cutoff</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; of selected peak</span><span class="se">\n</span><span class="s1">&#39;</span>
+		<span class="c1"># update the comment attributes if it exists</span>
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mapmasked</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
+			<span class="n">mapmasked</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;cropped regions, where mean Raman int. of peak: &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakx0</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; is less than &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">cutoff</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; of selected peak</span><span class="se">\n</span><span class="s1">&#39;</span>
 
 		<span class="k">return</span> <span class="n">mapmasked</span><span class="p">,</span> <span class="n">peakmask</span></div>
 
@@ -748,8 +751,9 @@
 
 		<span class="c1"># remove the background from ssxr</span>
 		<span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">-=</span> <span class="n">bg_values</span>
-		<span class="c1"># adding a note to `xarray` comments attribute</span>
-		<span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted, with parameters: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fitparams</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+		<span class="c1"># adding a note to `xarray` comments attribute if it exists</span>
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
+			<span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted, with parameters: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fitparams</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
 		<span class="c1"># save the fitmask as a variable of `singlespec`</span>
 		<span class="n">singlesp_mod</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
 
@@ -785,8 +789,9 @@
 		<span class="c1"># shift the ramanshift values by the correction factor in the new singlespec instance</span>
 		<span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">calibshift</span><span class="p">)</span>
 
-		<span class="c1"># add to the comments attribute of the new instance</span>
-		<span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;calibrated Raman shift by adding &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">calibshift</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; cm^-1 to the raw ramanshift</span><span class="se">\n</span><span class="s1">&#39;</span>
+		<span class="c1"># add to the comments attribute of the new instance if it exists</span>
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
+			<span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;calibrated Raman shift by adding &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">calibshift</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; cm^-1 to the raw ramanshift</span><span class="se">\n</span><span class="s1">&#39;</span>
 
 		<span class="k">return</span> <span class="n">ss_mod</span></div>
 
@@ -1314,8 +1319,10 @@
 	
 	<span class="c1"># copy attributes to the fit dataset, update the &#39;comments&#39;</span>
 	<span class="n">fit</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-	<span class="c1"># update the comments</span>
-	<span class="n">fit</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;peak fitting, using &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+	<span class="c1"># update the comments if it exists</span>
+	<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
+		<span class="n">fit</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;peak fitting, using &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+		
 	<span class="k">return</span> <span class="n">fit</span></div>
 
 </pre></div>
