@@ -1156,6 +1156,10 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 		- By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.
 		- In case of using double Lorentz fitting, the names of the parameters change! See: :func:`lorentz2`.
 
+	.. seealso::
+
+		It is good practice, to crop the data to the vicinity of the peak you want to fit to.
+
 	"""	
 	# get the parameters used by the function: func
 	# and also get the default values for the keyword arguments
