@@ -1122,9 +1122,9 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 	:param toplot: plot the fit result, defaults to ``False``
 	:type toplot: boolean, optional
 	:param width: width parameter of an :py:mod:`xarray` map to be used in conjunction with ``toplot = True``
-	:type width: `int` or `float`
+	:type width: `int` or `float`, optional
 	:param height: height parameter of an :py:mod:`xarray` map to be used in conjunction with ``toplot = True``
-	:type height: `int` or `float`
+	:type height: `int` or `float`, optional
 	
 	:return: fitted parameters of ``func`` and covariances in a Dataset
 	:rtype: :py:mod:`xarray` Dataset
