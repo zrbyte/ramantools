@@ -193,8 +193,9 @@ class ramanmap:
 			bg_values = bg_values[:, np.newaxis, np.newaxis]
 			# subtract these along the ramanshift dimension of bg
 			map_mod.mapxr[:] -= bg_values
-			# update the comments attribute
-			map_mod.mapxr.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
+			# update the comments attribute if it exists
+			if hasattr(map_mod.mapxr, 'comments'):
+				map_mod.mapxr.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
 
 		elif mode == 'individual':
 			# Make an individual fit to all spectra in the map
@@ -252,8 +253,9 @@ class ramanmap:
 		# shift the ramanshift values by the correction factor in the new singlespec instance
 		map_mod.mapxr = self.mapxr.assign_coords(ramanshift = self.mapxr['ramanshift'] + calibshift)
 
-		# add to the comments attribute of the new instance
-		map_mod.mapxr.attrs['comments'] += 'calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift \n'
+		# add to the comments attribute of the new instance if it exists
+		if hasattr(map_mod.mapxr, 'comments'):
+			map_mod.mapxr.attrs['comments'] += 'calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift \n'
 
 		return map_mod
 
@@ -432,8 +434,9 @@ class ramanmap:
 		mapmasked = copy.deepcopy(self)
 		mapmasked.mapxr = mapmasked.mapxr.where(peakmask)
 
-		# update the comment attributes
-		mapmasked.mapxr.attrs['comments'] += 'cropped regions, where mean Raman int. of peak: ' + f'{peakx0:.2f}' + ' is less than ' + f'{cutoff:.2f}' + ' of selected peak\n'
+		# update the comment attributes if it exists
+		if hasattr(mapmasked.mapxr, 'comments'):
+			mapmasked.mapxr.attrs['comments'] += 'cropped regions, where mean Raman int. of peak: ' + f'{peakx0:.2f}' + ' is less than ' + f'{cutoff:.2f}' + ' of selected peak\n'
 
 		return mapmasked, peakmask
 
@@ -674,8 +677,9 @@ class singlespec:
 
 		# remove the background from ssxr
 		singlesp_mod.ssxr -= bg_values
-		# adding a note to `xarray` comments attribute
-		singlesp_mod.ssxr.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
+		# adding a note to `xarray` comments attribute if it exists
+		if hasattr(singlesp_mod.ssxr, 'comments'):
+			singlesp_mod.ssxr.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
 		# save the fitmask as a variable of `singlespec`
 		singlesp_mod.mask = mask
 
@@ -711,8 +715,9 @@ class singlespec:
 		# shift the ramanshift values by the correction factor in the new singlespec instance
 		ss_mod.ssxr = self.ssxr.assign_coords(ramanshift = self.ssxr['ramanshift'] + calibshift)
 
-		# add to the comments attribute of the new instance
-		ss_mod.ssxr.attrs['comments'] += 'calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift\n'
+		# add to the comments attribute of the new instance if it exists
+		if hasattr(ss_mod.ssxr, 'comments'):
+			ss_mod.ssxr.attrs['comments'] += 'calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift\n'
 
 		return ss_mod
 
@@ -1240,7 +1245,9 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 	
 	# copy attributes to the fit dataset, update the 'comments'
 	fit.attrs = xrobj.attrs.copy()
-	# update the comments
-	fit.attrs['comments'] += 'peak fitting, using ' + str(func.__name__) + '\n'
+	# update the comments if it exists
+	if hasattr(fit, 'comments'):
+		fit.attrs['comments'] += 'peak fitting, using ' + str(func.__name__) + '\n'
+		
 	return fit
 
