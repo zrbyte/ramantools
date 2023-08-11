@@ -29,7 +29,7 @@ Below is a simple example for loading a Raman map and doing some basic analysis.
 
 	map_path = r'data path on you machine'
 	info_path = r'metadata path on your machine'
-	# use raw strings, starting with `r'` to escape special characters, such as backslash
+	# Use raw strings, starting with `r'` to escape special characters, such as backslash.
 
 	# Load a map
 	m = rt.ramanmap(map_path, info_path)
