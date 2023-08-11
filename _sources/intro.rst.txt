@@ -13,7 +13,7 @@ Installation
 
 .. code-block:: 
 	
-	pip install rhkpy
+	pip install ramantools
 
 
 Examples
