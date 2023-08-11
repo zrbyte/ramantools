@@ -1,0 +1,17 @@
+Metadata-Version: 2.1
+Name: ramantools
+Version: 0.2.2
+Summary: Tools for analyzing Raman spectroscopy data, measured by a Witec confocal Raman microscope.
+Home-page: https://github.com/zrbyte/ramantools
+Author: Peter Nemes-Incze
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# ramantools
+Tools for analyzing Raman spectroscopy data, measured by a Witec confocal Raman microscope.
+
+Documentation can be found here: [zrbyte.github.io/ramantools](https://zrbyte.github.io/ramantools/)
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/zrbyte/ramantools/HEAD?labpath=ramantools%20demo.ipynb)
