@@ -8,7 +8,7 @@ setup(
     install_requires = [
         "matplotlib",
         "numpy",
-        "pandas"
+        "pandas",
         "scipy",
         "xarray"
     ],
