@@ -2,8 +2,15 @@ from setuptools import setup, find_packages
 
 setup(
     name="ramantools",
-    version="0.2.3",
+    version="0.2.4",
     packages=find_packages(),
+    install_requires=[
+        "matplotlib",
+        "numpy",
+        "pandas"
+        "scipy",
+        "xarray"
+    ],
     description="Tools for analyzing Raman spectroscopy data, measured by a Witec confocal Raman microscope.",
     long_description=open('README.md', 'r').read(),
     long_description_content_type="text/markdown",
