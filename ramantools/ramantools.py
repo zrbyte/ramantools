@@ -504,18 +504,32 @@ class ramanmap:
 		"""
 		Load the Raman map data into a numpy array.
 		"""
-		m = np.loadtxt(map_path, skiprows=19, encoding='latin1')
+
+		# Check to see if metadata are present in the data file
+		with open(map_path, 'r', encoding = 'latin1') as file:
+			lines = [next(file).strip() for _ in range(2)]
+		
+		if 'Header' in lines[1]:
+			# we have a header
+			# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
+			with open(map_path, 'r', encoding = 'latin1') as file:
+				lines = [next(file).strip() for _ in range(17)]
+				self.metadata_datafile = '\n'.join(lines)
+			# need to skip the header when loading
+			toskip = 19
+
+			# extract the WIP filename
+			self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+		else:
+			# there is no header
+			toskip = 0
+			self.wipfilename = map_path
+		
+		# Load the data
+		m = np.loadtxt(map_path, skiprows = toskip, encoding = 'latin1')
 		# The raman shift is the first column in the exported table.
 		self.ramanshift = m[:, 0]
 		self.map = np.reshape(m[:, 1:], (m.shape[0], self.pixel_y, self.pixel_x))
-
-		# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
-		with open(map_path, 'r', encoding = 'latin1') as file:
-			lines = [next(file).strip() for _ in range(17)]
-			self.metadata_datafile = '\n'.join(lines)
-
-		# extract the WIP filename
-		self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
 
 		return self.map
 
