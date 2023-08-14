@@ -840,16 +840,30 @@ class singlespec:
 		"""
 		Load the Raman map data into a numpy array.
 		"""
-		ss = np.loadtxt(spec_path, skiprows = 17, encoding = 'latin1')
+
+		# Check to see if metadata are present in the data file
+		with open(spec_path, 'r', encoding = 'latin1') as file:
+			lines = [next(file).strip() for _ in range(2)]
+		
+		if 'Header' in lines[1]:
+			# we have a header
+			# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
+			with open(spec_path, 'r', encoding = 'latin1') as file:
+				lines = [next(file).strip() for _ in range(17)]
+				self.metadata_datafile = '\n'.join(lines)
+			# need to skip the header when loading
+			toskip = 17
+
+			# extract the WIP filename
+			self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+		else:
+			# there is no header
+			toskip = 0
+			self.wipfilename = spec_path
+
+		ss = np.loadtxt(spec_path, skiprows = toskip, encoding = 'latin1')
 		self.ramanshift = ss[:, 0]
 		self.counts = ss[:, 1]
-
-		# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
-		with open(spec_path, 'r', encoding = 'latin1') as file:
-			lines = [next(file).strip() for _ in range(17)]
-			self.metadata_datafile = '\n'.join(lines)
-
-		self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
 
 		return self.ramanshift, self.counts
 
