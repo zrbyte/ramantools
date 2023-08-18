@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "ramantools",
-    version = "0.2.9",
+    version = "0.2.10",
     packages = find_packages(),
     # python_requires='>=3.10',
     install_requires = [
