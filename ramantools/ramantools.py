@@ -240,8 +240,19 @@ class ramanmap:
 
 		# if a calibration factor is specified, don't fit just shift the values by calibfactor
 		if calibfactor == 0:
+			# before fitting crop to the area around the peak
+			fitrange = [peakshift - 100, peakshift + 100]
+			
+			# if one of the ranges out of bounds with the data
+			if fitrange[0] < self.mapxr.ramanshift.min().data:
+				fitrange[0] = self.mapxr.ramanshift.min().data
+			if fitrange[1] > self.mapxr.ramanshift.max().data:
+				fitrange[1] = self.mapxr.ramanshift.max().data
+			# crop the spectrum
+			spectofit_crop = spectofit.sel(ramanshift = slice(fitrange[0], fitrange[1]))
+
 			# fit to the peak around `peakshift`
-			fit = peakfit(spectofit, stval = {'x0': peakshift}, **kwargs)
+			fit = peakfit(spectofit_crop, stval = {'x0': peakshift}, **kwargs)
 			# correction factor relative to the expected value: peakshift
 			calibshift = peakshift - fit['curvefit_coefficients'].sel(param = 'x0').data
 		else:
@@ -716,8 +727,20 @@ class singlespec:
 
 		# if a calibration factor is specified, don't fit just shift the values by calibfactor
 		if calibfactor == 0:
+			# before fitting crop to the area around the peak
+			fitrange = [peakshift - 100, peakshift + 100]
+			
+			# if one of the ranges out of bounds with the data
+			if fitrange[0] < self.ssxr.ramanshift.min().data:
+				fitrange[0] = self.ssxr.ramanshift.min().data
+			if fitrange[1] > self.ssxr.ramanshift.max().data:
+				fitrange[1] = self.ssxr.ramanshift.max().data
+			# crop the spectrum
+			spectofit_crop = self.ssxr.sel(ramanshift = slice(fitrange[0], fitrange[1]))
+
 			# fit to the peak around `peakshift`
-			fit = peakfit(self.ssxr, stval = {'x0': peakshift}, **kwargs)
+			fit = peakfit(spectofit_crop, stval = {'x0': peakshift}, **kwargs)
+
 			# correction factor relative to the expected value: peakshift
 			calibshift = peakshift - fit['curvefit_coefficients'].sel(param = 'x0').data
 		else:
@@ -903,7 +926,7 @@ class singlespec:
 
 ## Tools -----------------------------------------------------------------
 
-def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 900):
+def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 0):
 	"""Gaussian function. Width and amplitude parameters have the same meaning as for :func:`lorentz`.
 
 	:param x: values for the x coordinate
@@ -924,7 +947,7 @@ def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 900):
 	return offset + ampl * np.exp(-2*np.log(2)*(x - x0)**2 / (width**2))
 
 
-def lorentz(x, x0 = 1580, ampl = 10, width = 15, offset = 900):
+def lorentz(x, x0 = 1580, ampl = 10, width = 15, offset = 0):
 	"""Single Lorentz function
 
 	:param x: values for the x coordinate
@@ -952,7 +975,7 @@ def lorentz(x, x0 = 1580, ampl = 10, width = 15, offset = 900):
 	area = np.pi * ampl * width / 2
 	return offset + (2/np.pi) * (area * width) / (4*(x - x0)**2 + width**2)
 
-def lorentz2(x, x01 = 2700, ampl1 = 1, width1 = 15, x02 = 2730, ampl2 = 1, width2 = 15, offset = 900):
+def lorentz2(x, x01 = 2700, ampl1 = 1, width1 = 15, x02 = 2730, ampl2 = 1, width2 = 15, offset = 0):
 	"""Double Lorentz function
 
 	:return: values of a double Lorentz function
