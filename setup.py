@@ -10,7 +10,7 @@ setup(
         "numpy",
         "pandas",
         "scipy",
-        "xarray"
+        "xarray>=2023.7.0"
     ],
     description = "Tools for analyzing Raman spectroscopy data, measured by a Witec confocal Raman microscope.",
     long_description = open('README.md', 'r').read(),
