@@ -1167,10 +1167,10 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 	return y_data_nobg, bg_values, coeff, params_used_at_run, mask, covar
 
 def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None, toplot = False, width = None, height = None, **kwargs):
-	"""Fitting a function to peaks in the data contained in ``xrobj``.
+	"""Fitting a function to peaks in the data contained in ``xrobj``, which can be a single spectrum, a map or a selected spectrum from a map.
 
 	:param xrobj: :py:mod:`xarray` DataArray, of a single spectrum or a map.
-	:type xrobj: :py:mod:`xarray`
+	:type xrobj: :py:mod:`xarray` DataArray
 	:param func: function to be used for fitting, defaults to lorentz
 	:type func: function, optional
 	:param fitresult: an :py:mod:`xarray` Dataset of a previous fit calculation, with matching dimensions. If this is passed to :func:`peakfit`, the fit calculation in skipped and the passed Dataset is used.
