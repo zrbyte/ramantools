@@ -562,6 +562,7 @@ class ramanmap:
 		# add a comment field
 		self.mapxr.attrs['comments'] = 'raw data loaded \n'
 		# adding attributes
+		self.mapxr.name = 'Raman intensity' # this is needed if used with hvplot
 		self.mapxr.attrs['wipfile name'] = self.wipfilename
 		self.mapxr.attrs['units'] = 'au'
 		self.mapxr.attrs['long_name'] = 'Raman intensity'
@@ -578,11 +579,13 @@ class ramanmap:
 		self.mapxr.attrs['objective magnification'] = self.objmagn + 'x'
 		self.mapxr.attrs['grating'] = self.grating
 		# coordinate attributes
-		self.mapxr.coords['ramanshift'].attrs['units'] = 'cm$^{-1}$'
+		self.mapxr.coords['ramanshift'].attrs['units'] = r'cm$^{-1}$'
 		self.mapxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
-		self.mapxr.coords['width'].attrs['units'] = '$\mathrm{\mu m}$' # type: ignore
+		# self.mapxr.coords['width'].attrs['units'] = r'$\mathrm{\mu m}$' # type: ignore
+		self.mapxr.coords['width'].attrs['units'] = 'um' # type: ignore
 		self.mapxr.coords['width'].attrs['long_name'] = 'width'
-		self.mapxr.coords['height'].attrs['units'] = '$\mathrm{\mu m}$' # type: ignore
+		# self.mapxr.coords['height'].attrs['units'] = r'$\mathrm{\mu m}$' # type: ignore
+		self.mapxr.coords['height'].attrs['units'] = 'um' # type: ignore
 		self.mapxr.coords['height'].attrs['long_name'] = 'height'
 
 ## ----------------------------------------------------
@@ -902,6 +905,7 @@ class singlespec:
 		# add a comment field
 		self.ssxr.attrs['comments'] = 'raw data loaded \n'
 		# adding attributes
+		self.ssxr.name = 'Raman intensity' # this is needed if used with hvplot
 		self.ssxr.attrs['wipfile name'] = self.wipfilename
 		self.ssxr.attrs['units'] = 'au'
 		self.ssxr.attrs['long_name'] = 'Raman intensity'
@@ -947,7 +951,7 @@ def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 0):
 	return offset + ampl * np.exp(-2*np.log(2)*(x - x0)**2 / (width**2))
 
 
-def lorentz(x, x0 = 1580, ampl = 10, width = 15, offset = 0):
+def lorentz(x, x0 = 1580, ampl = 1, width = 14, offset = 0):
 	"""Single Lorentz function
 
 	:param x: values for the x coordinate
