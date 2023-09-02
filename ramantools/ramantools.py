@@ -579,7 +579,7 @@ class ramanmap:
 		self.mapxr.attrs['objective magnification'] = self.objmagn + 'x'
 		self.mapxr.attrs['grating'] = self.grating
 		# coordinate attributes
-		self.mapxr.coords['ramanshift'].attrs['units'] = r'cm$^{-1}$'
+		self.mapxr.coords['ramanshift'].attrs['units'] = r'1/cm'
 		self.mapxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
 		# self.mapxr.coords['width'].attrs['units'] = r'$\mathrm{\mu m}$' # type: ignore
 		self.mapxr.coords['width'].attrs['units'] = 'um' # type: ignore
@@ -921,7 +921,7 @@ class singlespec:
 		self.ssxr.attrs['objective magnification'] = self.objmagn + 'x'
 		self.ssxr.attrs['grating'] = self.grating
 		# coordinate attributes
-		self.ssxr.coords['ramanshift'].attrs['units'] = 'cm$^{-1}$'
+		self.ssxr.coords['ramanshift'].attrs['units'] = r'1/cm'
 		self.ssxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
 
 ## internal functions ------------------------------------------------------------
