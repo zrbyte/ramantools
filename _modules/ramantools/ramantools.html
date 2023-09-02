@@ -10,11 +10,11 @@
     <script src="../../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/sphinx_highlight.js"></script>
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=a4664895"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -86,7 +86,9 @@
 <span class="sd">Tools to analize Raman spectroscopy data, measured using the Witec 300rsa+ confocal Raman spectrometer.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="ramanmap"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap">[docs]</a><span class="k">class</span> <span class="nc">ramanmap</span><span class="p">:</span>
+<div class="viewcode-block" id="ramanmap">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap">[docs]</a>
+<span class="k">class</span> <span class="nc">ramanmap</span><span class="p">:</span>
 <span class="w">	</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	Container for Raman maps, imported from a text file.</span>
 <span class="sd">	The text file needs to be exported as a “table” from Witec Project or Witec Control.</span>
@@ -128,13 +130,18 @@
 <span class="sd">	</span>
 <span class="sd">	&quot;&quot;&quot;</span>	
 
-<div class="viewcode-block" id="ramanmap.history"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.history">[docs]</a>	<span class="k">def</span> <span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ramanmap.history">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.history">[docs]</a>
+	<span class="k">def</span> <span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Display the notes accumulated in the &#39;comments&#39; attribute of the :class:`ramanmap.mapxr` `xarray` variable.</span>
 <span class="sd">		&quot;&quot;&quot;</span>		
 		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Data modification history:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span></div>
 
-<div class="viewcode-block" id="ramanmap.print_metadata"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ramanmap.print_metadata">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.print_metadata">[docs]</a>
+	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Prints the metadata of the :class:`ramanmap` instance, imported from the info file.</span>
 
@@ -145,7 +152,10 @@
 		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;------------------&#39;</span><span class="p">)</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ramanmap.plotspec"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.plotspec">[docs]</a>	<span class="k">def</span> <span class="nf">plotspec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ramanmap.plotspec">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.plotspec">[docs]</a>
+	<span class="k">def</span> <span class="nf">plotspec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">shift</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.</span>
 <span class="sd">		Needs width and height coordinates for the single spectrum and the Raman shift where we want to plot the Raman intensity in the map.</span>
@@ -181,7 +191,10 @@
 		<span class="n">ax1</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 		<span class="n">pl</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ramanmap.remove_bg"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.remove_bg">[docs]</a>	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ramanmap.remove_bg">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.remove_bg">[docs]</a>
+	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Remove the background of Raman maps.</span>
 <span class="sd">		It takes the same optional arguments as :func:`bgsubtract`.</span>
 <span class="sd">		Default fit function is a first order polynomial. This can be changed by the ``polyorder`` parameter.</span>
@@ -286,7 +299,10 @@
 
 		<span class="k">return</span> <span class="n">map_mod</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
 
-<div class="viewcode-block" id="ramanmap.calibrate"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.calibrate">[docs]</a>	<span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ramanmap.calibrate">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.calibrate">[docs]</a>
+	<span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Calibrating a Raman map.</span>
 <span class="sd">		It uses :func:`peakfit` to find the Raman peak closest to ``peakshift`` and returns a new :class:`ramanmap` instance, with the ramanshift coordinate offset to have the position of the peak at ``peakshift``.</span>
 <span class="sd">		If the optional argument ``calibfactor`` is passed, ``peakshift`` is ignored and the data is shifted by the given value.</span>
@@ -345,7 +361,10 @@
 
 		<span class="k">return</span> <span class="n">map_mod</span></div>
 
-<div class="viewcode-block" id="ramanmap.normalize"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ramanmap.normalize">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.normalize">[docs]</a>
+	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
 <span class="sd">		Returns a normalized :class:`ramanmap` instance.</span>
 <span class="sd">		An exception will be raised if the background has not been removed.</span>
@@ -446,7 +465,10 @@
 
 		<span class="k">return</span> <span class="n">map_norm</span></div>
 
-<div class="viewcode-block" id="ramanmap.peakmask"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.peakmask">[docs]</a>	<span class="k">def</span> <span class="nf">peakmask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakpos</span><span class="p">,</span> <span class="n">cutoff</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="ramanmap.peakmask">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.peakmask">[docs]</a>
+	<span class="k">def</span> <span class="nf">peakmask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakpos</span><span class="p">,</span> <span class="n">cutoff</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Create a boolean mask for the map, where the mean Raman intensity of the peak at ``peakpos`` is larger than the peak mean in the selected spectrum by the ``cutoff`` value.</span>
 <span class="sd">		The method also returns the cropped :py:mod:`xarray` DataArray, with the values that are cropped replaced by NaNs.</span>
 <span class="sd">		The method needs a reference spectrum for  determining the &quot;typical&quot; mean of the peak amplitude.</span>
@@ -525,6 +547,7 @@
 			<span class="n">mapmasked</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;cropped regions, where mean Raman int. of peak: &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakx0</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; is less than &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">cutoff</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; of selected peak</span><span class="se">\n</span><span class="s1">&#39;</span>
 
 		<span class="k">return</span> <span class="n">mapmasked</span><span class="p">,</span> <span class="n">peakmask</span></div>
+
 
 	<span class="c1"># internal functions --------------------------</span>
 
@@ -637,6 +660,7 @@
 		<span class="c1"># add a comment field</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded </span><span class="se">\n</span><span class="s1">&#39;</span>
 		<span class="c1"># adding attributes</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Raman intensity&#39;</span> <span class="c1"># this is needed if used with hvplot</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;wipfile name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;au&#39;</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Raman intensity&#39;</span>
@@ -653,16 +677,21 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;objective magnification&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objmagn</span> <span class="o">+</span> <span class="s1">&#39;x&#39;</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;grating&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grating</span>
 		<span class="c1"># coordinate attributes</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;cm$^{-1}$&#39;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;1/cm&#39;</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Raman shift&#39;</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;$\mathrm{\mu m}$&#39;</span> <span class="c1"># type: ignore</span>
+		<span class="c1"># self.mapxr.coords[&#39;width&#39;].attrs[&#39;units&#39;] = r&#39;$\mathrm{\mu m}$&#39; # type: ignore</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;um&#39;</span> <span class="c1"># type: ignore</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;width&#39;</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;$\mathrm{\mu m}$&#39;</span> <span class="c1"># type: ignore</span>
+		<span class="c1"># self.mapxr.coords[&#39;height&#39;].attrs[&#39;units&#39;] = r&#39;$\mathrm{\mu m}$&#39; # type: ignore</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;um&#39;</span> <span class="c1"># type: ignore</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;height&#39;</span></div>
+
 
 <span class="c1">## ----------------------------------------------------</span>
 
-<div class="viewcode-block" id="singlespec"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec">[docs]</a><span class="k">class</span> <span class="nc">singlespec</span><span class="p">:</span>
+<div class="viewcode-block" id="singlespec">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec">[docs]</a>
+<span class="k">class</span> <span class="nc">singlespec</span><span class="p">:</span>
 <span class="w">	</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	Container for Raman single spectra, imported from a text file.</span>
 <span class="sd">	The text file needs to be exported as a &quot;table&quot; from Witec Project or Witec Control</span>
@@ -705,13 +734,18 @@
 
 <span class="sd">	&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="singlespec.history"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.history">[docs]</a>	<span class="k">def</span> <span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="singlespec.history">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.history">[docs]</a>
+	<span class="k">def</span> <span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Display the notes accumulated in the &#39;comments&#39; attribute of the :class:`singlespec.ssxr` `xarray` variable.</span>
 <span class="sd">		&quot;&quot;&quot;</span>		
 		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Data modification history:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span></div>
 
-<div class="viewcode-block" id="singlespec.print_metadata"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.print_metadata">[docs]</a>	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+<div class="viewcode-block" id="singlespec.print_metadata">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.print_metadata">[docs]</a>
+	<span class="k">def</span> <span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Prints the metadata of the :class:`singlespec` instance, imported from the info file.</span>
 
@@ -722,7 +756,10 @@
 		<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;------------------&#39;</span><span class="p">)</span>
 		<span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="singlespec.remove_bg"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.remove_bg">[docs]</a>	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="singlespec.remove_bg">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.remove_bg">[docs]</a>
+	<span class="k">def</span> <span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Remove the background of Raman spectra.</span>
 <span class="sd">		The :py:mod:`xarray` variable of the :class:`singlespec` instance is updated with the new dataset, with the background removed.</span>
 <span class="sd">	</span>
@@ -785,7 +822,10 @@
 
 		<span class="k">return</span> <span class="n">singlesp_mod</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
 
-<div class="viewcode-block" id="singlespec.calibrate"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.calibrate">[docs]</a>	<span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="singlespec.calibrate">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.calibrate">[docs]</a>
+	<span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Calibrating a single Raman spectrum.</span>
 <span class="sd">		It uses :func:`peakfit` to find the Raman peak closest to ``peakshift`` and returns a new :class:`singlespec` instance, with the ramanshift coordinate offset to have the position of the peak at ``peakshift``.</span>
 <span class="sd">		If the optional argument ``calibfactor`` is passed, ``peakshift`` is ignored and the data is shifted by the given value.</span>
@@ -833,7 +873,10 @@
 
 		<span class="k">return</span> <span class="n">ss_mod</span></div>
 
-<div class="viewcode-block" id="singlespec.normalize"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.normalize">[docs]</a>	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<div class="viewcode-block" id="singlespec.normalize">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.normalize">[docs]</a>
+	<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">		</span><span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
 <span class="sd">		Returns a normalized :class:`singlespec` instance.</span>
 <span class="sd">		An exception will be raised if the background has not been removed.</span>
@@ -882,6 +925,7 @@
 		<span class="n">ss_norm</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="n">normalized</span>
 
 		<span class="k">return</span> <span class="n">ss_norm</span></div>
+
 
 
 	<span class="c1"># internal functions ----------------------------------</span>
@@ -977,6 +1021,7 @@
 		<span class="c1"># add a comment field</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded </span><span class="se">\n</span><span class="s1">&#39;</span>
 		<span class="c1"># adding attributes</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Raman intensity&#39;</span> <span class="c1"># this is needed if used with hvplot</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;wipfile name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;au&#39;</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Raman intensity&#39;</span>
@@ -992,8 +1037,9 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;objective magnification&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objmagn</span> <span class="o">+</span> <span class="s1">&#39;x&#39;</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;grating&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grating</span>
 		<span class="c1"># coordinate attributes</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;cm$^{-1}$&#39;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;1/cm&#39;</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Raman shift&#39;</span></div>
+
 
 <span class="c1">## internal functions ------------------------------------------------------------</span>
 
@@ -1001,7 +1047,9 @@
 
 <span class="c1">## Tools -----------------------------------------------------------------</span>
 
-<div class="viewcode-block" id="gaussian"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.gaussian">[docs]</a><span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mi">1580</span><span class="p">,</span> <span class="n">ampl</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="gaussian">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.gaussian">[docs]</a>
+<span class="k">def</span> <span class="nf">gaussian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mi">1580</span><span class="p">,</span> <span class="n">ampl</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
 <span class="w">	</span><span class="sd">&quot;&quot;&quot;Gaussian function. Width and amplitude parameters have the same meaning as for :func:`lorentz`.</span>
 
 <span class="sd">	:param x: values for the x coordinate</span>
@@ -1022,7 +1070,10 @@
 	<span class="k">return</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">ampl</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="n">width</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span></div>
 
 
-<div class="viewcode-block" id="lorentz"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.lorentz">[docs]</a><span class="k">def</span> <span class="nf">lorentz</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mi">1580</span><span class="p">,</span> <span class="n">ampl</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+
+<div class="viewcode-block" id="lorentz">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.lorentz">[docs]</a>
+<span class="k">def</span> <span class="nf">lorentz</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span> <span class="o">=</span> <span class="mi">1580</span><span class="p">,</span> <span class="n">ampl</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="mi">14</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
 <span class="w">	</span><span class="sd">&quot;&quot;&quot;Single Lorentz function</span>
 
 <span class="sd">	:param x: values for the x coordinate</span>
@@ -1050,7 +1101,10 @@
 	<span class="n">area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">ampl</span> <span class="o">*</span> <span class="n">width</span> <span class="o">/</span> <span class="mi">2</span>
 	<span class="k">return</span> <span class="n">offset</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">area</span> <span class="o">*</span> <span class="n">width</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">width</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="lorentz2"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.lorentz2">[docs]</a><span class="k">def</span> <span class="nf">lorentz2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x01</span> <span class="o">=</span> <span class="mi">2700</span><span class="p">,</span> <span class="n">ampl1</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">width1</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">x02</span> <span class="o">=</span> <span class="mi">2730</span><span class="p">,</span> <span class="n">ampl2</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">width2</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+
+<div class="viewcode-block" id="lorentz2">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.lorentz2">[docs]</a>
+<span class="k">def</span> <span class="nf">lorentz2</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x01</span> <span class="o">=</span> <span class="mi">2700</span><span class="p">,</span> <span class="n">ampl1</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">width1</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">x02</span> <span class="o">=</span> <span class="mi">2730</span><span class="p">,</span> <span class="n">ampl2</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">width2</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
 <span class="w">	</span><span class="sd">&quot;&quot;&quot;Double Lorentz function</span>
 
 <span class="sd">	:return: values of a double Lorentz function</span>
@@ -1072,7 +1126,10 @@
 	<span class="n">area2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">ampl2</span> <span class="o">*</span> <span class="n">width2</span> <span class="o">/</span> <span class="mi">2</span>
 	<span class="k">return</span> <span class="n">offset</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">area1</span> <span class="o">*</span> <span class="n">width1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x01</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">width1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">area2</span> <span class="o">*</span> <span class="n">width2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x02</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">width2</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="polynomial_fit"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.polynomial_fit">[docs]</a><span class="k">def</span> <span class="nf">polynomial_fit</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">):</span>
+
+<div class="viewcode-block" id="polynomial_fit">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.polynomial_fit">[docs]</a>
+<span class="k">def</span> <span class="nf">polynomial_fit</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">):</span>
 <span class="w">	</span><span class="sd">&quot;&quot;&quot;Polinomial fit to `x_data`, `y_data`</span>
 
 <span class="sd">	:param order: order of the polinomial to be fit</span>
@@ -1099,7 +1156,10 @@
 
 	<span class="k">return</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
 
-<div class="viewcode-block" id="bgsubtract"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.bgsubtract">[docs]</a><span class="k">def</span> <span class="nf">bgsubtract</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">polyorder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hmin</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">hmax</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">wmin</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">wmax</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span> <span class="n">prom</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclusion_factor</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+<div class="viewcode-block" id="bgsubtract">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.bgsubtract">[docs]</a>
+<span class="k">def</span> <span class="nf">bgsubtract</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">polyorder</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hmin</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">hmax</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">wmin</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">wmax</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span> <span class="n">prom</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclusion_factor</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">	</span><span class="sd">&quot;&quot;&quot;Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.</span>
 <span class="sd">	These peaks are then used to define the areas of the background signal.</span>
 <span class="sd">	In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: ``polyorder``.</span>
@@ -1237,11 +1297,14 @@
 
 	<span class="k">return</span> <span class="n">y_data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">params_used_at_run</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span></div>
 
-<div class="viewcode-block" id="peakfit"><a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.peakfit">[docs]</a><span class="k">def</span> <span class="nf">peakfit</span><span class="p">(</span><span class="n">xrobj</span><span class="p">,</span> <span class="n">func</span> <span class="o">=</span> <span class="n">lorentz</span><span class="p">,</span> <span class="n">fitresult</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bounds</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">	</span><span class="sd">&quot;&quot;&quot;Fitting a function to peaks in the data contained in ``xrobj``.</span>
+
+<div class="viewcode-block" id="peakfit">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.peakfit">[docs]</a>
+<span class="k">def</span> <span class="nf">peakfit</span><span class="p">(</span><span class="n">xrobj</span><span class="p">,</span> <span class="n">func</span> <span class="o">=</span> <span class="n">lorentz</span><span class="p">,</span> <span class="n">fitresult</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bounds</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">	</span><span class="sd">&quot;&quot;&quot;Fitting a function to peaks in the data contained in ``xrobj``, which can be a single spectrum, a map or a selected spectrum from a map.</span>
 
 <span class="sd">	:param xrobj: :py:mod:`xarray` DataArray, of a single spectrum or a map.</span>
-<span class="sd">	:type xrobj: :py:mod:`xarray`</span>
+<span class="sd">	:type xrobj: :py:mod:`xarray` DataArray</span>
 <span class="sd">	:param func: function to be used for fitting, defaults to lorentz</span>
 <span class="sd">	:type func: function, optional</span>
 <span class="sd">	:param fitresult: an :py:mod:`xarray` Dataset of a previous fit calculation, with matching dimensions. If this is passed to :func:`peakfit`, the fit calculation in skipped and the passed Dataset is used.</span>
@@ -1376,6 +1439,7 @@
 		<span class="n">fit</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;peak fitting, using &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
 		
 	<span class="k">return</span> <span class="n">fit</span></div>
+
 
 </pre></div>
 
