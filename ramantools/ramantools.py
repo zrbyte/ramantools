@@ -134,7 +134,7 @@ class ramanmap:
 			* ``coeff``: the coefficients and
 			* ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
 		
-		:rtype: tuple: (:class:`ramanmap` :py:mod:`numpy`, :py:mod:`numpy`)
+		:rtype: tuple: (:class:`ramanmap`, :py:mod:`numpy`, :py:mod:`numpy`)
 
 		.. note::
 			If the peaks and background are complicated, it is advised to test the background fit, by selecting the most difficult spectrum from the map and tweaking the fit parameters directly, using :func:`bgsubtract`.
@@ -664,7 +664,7 @@ class singlespec:
 			* ``coeff``: the coefficients and
 			* ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
 
-		:rtype: tuple: (:class:`singlespec` :py:mod:`numpy`, :py:mod:`numpy`)
+		:rtype: tuple: (:class:`singlespec`, :py:mod:`numpy`, :py:mod:`numpy`)
 
 		.. note::
 			Metadata is copied over to the returned :class:`singlespec` instance, because there are no unit changes, in removing the background.
