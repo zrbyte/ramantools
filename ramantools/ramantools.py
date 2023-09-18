@@ -500,7 +500,7 @@ class ramanmap:
 		# time of measurement
 		self.time = re.findall(r'(?<=Start Time:\t)-?.+', metadata)[0]
 		# sample name
-		self.samplename = re.findall(r'(?<=Sample Name:\t)-?.+', metadata)[0]
+		self.samplename = re.findall(r'(?<=Sample Name:\t).*', metadata)[0] # new regex to match also no characters after sample name
 		# laser energy
 		self.laser = float(re.findall(r'(?<=Excitation Wavelength \[nm\]:\t)-?.+', metadata)[0])
 		# integration time
@@ -855,7 +855,7 @@ class singlespec:
 		# time of measurement
 		self.time = re.findall(r'(?<=Start Time:\t)-?.+', metadata)[0]
 		# sample name
-		self.samplename = re.findall(r'(?<=Sample Name:\t)-?.+', metadata)[0]
+		self.samplename = re.findall(r'(?<=Sample Name:\t).*', metadata)[0] # new regex to match also no characters after sample name
 		# laser energy
 		self.laser = float(re.findall(r'(?<=Excitation Wavelength \[nm\]:\t)-?.+', metadata)[0])
 		# integration time
