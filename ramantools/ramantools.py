@@ -341,7 +341,7 @@ class ramanmap:
 			normalized.attrs = self.mapxr.attrs.copy()
 			normalized.attrs['units'] = ' '
 			normalized.attrs['long_name'] = 'normalized Raman intensity'
-			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == const' + '\n'
+			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == const' + ' by a factor of ' + f'{peakampl:.2f}' + '\n'
 
 			map_norm = normalized
 
@@ -358,7 +358,7 @@ class ramanmap:
 			normalized.attrs = self.mapxr.attrs.copy()
 			normalized.attrs['units'] = ' '
 			normalized.attrs['long_name'] = 'normalized Raman intensity'
-			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == individual' + '\n'
+			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == individual' + ' by a factor of ' + f'{peakampl:.2f}' + '\n'
 			
 		else:
 			raise ValueError('`mode` parameter must be either: \'const\' or \'individual\'')
@@ -368,6 +368,9 @@ class ramanmap:
 		map_norm = copy.deepcopy(self)
 		# replace the xarray variable with the normalized one
 		map_norm.mapxr = normalized
+
+		# add the normalization factor to the ramanmap instance
+		map_norm.normfactor = peakampl
 
 		return map_norm
 
@@ -460,6 +463,8 @@ class ramanmap:
 		self.filename = map_path
 		# fitmask
 		self.mask = None
+		# normalization factor, factor by which the raman intensity values are divided during normalize
+		self.normfactor = None
 		# Load the metadata
 		self._load_info(info_path)
 		# Load the Raman map
@@ -803,11 +808,14 @@ class singlespec:
 		normalized.attrs = self.ssxr.attrs.copy()
 		normalized.attrs['units'] = ' '
 		normalized.attrs['long_name'] = 'normalized Raman intensity'
-		normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + '\n'
+		normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' by a factor of ' + f'{peakampl:.2f}' + '\n'
 
 		# copy the singlespec instance
 		ss_norm = copy.deepcopy(self)
 		ss_norm.ssxr = normalized
+
+		# add the normalization factor to the singlespec instance
+		ss_norm.normfactor = peakampl
 
 		return ss_norm
 
@@ -821,6 +829,8 @@ class singlespec:
 		self.filename = spec_path
 		# fit mask	
 		self.mask = None
+		# normalization factor, factor by which the raman intensity values are divided during normalize
+		self.normfactor = None
 		# Load the metadata
 		self._load_info(info_path)
 		# Load the Raman map
