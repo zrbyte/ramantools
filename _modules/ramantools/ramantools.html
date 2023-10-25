@@ -469,6 +469,52 @@
 		<span class="k">return</span> <span class="n">map_norm</span></div>
 
 
+
+<div class="viewcode-block" id="ramanmap.crr">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.crr">[docs]</a>
+	<span class="k">def</span> <span class="nf">crr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutoff</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">window</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;Tool for removing cosmic rays from a spectroscopy maps.</span>
+<span class="sd">		The CRR peaks are determined as the standard deviation of the data: `std` times the `cutoff` value, in the `window` sized vicinity of each pixel.</span>
+
+<span class="sd">		:param cutoff: multiplication factor for the data&#39;s standard deviation; defaults to 2.</span>
+<span class="sd">		:type cutoff: int, optional</span>
+<span class="sd">		:param window: size of the neighborhood to consider; defaults to 2.</span>
+<span class="sd">		:type window: int, optional</span>
+<span class="sd">		</span>
+<span class="sd">		:return: instance of the :class:`ramanmap` class with the cosmic-ray peaks removed.</span>
+<span class="sd">		:rtype: :class:`ramanmap`</span>
+
+<span class="sd">		.. note::</span>
+<span class="sd">			If CRR is not satisfactory, keep reducing the `cutoff` value and compare to the original data.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="c1"># shift the data by `window` pixels to the left and right</span>
+		<span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="o">-</span><span class="n">window</span><span class="p">)</span>
+		<span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">window</span><span class="p">)</span>
+
+		<span class="c1"># the standard deviation of this will give us the noise level in the data</span>
+		<span class="c1"># we can then take a `cutoff` times the std to locate the CRR peaks</span>
+		<span class="n">difference</span> <span class="o">=</span> <span class="n">left</span> <span class="o">-</span> <span class="n">right</span>
+		<span class="n">noise_std</span> <span class="o">=</span> <span class="n">difference</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+		<span class="c1"># calculate the average of the Raman intensity positions of the neighbor pixels from window away</span>
+		<span class="n">average</span> <span class="o">=</span> <span class="p">(</span><span class="n">left</span> <span class="o">+</span> <span class="n">right</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+
+		<span class="c1"># positions of the CRR peaks, where the Raman signal is higher than `cutoff*noise_std`</span>
+		<span class="n">crrpos</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">left</span> <span class="o">+</span> <span class="n">cutoff</span><span class="o">*</span><span class="n">noise_std</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">right</span> <span class="o">+</span> <span class="n">cutoff</span><span class="o">*</span><span class="n">noise_std</span><span class="p">))</span>
+
+		<span class="c1"># make new Dataarray with the values with the averages at the CRR positions, where the crrpos mask is True and with the original values where it is False.</span>
+		<span class="n">map_crr_removed</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">crrpos</span><span class="p">,</span> <span class="n">average</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">crrpos</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">)</span>
+		<span class="c1"># make a copy of the spec instance</span>
+		<span class="n">map_crr</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+		<span class="n">map_crr</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">map_crr_removed</span><span class="o">.</span><span class="n">data</span>
+
+		<span class="c1"># add comment to attributes</span>
+		<span class="n">map_crr</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;replaced cosmic ray values with average of neighbors at &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">crrpos</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; coordinates.</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+		<span class="k">return</span> <span class="n">map_crr</span></div>
+
+
+
 <div class="viewcode-block" id="ramanmap.peakmask">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.peakmask">[docs]</a>
 	<span class="k">def</span> <span class="nf">peakmask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakpos</span><span class="p">,</span> <span class="n">cutoff</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -933,6 +979,52 @@
 		<span class="n">ss_norm</span><span class="o">.</span><span class="n">normfactor</span> <span class="o">=</span> <span class="n">peakampl</span>
 
 		<span class="k">return</span> <span class="n">ss_norm</span></div>
+
+
+<div class="viewcode-block" id="singlespec.crr">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.crr">[docs]</a>
+	<span class="k">def</span> <span class="nf">crr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutoff</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">window</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">		</span><span class="sd">&quot;&quot;&quot;Tool for removing cosmic rays from a single spectrum.</span>
+<span class="sd">		The CRR peaks are determined as the standard deviation of the data: `std` times the `cutoff` value, in the `window` sized vicinity of each pixel.</span>
+
+<span class="sd">		:param cutoff: multiplication factor for the data&#39;s standard deviation; defaults to 2.</span>
+<span class="sd">		:type cutoff: int, optional</span>
+<span class="sd">		:param window: size of the neighborhood to consider; defaults to 2.</span>
+<span class="sd">		:type window: int, optional</span>
+<span class="sd">		</span>
+<span class="sd">		:return: instance of the :class:`singlespec` class with the cosmic-ray peaks removed.</span>
+<span class="sd">		:rtype: :class:`singlespec`</span>
+
+<span class="sd">		.. note::</span>
+<span class="sd">			If CRR is not satisfactory, keep reducing the `cutoff` value and compare to the original data.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="c1"># shift the data by `window` pixels to the left and right</span>
+		<span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="o">-</span><span class="n">window</span><span class="p">)</span>
+		<span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">window</span><span class="p">)</span>
+
+		<span class="c1"># the standard deviation of this will give us the noise level in the data</span>
+		<span class="c1"># we can then take a `cutoff` times the std to locate the CRR peaks</span>
+		<span class="n">difference</span> <span class="o">=</span> <span class="n">left</span> <span class="o">-</span> <span class="n">right</span>
+		<span class="n">noise_std</span> <span class="o">=</span> <span class="n">difference</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+		<span class="c1"># calculate the average of the Raman intensity positions of the neighbor pixels from window away</span>
+		<span class="n">average</span> <span class="o">=</span> <span class="p">(</span><span class="n">left</span> <span class="o">+</span> <span class="n">right</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span>
+
+		<span class="c1"># positions of the CRR peaks, where the Raman signal is higher than `cutoff*noise_std`</span>
+		<span class="n">crrpos</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">left</span> <span class="o">+</span> <span class="n">cutoff</span><span class="o">*</span><span class="n">noise_std</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">&gt;</span> <span class="p">(</span><span class="n">right</span> <span class="o">+</span> <span class="n">cutoff</span><span class="o">*</span><span class="n">noise_std</span><span class="p">))</span>
+
+		<span class="c1"># Ramanshift coordinates of the CRR peaks</span>
+		<span class="n">crr_coords</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">crrpos</span><span class="p">,</span> <span class="n">drop</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+
+		<span class="c1"># make a copy of the spec instance</span>
+		<span class="n">ss_crr</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+		<span class="c1"># replace the values with the averages at the CRR positions</span>
+		<span class="n">ss_crr</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">loc</span><span class="p">[{</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">:</span> <span class="n">crr_coords</span><span class="p">}]</span> <span class="o">=</span> <span class="n">average</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span><span class="o">=</span><span class="n">crr_coords</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
+		<span class="c1"># add comment to attributes</span>
+		<span class="n">ss_crr</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;replaced cosmic ray values with average of neighbors at &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">crrpos</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; Ramanshift coordinates.</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+		<span class="k">return</span> <span class="n">ss_crr</span></div>
 
 
 
