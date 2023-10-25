@@ -374,6 +374,49 @@ class ramanmap:
 
 		return map_norm
 
+
+	def crr(self, cutoff = 2, window = 2, **kwargs):
+		"""Tool for removing cosmic rays from a spectroscopy maps.
+		The CRR peaks are determined as the standard deviation of the data: `std` times the `cutoff` value, in the `window` sized vicinity of each pixel.
+
+		:param cutoff: multiplication factor for the data's standard deviation; defaults to 2.
+		:type cutoff: int, optional
+		:param window: size of the neighborhood to consider; defaults to 2.
+		:type window: int, optional
+		
+		:return: instance of the :class:`ramanmap` class with the cosmic-ray peaks removed.
+		:rtype: :class:`ramanmap`
+
+		.. note::
+			If CRR is not satisfactory, keep reducing the `cutoff` value and compare to the original data.
+		"""
+
+		# shift the data by `window` pixels to the left and right
+		left = self.mapxr.shift(ramanshift = -window)
+		right = self.mapxr.shift(ramanshift = window)
+
+		# the standard deviation of this will give us the noise level in the data
+		# we can then take a `cutoff` times the std to locate the CRR peaks
+		difference = left - right
+		noise_std = difference.std()
+		# calculate the average of the Raman intensity positions of the neighbor pixels from window away
+		average = (left + right)/2
+
+		# positions of the CRR peaks, where the Raman signal is higher than `cutoff*noise_std`
+		crrpos = (self.mapxr > (left + cutoff*noise_std)) & (self.mapxr > (right + cutoff*noise_std))
+
+		# make new Dataarray with the values with the averages at the CRR positions, where the crrpos mask is True and with the original values where it is False.
+		map_crr_removed = xr.where(crrpos, average.where(crrpos), self.mapxr)
+		# make a copy of the spec instance
+		map_crr = copy.deepcopy(self)
+		map_crr.mapxr.data = map_crr_removed.data
+
+		# add comment to attributes
+		map_crr.mapxr.attrs['comments'] += 'replaced cosmic ray values with average of neighbors at ' + f'{crrpos.sum().data}' + ' coordinates.\n'
+
+		return map_crr
+
+
 	def peakmask(self, peakpos, cutoff = 0.1, width = None, height = None, **kwargs):
 		"""Create a boolean mask for the map, where the mean Raman intensity of the peak at ``peakpos`` is larger than the peak mean in the selected spectrum by the ``cutoff`` value.
 		The method also returns the cropped :py:mod:`xarray` DataArray, with the values that are cropped replaced by NaNs.
@@ -818,6 +861,49 @@ class singlespec:
 		ss_norm.normfactor = peakampl
 
 		return ss_norm
+
+	def crr(self, cutoff = 2, window = 2, **kwargs):
+		"""Tool for removing cosmic rays from a single spectrum.
+		The CRR peaks are determined as the standard deviation of the data: `std` times the `cutoff` value, in the `window` sized vicinity of each pixel.
+
+		:param cutoff: multiplication factor for the data's standard deviation; defaults to 2.
+		:type cutoff: int, optional
+		:param window: size of the neighborhood to consider; defaults to 2.
+		:type window: int, optional
+		
+		:return: instance of the :class:`singlespec` class with the cosmic-ray peaks removed.
+		:rtype: :class:`singlespec`
+
+		.. note::
+			If CRR is not satisfactory, keep reducing the `cutoff` value and compare to the original data.
+		"""
+
+		# shift the data by `window` pixels to the left and right
+		left = self.ssxr.shift(ramanshift = -window)
+		right = self.ssxr.shift(ramanshift = window)
+
+		# the standard deviation of this will give us the noise level in the data
+		# we can then take a `cutoff` times the std to locate the CRR peaks
+		difference = left - right
+		noise_std = difference.std()
+		# calculate the average of the Raman intensity positions of the neighbor pixels from window away
+		average = (left + right)/2
+
+		# positions of the CRR peaks, where the Raman signal is higher than `cutoff*noise_std`
+		crrpos = (self.ssxr > (left + cutoff*noise_std)) & (self.ssxr > (right + cutoff*noise_std))
+
+		# Ramanshift coordinates of the CRR peaks
+		crr_coords = self.ssxr.ramanshift.where(crrpos, drop = True)
+
+		# make a copy of the spec instance
+		ss_crr = copy.deepcopy(self)
+		# replace the values with the averages at the CRR positions
+		ss_crr.ssxr.loc[{'ramanshift': crr_coords}] = average.sel(ramanshift=crr_coords).data
+
+		# add comment to attributes
+		ss_crr.ssxr.attrs['comments'] += 'replaced cosmic ray values with average of neighbors at ' + f'{crrpos.sum().data}' + ' Ramanshift coordinates.\n'
+
+		return ss_crr
 
 
 	# internal functions ----------------------------------

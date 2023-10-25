@@ -54,6 +54,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.polynomial_fit"><code class="docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.ramanmap"><code class="docutils literal notranslate"><span class="pre">ramanmap</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.calibrate"><code class="docutils literal notranslate"><span class="pre">ramanmap.calibrate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.crr"><code class="docutils literal notranslate"><span class="pre">ramanmap.crr()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.history"><code class="docutils literal notranslate"><span class="pre">ramanmap.history()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.normalize"><code class="docutils literal notranslate"><span class="pre">ramanmap.normalize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.peakmask"><code class="docutils literal notranslate"><span class="pre">ramanmap.peakmask()</span></code></a></li>
@@ -64,6 +65,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.calibrate"><code class="docutils literal notranslate"><span class="pre">singlespec.calibrate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.crr"><code class="docutils literal notranslate"><span class="pre">singlespec.crr()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.history"><code class="docutils literal notranslate"><span class="pre">singlespec.history()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.normalize"><code class="docutils literal notranslate"><span class="pre">singlespec.normalize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
@@ -174,7 +176,7 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.ramantools.gaussian">
-<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1580</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">900</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/ramantools.html#gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.gaussian" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1580</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/ramantools.html#gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.gaussian" title="Permalink to this definition"></a></dt>
 <dd><p>Gaussian function. Width and amplitude parameters have the same meaning as for <a class="reference internal" href="#ramantools.ramantools.lorentz" title="ramantools.ramantools.lorentz"><code class="xref py py-func docutils literal notranslate"><span class="pre">lorentz()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -197,7 +199,7 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.ramantools.lorentz">
-<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">lorentz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1580</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">900</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/ramantools.html#lorentz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.lorentz" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">lorentz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1580</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/ramantools.html#lorentz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.lorentz" title="Permalink to this definition"></a></dt>
 <dd><p>Single Lorentz function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -227,7 +229,7 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.ramantools.lorentz2">
-<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">lorentz2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x01</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2700</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x02</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2730</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">900</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/ramantools.html#lorentz2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.lorentz2" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">lorentz2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x01</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2700</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x02</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2730</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ampl2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/ramantools.html#lorentz2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.lorentz2" title="Permalink to this definition"></a></dt>
 <dd><p>Double Lorentz function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -251,11 +253,11 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.ramantools.peakfit">
 <span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">peakfit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xrobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func=&lt;function</span> <span class="pre">lorentz&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitresult=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stval=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/ramantools.html#peakfit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.peakfit" title="Permalink to this definition"></a></dt>
-<dd><p>Fitting a function to peaks in the data contained in <code class="docutils literal notranslate"><span class="pre">xrobj</span></code>.</p>
+<dd><p>Fitting a function to peaks in the data contained in <code class="docutils literal notranslate"><span class="pre">xrobj</span></code>, which can be a single spectrum, a map or a selected spectrum from a map.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>xrobj</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code>) – <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray, of a single spectrum or a map.</p></li>
+<li><p><strong>xrobj</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray) – <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray, of a single spectrum or a map.</p></li>
 <li><p><strong>func</strong> (<em>function</em><em>, </em><em>optional</em>) – function to be used for fitting, defaults to lorentz</p></li>
 <li><p><strong>fitresult</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> Dataset, optional) – an <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> Dataset of a previous fit calculation, with matching dimensions. If this is passed to <a class="reference internal" href="#ramantools.ramantools.peakfit" title="ramantools.ramantools.peakfit"><code class="xref py py-func docutils literal notranslate"><span class="pre">peakfit()</span></code></a>, the fit calculation in skipped and the passed Dataset is used.</p></li>
 <li><p><strong>stval</strong> (dictionary of <code class="docutils literal notranslate"><span class="pre">func</span></code> parameters, optional) – starting values for the fit parameters of <code class="docutils literal notranslate"><span class="pre">func</span></code>. You are free to specify only some of the values, the rest will be filled by defaults. Defaults are given in the starting values for keyword arguments in <code class="docutils literal notranslate"><span class="pre">func</span></code>.</p></li>
@@ -401,6 +403,31 @@ All possible keyword arguments of <a class="reference internal" href="#ramantool
 <dd class="field-odd"><p><a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramantools.ramanmap.crr">
+<span class="sig-name descname"><span class="pre">crr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/ramantools.html#ramanmap.crr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.ramanmap.crr" title="Permalink to this definition"></a></dt>
+<dd><p>Tool for removing cosmic rays from a spectroscopy maps.
+The CRR peaks are determined as the standard deviation of the data: <cite>std</cite> times the <cite>cutoff</cite> value, in the <cite>window</cite> sized vicinity of each pixel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cutoff</strong> (<em>int</em><em>, </em><em>optional</em>) – multiplication factor for the data’s standard deviation; defaults to 2.</p></li>
+<li><p><strong>window</strong> (<em>int</em><em>, </em><em>optional</em>) – size of the neighborhood to consider; defaults to 2.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>instance of the <a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> class with the cosmic-ray peaks removed.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If CRR is not satisfactory, keep reducing the <cite>cutoff</cite> value and compare to the original data.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
@@ -552,7 +579,7 @@ Default fit function is a first order polynomial. This can be changed by the <co
 </p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>tuple: (<a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>)</p>
+<dd class="field-odd"><p>tuple: (<a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>)</p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -664,6 +691,31 @@ All possible keyword arguments of <a class="reference internal" href="#ramantool
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramantools.singlespec.crr">
+<span class="sig-name descname"><span class="pre">crr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/ramantools.html#singlespec.crr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.singlespec.crr" title="Permalink to this definition"></a></dt>
+<dd><p>Tool for removing cosmic rays from a single spectrum.
+The CRR peaks are determined as the standard deviation of the data: <cite>std</cite> times the <cite>cutoff</cite> value, in the <cite>window</cite> sized vicinity of each pixel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cutoff</strong> (<em>int</em><em>, </em><em>optional</em>) – multiplication factor for the data’s standard deviation; defaults to 2.</p></li>
+<li><p><strong>window</strong> (<em>int</em><em>, </em><em>optional</em>) – size of the neighborhood to consider; defaults to 2.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>instance of the <a class="reference internal" href="#ramantools.ramantools.singlespec" title="ramantools.ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> class with the cosmic-ray peaks removed.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#ramantools.ramantools.singlespec" title="ramantools.ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If CRR is not satisfactory, keep reducing the <cite>cutoff</cite> value and compare to the original data.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramantools.singlespec.history">
 <span class="sig-name descname"><span class="pre">history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/ramantools.html#singlespec.history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.singlespec.history" title="Permalink to this definition"></a></dt>
 <dd><p>Display the notes accumulated in the ‘comments’ attribute of the <code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec.ssxr</span></code> <cite>xarray</cite> variable.</p>
@@ -725,7 +777,7 @@ This can be changed by the <code class="docutils literal notranslate"><span clas
 </p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p>tuple: (<a class="reference internal" href="#ramantools.ramantools.singlespec" title="ramantools.ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>)</p>
+<dd class="field-even"><p>tuple: (<a class="reference internal" href="#ramantools.ramantools.singlespec" title="ramantools.ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>)</p>
 </dd>
 </dl>
 <div class="admonition note">
