@@ -53,7 +53,7 @@ Below is a simple example for loading a Raman map and doing some basic analysis.
 	fit['curvefit_coefficients'].sel(param = 'width').plot(vmin = 40, vmax = 80)
 
 	# export the fit results and the map without the background to NetCDF format for easy loading later
-	m_nobg.mapxr.to_netcdf(data_path + 'map - no backgroung.nc')
-	fit.to_netcdf(data_path + 'map - no backgroung_Lorentz fit.nc')
+	m_nobg.mapxr.to_netcdf(data_path + 'map.nc')
+	fit.to_netcdf(data_path + 'map_Lorentz fit.nc')
 
 
