@@ -1044,7 +1044,7 @@ def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 0):
 	:rtype: float, :py:mod:`numpy` array, etc.
 	"""	
 	# using the FWHM for the width
-	return offset + ampl * np.exp(-2*np.log(2)*(x - x0)**2 / (width**2))
+	return offset + ampl * np.exp(-4*np.log(2)*(x - x0)**2 / (width**2))
 
 
 def lorentz(x, x0 = 1580, ampl = 1, width = 14, offset = 0):
