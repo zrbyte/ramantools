@@ -1139,7 +1139,7 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 
 	:param x_data: Raman shift values
 	:type x_data: :py:mod:`numpy` array
-	:param y_data: Raman intesity values
+	:param y_data: Raman intensity values
 	:type y_data: :py:mod:`numpy` array
 	:param polyorder: order of polynomial used to fit the background, defaults to 1
 	:type polyorder: int, optional
