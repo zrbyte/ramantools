@@ -1327,7 +1327,7 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 	# make a dictionary with the keyword arguments (parameters) and their default values specified in the function: func
 	kwargs_with_defaults = dict(zip(param_names[kwargs_start_index:], defaults))
 
-	# loop over the keys in stval and fill missing values with defaults
+	# loop over the keys in stval and fill missing values with defaults 
 	if stval is None:
 		stval = kwargs_with_defaults
 	else:
