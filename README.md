@@ -1,5 +1,5 @@
 # ramantools
-Tools for analyzing Raman spectroscopy data, measured by a Witec confocal Raman microscope.
+Tools for analyzing Raman spectroscopy data, measured by a Witec confocal Raman microscope. It uses [xarray](https://ramanspy.readthedocs.io/en/latest/) DataArrays to effiently store and analyze spectroscopy maps and individual spectra, as well as their metadata. There are two containers for Raman spectroscopy data: [ramanmap](https://zrbyte.github.io/ramantools/ramantools.html#ramantools.ramantools.ramanmap) and [singlespec](https://zrbyte.github.io/ramantools/ramantools.html#ramantools.ramantools.singlespec), for use with spectroscopy maps and single spectra.
 
 Documentation can be found here: [zrbyte.github.io/ramantools](https://zrbyte.github.io/ramantools/)
 
