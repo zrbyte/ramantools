@@ -564,25 +564,53 @@ class ramanmap:
 		Load the Raman map data into a numpy array.
 		"""
 
-		# Check to see if metadata are present in the data file
-		with open(map_path, 'r', encoding = 'latin1') as file:
-			lines = [next(file).strip() for _ in range(2)]
+		# Load the first part of the file to search for metadata
+		with open(map_path, 'r', encoding='latin1') as file:
+			lines = []
+			for _ in range(40): # start reading the first 40 lines
+				line = file.readline()
+				if not line:  # stop if end of file is reached
+					break
+				lines.append(line.strip())
 		
-		if 'Header' in lines[1]:
-			# we have a header
-			# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
-			with open(map_path, 'r', encoding = 'latin1') as file:
-				lines = [next(file).strip() for _ in range(17)]
-				self.metadata_datafile = '\n'.join(lines)
-			# need to skip the header when loading
-			toskip = 19
+		# define a regular expression to search for the start of the data. It looks for any number, followed by a dot, with more numbers after, then any character and a tab or space and more numbers
+		data_pattern = r'(\d+\.\d+.+[\t ]+)+'
+		# initialize lineskip parameter
+		toskip = 0
+		# Check each line for a match
+		for idx, line in enumerate(lines, start=0):
+			if re.search(data_pattern, line):
+				toskip = idx
+				break  # Stop after finding the first match
 
+		# save datafile metadata
+		if toskip == 0:
+			# there is no header
+			self.wipfilename = map_path
+			self.metadata_datafile = ''
+		else:
+			# add the data metadata to a class variable
+			with open(map_path, 'r', encoding = 'latin1') as file:
+				lines = [next(file).strip() for _ in range(toskip)]
+				self.metadata_datafile = '\n'.join(lines)
 			# extract the WIP filename
 			self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
-		else:
-			# there is no header
-			toskip = 0
-			self.wipfilename = map_path
+
+		# if 'Header' in lines[1]:
+		# 	# we have a header
+		# 	# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
+		# 	with open(map_path, 'r', encoding = 'latin1') as file:
+		# 		lines = [next(file).strip() for _ in range(17)]
+		# 		self.metadata_datafile = '\n'.join(lines)
+		# 	# need to skip the header when loading
+		# 	toskip = 19
+
+		# 	# extract the WIP filename
+		# 	self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+		# else:
+		# 	# there is no header
+		# 	toskip = 0
+		# 	self.wipfilename = map_path
 		
 		# Load the data
 		m = np.loadtxt(map_path, skiprows = toskip, encoding = 'latin1')
@@ -963,26 +991,59 @@ class singlespec:
 		Load the Raman map data into a numpy array.
 		"""
 
-		# Check to see if metadata are present in the data file
-		with open(spec_path, 'r', encoding = 'latin1') as file:
-			lines = [next(file).strip() for _ in range(2)]
+		# Load the first part of the file to search for metadata
+		with open(spec_path, 'r', encoding='latin1') as file:
+			lines = []
+			for _ in range(40): # start reading the first 40 lines
+				line = file.readline()
+				if not line:  # stop if end of file is reached
+					break
+				lines.append(line.strip())
 		
-		if 'Header' in lines[1]:
-			# we have a header
-			# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
-			with open(spec_path, 'r', encoding = 'latin1') as file:
-				lines = [next(file).strip() for _ in range(17)]
-				self.metadata_datafile = '\n'.join(lines)
-			# need to skip the header when loading
-			toskip = 17
+		# define a regular expression to search for the start of the data. It looks for any number, followed by a dot, with more numbers after, then any character and a tab or space and more numbers
+		data_pattern = r'(\d+\.\d+.+[\t ]+)+'
+		# initialize lineskip parameter
+		toskip = 0
+		# Check each line for a match
+		for idx, line in enumerate(lines, start=0):
+			if re.search(data_pattern, line):
+				toskip = idx
+				break  # Stop after finding the first match
 
+		# save datafile metadata
+		if toskip == 0:
+			# there is no header
+			self.wipfilename = spec_path
+			self.metadata_datafile = ''
+		else:
+			# add the data metadata to a class variable
+			with open(spec_path, 'r', encoding = 'latin1') as file:
+				lines = [next(file).strip() for _ in range(toskip)]
+				self.metadata_datafile = '\n'.join(lines)
 			# extract the WIP filename
 			self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
-		else:
-			# there is no header
-			toskip = 0
-			self.wipfilename = spec_path
 
+		# # Check to see if metadata are present in the data file
+		# with open(spec_path, 'r', encoding = 'latin1') as file:
+		# 	lines = [next(file).strip() for _ in range(2)]
+		
+		# if 'Header' in lines[1]:
+		# 	# we have a header
+		# 	# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
+		# 	with open(spec_path, 'r', encoding = 'latin1') as file:
+		# 		lines = [next(file).strip() for _ in range(17)]
+		# 		self.metadata_datafile = '\n'.join(lines)
+		# 	# need to skip the header when loading
+		# 	toskip = 17
+
+		# 	# extract the WIP filename
+		# 	self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+		# else:
+		# 	# there is no header
+		# 	toskip = 0
+		# 	self.wipfilename = spec_path
+		
+		# Load the data
 		ss = np.loadtxt(spec_path, skiprows = toskip, encoding = 'latin1')
 		self.ramanshift = ss[:, 0]
 		self.counts = ss[:, 1]
