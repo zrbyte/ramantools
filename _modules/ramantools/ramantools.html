@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="../../">
 <head>
@@ -5,18 +7,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ramantools.ramantools &mdash; Ramantools 2023 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
   
-  <!--[if lt IE 9]>
-    <script src="../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../../_static/jquery.js?v=5d32c60e"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="../../_static/documentation_options.js?v=a4664895"></script>
-        <script src="../../_static/doctools.js?v=9a2dae69"></script>
-        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=a4664895"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -667,25 +665,53 @@
 <span class="sd">		Load the Raman map data into a numpy array.</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 
-		<span class="c1"># Check to see if metadata are present in the data file</span>
-		<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
-			<span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
+		<span class="c1"># Load the first part of the file to search for metadata</span>
+		<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;latin1&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+			<span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">40</span><span class="p">):</span> <span class="c1"># start reading the first 40 lines</span>
+				<span class="n">line</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+				<span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>  <span class="c1"># stop if end of file is reached</span>
+					<span class="k">break</span>
+				<span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
 		
-		<span class="k">if</span> <span class="s1">&#39;Header&#39;</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
-			<span class="c1"># we have a header</span>
-			<span class="c1"># load additional metadata from the data file itself, ie the first 19 lines we have skipped.</span>
-			<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
-				<span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">17</span><span class="p">)]</span>
-				<span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
-			<span class="c1"># need to skip the header when loading</span>
-			<span class="n">toskip</span> <span class="o">=</span> <span class="mi">19</span>
+		<span class="c1"># define a regular expression to search for the start of the data. It looks for any number, followed by a dot, with more numbers after, then any character and a tab or space and more numbers</span>
+		<span class="n">data_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(\d+\.\d+.+[\t ]+)+&#39;</span>
+		<span class="c1"># initialize lineskip parameter</span>
+		<span class="n">toskip</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="c1"># Check each line for a match</span>
+		<span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+			<span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">data_pattern</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+				<span class="n">toskip</span> <span class="o">=</span> <span class="n">idx</span>
+				<span class="k">break</span>  <span class="c1"># Stop after finding the first match</span>
 
+		<span class="c1"># save datafile metadata</span>
+		<span class="k">if</span> <span class="n">toskip</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="c1"># there is no header</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">map_path</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="c1"># add the data metadata to a class variable</span>
+			<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+				<span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">toskip</span><span class="p">)]</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
 			<span class="c1"># extract the WIP filename</span>
 			<span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;FileName = (.*?)(?:\n|$)&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-		<span class="k">else</span><span class="p">:</span>
-			<span class="c1"># there is no header</span>
-			<span class="n">toskip</span> <span class="o">=</span> <span class="mi">0</span>
-			<span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">map_path</span>
+
+		<span class="c1"># if &#39;Header&#39; in lines[1]:</span>
+		<span class="c1"># 	# we have a header</span>
+		<span class="c1"># 	# load additional metadata from the data file itself, ie the first 19 lines we have skipped.</span>
+		<span class="c1"># 	with open(map_path, &#39;r&#39;, encoding = &#39;latin1&#39;) as file:</span>
+		<span class="c1"># 		lines = [next(file).strip() for _ in range(17)]</span>
+		<span class="c1"># 		self.metadata_datafile = &#39;\n&#39;.join(lines)</span>
+		<span class="c1"># 	# need to skip the header when loading</span>
+		<span class="c1"># 	toskip = 19</span>
+
+		<span class="c1"># 	# extract the WIP filename</span>
+		<span class="c1"># 	self.wipfilename = re.findall(r&#39;FileName = (.*?)(?:\n|$)&#39;, self.metadata_datafile)[0]</span>
+		<span class="c1"># else:</span>
+		<span class="c1"># 	# there is no header</span>
+		<span class="c1"># 	toskip = 0</span>
+		<span class="c1"># 	self.wipfilename = map_path</span>
 		
 		<span class="c1"># Load the data</span>
 		<span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="n">skiprows</span> <span class="o">=</span> <span class="n">toskip</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span>
@@ -1087,26 +1113,59 @@
 <span class="sd">		Load the Raman map data into a numpy array.</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 
-		<span class="c1"># Check to see if metadata are present in the data file</span>
-		<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
-			<span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)]</span>
+		<span class="c1"># Load the first part of the file to search for metadata</span>
+		<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;latin1&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+			<span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">40</span><span class="p">):</span> <span class="c1"># start reading the first 40 lines</span>
+				<span class="n">line</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+				<span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>  <span class="c1"># stop if end of file is reached</span>
+					<span class="k">break</span>
+				<span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
 		
-		<span class="k">if</span> <span class="s1">&#39;Header&#39;</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
-			<span class="c1"># we have a header</span>
-			<span class="c1"># load additional metadata from the data file itself, ie the first 19 lines we have skipped.</span>
-			<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
-				<span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">17</span><span class="p">)]</span>
-				<span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
-			<span class="c1"># need to skip the header when loading</span>
-			<span class="n">toskip</span> <span class="o">=</span> <span class="mi">17</span>
+		<span class="c1"># define a regular expression to search for the start of the data. It looks for any number, followed by a dot, with more numbers after, then any character and a tab or space and more numbers</span>
+		<span class="n">data_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;(\d+\.\d+.+[\t ]+)+&#39;</span>
+		<span class="c1"># initialize lineskip parameter</span>
+		<span class="n">toskip</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="c1"># Check each line for a match</span>
+		<span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+			<span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">data_pattern</span><span class="p">,</span> <span class="n">line</span><span class="p">):</span>
+				<span class="n">toskip</span> <span class="o">=</span> <span class="n">idx</span>
+				<span class="k">break</span>  <span class="c1"># Stop after finding the first match</span>
 
+		<span class="c1"># save datafile metadata</span>
+		<span class="k">if</span> <span class="n">toskip</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="c1"># there is no header</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">spec_path</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="c1"># add the data metadata to a class variable</span>
+			<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+				<span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">toskip</span><span class="p">)]</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
 			<span class="c1"># extract the WIP filename</span>
 			<span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;FileName = (.*?)(?:\n|$)&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-		<span class="k">else</span><span class="p">:</span>
-			<span class="c1"># there is no header</span>
-			<span class="n">toskip</span> <span class="o">=</span> <span class="mi">0</span>
-			<span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">spec_path</span>
 
+		<span class="c1"># # Check to see if metadata are present in the data file</span>
+		<span class="c1"># with open(spec_path, &#39;r&#39;, encoding = &#39;latin1&#39;) as file:</span>
+		<span class="c1"># 	lines = [next(file).strip() for _ in range(2)]</span>
+		
+		<span class="c1"># if &#39;Header&#39; in lines[1]:</span>
+		<span class="c1"># 	# we have a header</span>
+		<span class="c1"># 	# load additional metadata from the data file itself, ie the first 19 lines we have skipped.</span>
+		<span class="c1"># 	with open(spec_path, &#39;r&#39;, encoding = &#39;latin1&#39;) as file:</span>
+		<span class="c1"># 		lines = [next(file).strip() for _ in range(17)]</span>
+		<span class="c1"># 		self.metadata_datafile = &#39;\n&#39;.join(lines)</span>
+		<span class="c1"># 	# need to skip the header when loading</span>
+		<span class="c1"># 	toskip = 17</span>
+
+		<span class="c1"># 	# extract the WIP filename</span>
+		<span class="c1"># 	self.wipfilename = re.findall(r&#39;FileName = (.*?)(?:\n|$)&#39;, self.metadata_datafile)[0]</span>
+		<span class="c1"># else:</span>
+		<span class="c1"># 	# there is no header</span>
+		<span class="c1"># 	toskip = 0</span>
+		<span class="c1"># 	self.wipfilename = spec_path</span>
+		
+		<span class="c1"># Load the data</span>
 		<span class="n">ss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="n">skiprows</span> <span class="o">=</span> <span class="n">toskip</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">ss</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">ss</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
