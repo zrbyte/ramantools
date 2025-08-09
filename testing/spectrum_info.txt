@@ -1,0 +1,12 @@
+TestSpectrum
+Start Time:	00:00:00
+Start Date:	2023-01-01
+Sample Name:	TestSample
+Excitation Wavelength [nm]:	532
+Integration Time [s]:	1
+Grating:	TestGrating
+Objective Name:	TestObjective
+Objective Magnification:	100
+Position X [m]:	0
+Position Y [m]:	0
+Position Z [m]:	0
