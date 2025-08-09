@@ -1,6 +1,7 @@
-import re, copy
+import re  # Regular expressions for parsing metadata
+import copy  # Object copying utilities
 import numpy as np
-import matplotlib.pyplot as pl
+import matplotlib.pyplot as plt  # Widely used alias for matplotlib's pyplot
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 import xarray as xr
@@ -10,6 +11,19 @@ Module ramantools
 =============
 Tools to analize Raman spectroscopy data, measured using the Witec 300rsa+ confocal Raman spectrometer.
 """
+
+# Helper utilities -----------------------------------------------------------
+
+def _midpoint(values: np.ndarray) -> float:
+        """Return the midpoint of an array of values.
+
+        This function centralizes the midpoint calculation used throughout the
+        module to determine the center of width and height coordinates. Having
+        a single helper avoids repeated formulae and clarifies intent.
+        """
+        vmin = np.min(values)
+        vmax = np.max(values)
+        return (vmax - vmin) / 2 + vmin
 
 class ramanmap:
 	"""
@@ -88,8 +102,9 @@ class ramanmap:
 		spec = self.mapxr.sel(width = width, height = height, method = 'nearest')
 		ramanintensity = self.mapxr.sel(ramanshift = shift, method = 'nearest')
 
-		# Creating a figure with two subplots and a given size
-		fig, [ax0, ax1] = pl.subplots(1, 2, figsize = (9, 4))
+                # Creating two subplots; the figure handle is intentionally
+                # discarded ("_" variable) because it is not used later.
+                _, [ax0, ax1] = plt.subplots(1, 2, figsize = (9, 4))
 		# plotting the density plot of the 2D peak area ratio
 		ramanintensity.plot(
 			ax = ax0,
@@ -103,8 +118,8 @@ class ramanmap:
 			color = 'lime', marker = 'x')
 		ax0.set_aspect('equal', 'box')
 		ax0.axes.title.set_size(10)
-		ax1.axes.title.set_size(10)
-		pl.tight_layout()
+                ax1.axes.title.set_size(10)
+                plt.tight_layout()  # Adjust subplot spacing for readability
 
 	def remove_bg(self, mode = 'const', fitmask = None, height = None, width = None, **kwargs):
 		"""Remove the background of Raman maps.
@@ -134,7 +149,7 @@ class ramanmap:
 			* ``coeff``: the coefficients and
 			* ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
 		
-		:rtype: tuple: (:class:`ramanmap` :py:mod:`numpy`, :py:mod:`numpy`)
+		:rtype: tuple: (:class:`ramanmap`, :py:mod:`numpy`, :py:mod:`numpy`)
 
 		.. note::
 			If the peaks and background are complicated, it is advised to test the background fit, by selecting the most difficult spectrum from the map and tweaking the fit parameters directly, using :func:`bgsubtract`.
@@ -164,8 +179,10 @@ class ramanmap:
 			new_m.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest').plot()
 
 		"""
-		# create a copy of the instance
-		map_mod = copy.deepcopy(self)
+                # create a lightweight copy of the instance; we avoid deepcopy to
+                # reduce memory churn and instead copy only the data array below
+                map_mod = copy.copy(self)
+                map_mod.mapxr = self.mapxr.copy()
 
 		if mode == 'const':
 			# Remove the same background for all spectra in the map
@@ -240,15 +257,27 @@ class ramanmap:
 
 		# if a calibration factor is specified, don't fit just shift the values by calibfactor
 		if calibfactor == 0:
+			# before fitting crop to the area around the peak
+			fitrange = [peakshift - 100, peakshift + 100]
+			
+			# if one of the ranges out of bounds with the data
+			if fitrange[0] < self.mapxr.ramanshift.min().data:
+				fitrange[0] = self.mapxr.ramanshift.min().data
+			if fitrange[1] > self.mapxr.ramanshift.max().data:
+				fitrange[1] = self.mapxr.ramanshift.max().data
+			# crop the spectrum
+			spectofit_crop = spectofit.sel(ramanshift = slice(fitrange[0], fitrange[1]))
+
 			# fit to the peak around `peakshift`
-			fit = peakfit(spectofit, stval = {'x0': peakshift}, **kwargs)
+			fit = peakfit(spectofit_crop, stval = {'x0': peakshift}, **kwargs)
 			# correction factor relative to the expected value: peakshift
 			calibshift = peakshift - fit['curvefit_coefficients'].sel(param = 'x0').data
 		else:
 			calibshift = calibfactor
 
-		# create a copy of the instance
-		map_mod = copy.deepcopy(self)
+                # create a shallow copy of the instance; the new coordinates are
+                # assigned below so a deep copy is unnecessary
+                map_mod = copy.copy(self)
 
 		# shift the ramanshift values by the correction factor in the new singlespec instance
 		map_mod.mapxr = self.mapxr.assign_coords(ramanshift = self.mapxr['ramanshift'] + calibshift)
@@ -287,18 +316,15 @@ class ramanmap:
 			If ``mode == 'individual'``, the ``width`` and ``height`` parameters are ignored.
 		"""
 
-		# get the middle of the map
-		if (width is not None) and (height is not None):
-			mapwidth = width
-			mapheight = height
-		else:
-			# if no width and height parameters are supplied, take the middle spectrum
-			wmin = min(self.mapxr.width.data)
-			wmax = max(self.mapxr.width.data)
-			hmin = min(self.mapxr.height.data)
-			hmax = max(self.mapxr.height.data)
-			mapwidth = (wmax - wmin)/2 + wmin
-			mapheight = (hmax - hmin)/2 + hmin
+                # Determine reference coordinates. When none are supplied we use
+                # the midpoint of the map, computed via the helper above to
+                # avoid duplicated midpoint logic.
+                if (width is not None) and (height is not None):
+                        mapwidth = width
+                        mapheight = height
+                else:
+                        mapwidth = _midpoint(self.mapxr.width.data)
+                        mapheight = _midpoint(self.mapxr.height.data)
 
 		# crop the data in ramanshift to around the peak specified
 		cropregion = 100
@@ -330,9 +356,7 @@ class ramanmap:
 			normalized.attrs = self.mapxr.attrs.copy()
 			normalized.attrs['units'] = ' '
 			normalized.attrs['long_name'] = 'normalized Raman intensity'
-			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == const' + '\n'
-
-			map_norm = normalized
+                        normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == const' + ' by a factor of ' + f'{peakampl:.2f}' + '\n'
 
 		elif mode == 'individual':
 			# fit to the cropped region
@@ -347,18 +371,63 @@ class ramanmap:
 			normalized.attrs = self.mapxr.attrs.copy()
 			normalized.attrs['units'] = ' '
 			normalized.attrs['long_name'] = 'normalized Raman intensity'
-			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == individual' + '\n'
+			normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == individual' + ' by a factor of ' + f'{peakampl:.2f}' + '\n'
 			
 		else:
 			raise ValueError('`mode` parameter must be either: \'const\' or \'individual\'')
 			return
 		
-		# create a copy of the instance
-		map_norm = copy.deepcopy(self)
-		# replace the xarray variable with the normalized one
-		map_norm.mapxr = normalized
+                # create a shallow copy of the instance and attach the new
+                # normalized data array computed above
+                map_norm = copy.copy(self)
+                map_norm.mapxr = normalized.copy()
+
+		# add the normalization factor to the ramanmap instance
+		map_norm.normfactor = peakampl
 
 		return map_norm
+
+
+	def crr(self, cutoff = 2, window = 2, **kwargs):
+		"""Tool for removing cosmic rays from a spectroscopy maps.
+		The CRR peaks are determined as the standard deviation of the data: `std` times the `cutoff` value, in the `window` sized vicinity of each pixel.
+
+		:param cutoff: multiplication factor for the data's standard deviation; defaults to 2.
+		:type cutoff: int, optional
+		:param window: size of the neighborhood to consider; defaults to 2.
+		:type window: int, optional
+		
+		:return: instance of the :class:`ramanmap` class with the cosmic-ray peaks removed.
+		:rtype: :class:`ramanmap`
+
+		.. note::
+			If CRR is not satisfactory, keep reducing the `cutoff` value and compare to the original data.
+		"""
+
+                # Compute rolling statistics to estimate local noise and mean.
+                # Using xarray's vectorized rolling operations clarifies intent
+                # and avoids manual shifting of data arrays.
+                rolling = self.mapxr.rolling(ramanshift=2*window+1, center=True)
+                local_mean = rolling.mean()
+                local_std = rolling.std()
+
+                # Identify positions where the signal significantly exceeds the
+                # local mean by ``cutoff`` standard deviations.
+                crrpos = (self.mapxr - local_mean) > (cutoff * local_std)
+
+                # Replace cosmic-ray spikes with the local mean while preserving
+                # untouched data elsewhere.
+                map_crr_removed = xr.where(crrpos, local_mean, self.mapxr)
+
+                # Make a lightweight copy of the instance and attach the cleaned data
+                map_crr = copy.copy(self)
+                map_crr.mapxr = map_crr_removed
+
+                # add comment to attributes
+                map_crr.mapxr.attrs['comments'] += 'replaced cosmic ray values with local mean at ' + f'{crrpos.sum().data}' + ' coordinates.\n'
+
+		return map_crr
+
 
 	def peakmask(self, peakpos, cutoff = 0.1, width = None, height = None, **kwargs):
 		"""Create a boolean mask for the map, where the mean Raman intensity of the peak at ``peakpos`` is larger than the peak mean in the selected spectrum by the ``cutoff`` value.
@@ -392,18 +461,15 @@ class ramanmap:
 			The method uses :func:`peakfit` to find the peak near ``peakpos``.
 			Keyword arguments used by :func:`peakfit` can be passed to the method.
 		"""
-		# get the middle of the map
-		if (width is not None) and (height is not None):
-			mapwidth = width
-			mapheight = height
-		else:
-			# if no width and height parameters are supplied, take the middle spectrum
-			wmin = min(self.mapxr.width.data)
-			wmax = max(self.mapxr.width.data)
-			hmin = min(self.mapxr.height.data)
-			hmax = max(self.mapxr.height.data)
-			mapwidth = (wmax - wmin)/2 + wmin
-			mapheight = (hmax - hmin)/2 + hmin
+                # Determine reference coordinates using supplied values or the
+                # midpoint of the map when absent. The helper function above
+                # encapsulates midpoint math for clarity.
+                if (width is not None) and (height is not None):
+                        mapwidth = width
+                        mapheight = height
+                else:
+                        mapwidth = _midpoint(self.mapxr.width.data)
+                        mapheight = _midpoint(self.mapxr.height.data)
 
 		# first we fit a Lorentzian to the peak at peakpos to determine its width
 		spectofit = self.mapxr.sel(width = mapwidth, height = mapheight, method = 'nearest')
@@ -430,9 +496,9 @@ class ramanmap:
 		# make the boolean mask where the value of the mean is more than the cutoff times the selected peak mean
 		peakmask = peakmean > cutoff*selected_peakmean
 
-		# crop the data with the mask
-		mapmasked = copy.deepcopy(self)
-		mapmasked.mapxr = mapmasked.mapxr.where(peakmask)
+                # crop the data with the mask
+                mapmasked = copy.copy(self)  # shallow copy of container
+                mapmasked.mapxr = self.mapxr.where(peakmask)
 
 		# update the comment attributes if it exists
 		if hasattr(mapmasked.mapxr, 'comments'):
@@ -449,6 +515,8 @@ class ramanmap:
 		self.filename = map_path
 		# fitmask
 		self.mask = None
+		# normalization factor, factor by which the raman intensity values are divided during normalize
+		self.normfactor = None
 		# Load the metadata
 		self._load_info(info_path)
 		# Load the Raman map
@@ -484,7 +552,7 @@ class ramanmap:
 		# time of measurement
 		self.time = re.findall(r'(?<=Start Time:\t)-?.+', metadata)[0]
 		# sample name
-		self.samplename = re.findall(r'(?<=Sample Name:\t)-?.+', metadata)[0]
+		self.samplename = re.findall(r'(?<=Sample Name:\t).*', metadata)[0] # new regex to match also no characters after sample name
 		# laser energy
 		self.laser = float(re.findall(r'(?<=Excitation Wavelength \[nm\]:\t)-?.+', metadata)[0])
 		# integration time
@@ -504,18 +572,60 @@ class ramanmap:
 		"""
 		Load the Raman map data into a numpy array.
 		"""
-		m = np.loadtxt(map_path, skiprows=19, encoding='latin1')
+
+		# Load the first part of the file to search for metadata
+		with open(map_path, 'r', encoding='latin1') as file:
+			lines = []
+			for _ in range(40): # start reading the first 40 lines
+				line = file.readline()
+				if not line:  # stop if end of file is reached
+					break
+				lines.append(line.strip())
+		
+		# define a regular expression to search for the start of the data. It looks for any number, followed by a dot, with more numbers after, then any character and a tab or space and more numbers
+		data_pattern = r'(\d+\.\d+.+[\t ]+)+'
+		# initialize lineskip parameter
+		toskip = 0
+		# Check each line for a match
+		for idx, line in enumerate(lines, start=0):
+			if re.search(data_pattern, line):
+				toskip = idx
+				break  # Stop after finding the first match
+
+		# save datafile metadata
+		if toskip == 0:
+			# there is no header
+			self.wipfilename = map_path
+			self.metadata_datafile = ''
+		else:
+			# add the data metadata to a class variable
+			with open(map_path, 'r', encoding = 'latin1') as file:
+				lines = [next(file).strip() for _ in range(toskip)]
+				self.metadata_datafile = '\n'.join(lines)
+			# extract the WIP filename
+			self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+
+		# if 'Header' in lines[1]:
+		# 	# we have a header
+		# 	# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
+		# 	with open(map_path, 'r', encoding = 'latin1') as file:
+		# 		lines = [next(file).strip() for _ in range(17)]
+		# 		self.metadata_datafile = '\n'.join(lines)
+		# 	# need to skip the header when loading
+		# 	toskip = 19
+
+		# 	# extract the WIP filename
+		# 	self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+		# else:
+		# 	# there is no header
+		# 	toskip = 0
+		# 	self.wipfilename = map_path
+		
+		# Load the data
+		m = np.loadtxt(map_path, skiprows = toskip, encoding = 'latin1')
 		# The raman shift is the first column in the exported table.
 		self.ramanshift = m[:, 0]
 		self.map = np.reshape(m[:, 1:], (m.shape[0], self.pixel_y, self.pixel_x))
-
-		# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
-		with open(map_path, 'r', encoding = 'latin1') as file:
-			lines = [next(file).strip() for _ in range(17)]
-			self.metadata_datafile = '\n'.join(lines)
-
-		# extract the WIP filename
-		self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
 
 		return self.map
 
@@ -537,6 +647,7 @@ class ramanmap:
 		# add a comment field
 		self.mapxr.attrs['comments'] = 'raw data loaded \n'
 		# adding attributes
+		self.mapxr.name = 'Raman intensity' # this is needed if used with hvplot
 		self.mapxr.attrs['wipfile name'] = self.wipfilename
 		self.mapxr.attrs['units'] = 'au'
 		self.mapxr.attrs['long_name'] = 'Raman intensity'
@@ -553,11 +664,13 @@ class ramanmap:
 		self.mapxr.attrs['objective magnification'] = self.objmagn + 'x'
 		self.mapxr.attrs['grating'] = self.grating
 		# coordinate attributes
-		self.mapxr.coords['ramanshift'].attrs['units'] = 'cm$^{-1}$'
+		self.mapxr.coords['ramanshift'].attrs['units'] = r'1/cm'
 		self.mapxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
-		self.mapxr.coords['width'].attrs['units'] = '$\mathrm{\mu m}$' # type: ignore
+		# self.mapxr.coords['width'].attrs['units'] = r'$\mathrm{\mu m}$' # type: ignore
+		self.mapxr.coords['width'].attrs['units'] = 'um' # type: ignore
 		self.mapxr.coords['width'].attrs['long_name'] = 'width'
-		self.mapxr.coords['height'].attrs['units'] = '$\mathrm{\mu m}$' # type: ignore
+		# self.mapxr.coords['height'].attrs['units'] = r'$\mathrm{\mu m}$' # type: ignore
+		self.mapxr.coords['height'].attrs['units'] = 'um' # type: ignore
 		self.mapxr.coords['height'].attrs['long_name'] = 'height'
 
 ## ----------------------------------------------------
@@ -636,7 +749,7 @@ class singlespec:
 			* ``coeff``: the coefficients and
 			* ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
 
-		:rtype: tuple: (:class:`singlespec` :py:mod:`numpy`, :py:mod:`numpy`)
+		:rtype: tuple: (:class:`singlespec`, :py:mod:`numpy`, :py:mod:`numpy`)
 
 		.. note::
 			Metadata is copied over to the returned :class:`singlespec` instance, because there are no unit changes, in removing the background.
@@ -672,11 +785,12 @@ class singlespec:
 		"""		
 		data_nobg, bg_values, coeff, fitparams, mask, covar = bgsubtract(self.ssxr.coords['ramanshift'].data, self.ssxr.data, **kwargs)
 
-		# create a copy of the instance
-		singlesp_mod = copy.deepcopy(self)
+                # create a lightweight copy of the instance and copy the data
+                singlesp_mod = copy.copy(self)
+                singlesp_mod.ssxr = self.ssxr.copy()
 
-		# remove the background from ssxr
-		singlesp_mod.ssxr -= bg_values
+                # remove the background from ssxr
+                singlesp_mod.ssxr -= bg_values
 		# adding a note to `xarray` comments attribute if it exists
 		if hasattr(singlesp_mod.ssxr, 'comments'):
 			singlesp_mod.ssxr.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
@@ -702,15 +816,27 @@ class singlespec:
 
 		# if a calibration factor is specified, don't fit just shift the values by calibfactor
 		if calibfactor == 0:
+			# before fitting crop to the area around the peak
+			fitrange = [peakshift - 100, peakshift + 100]
+			
+			# if one of the ranges out of bounds with the data
+			if fitrange[0] < self.ssxr.ramanshift.min().data:
+				fitrange[0] = self.ssxr.ramanshift.min().data
+			if fitrange[1] > self.ssxr.ramanshift.max().data:
+				fitrange[1] = self.ssxr.ramanshift.max().data
+			# crop the spectrum
+			spectofit_crop = self.ssxr.sel(ramanshift = slice(fitrange[0], fitrange[1]))
+
 			# fit to the peak around `peakshift`
-			fit = peakfit(self.ssxr, stval = {'x0': peakshift}, **kwargs)
+			fit = peakfit(spectofit_crop, stval = {'x0': peakshift}, **kwargs)
+
 			# correction factor relative to the expected value: peakshift
 			calibshift = peakshift - fit['curvefit_coefficients'].sel(param = 'x0').data
 		else:
 			calibshift = calibfactor
 
-		# create a copy of the instance
-		ss_mod = copy.deepcopy(self)
+                # create a shallow copy since assign_coords returns a new DataArray
+                ss_mod = copy.copy(self)
 
 		# shift the ramanshift values by the correction factor in the new singlespec instance
 		ss_mod.ssxr = self.ssxr.assign_coords(ramanshift = self.ssxr['ramanshift'] + calibshift)
@@ -763,13 +889,50 @@ class singlespec:
 		normalized.attrs = self.ssxr.attrs.copy()
 		normalized.attrs['units'] = ' '
 		normalized.attrs['long_name'] = 'normalized Raman intensity'
-		normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + '\n'
+		normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' by a factor of ' + f'{peakampl:.2f}' + '\n'
 
-		# copy the singlespec instance
-		ss_norm = copy.deepcopy(self)
-		ss_norm.ssxr = normalized
+                # copy the singlespec instance lightly and attach normalized data
+                ss_norm = copy.copy(self)
+                ss_norm.ssxr = normalized.copy()
+
+		# add the normalization factor to the singlespec instance
+		ss_norm.normfactor = peakampl
 
 		return ss_norm
+
+	def crr(self, cutoff = 2, window = 2, **kwargs):
+		"""Tool for removing cosmic rays from a single spectrum.
+		The CRR peaks are determined as the standard deviation of the data: `std` times the `cutoff` value, in the `window` sized vicinity of each pixel.
+
+		:param cutoff: multiplication factor for the data's standard deviation; defaults to 2.
+		:type cutoff: int, optional
+		:param window: size of the neighborhood to consider; defaults to 2.
+		:type window: int, optional
+		
+		:return: instance of the :class:`singlespec` class with the cosmic-ray peaks removed.
+		:rtype: :class:`singlespec`
+
+		.. note::
+			If CRR is not satisfactory, keep reducing the `cutoff` value and compare to the original data.
+		"""
+
+                # Use rolling window statistics to estimate local mean and
+                # standard deviation, replacing manual shifts.
+                rolling = self.ssxr.rolling(ramanshift=2*window+1, center=True)
+                local_mean = rolling.mean()
+                local_std = rolling.std()
+
+                # Identify spikes that exceed the local mean by ``cutoff`` standard deviations
+                crrpos = (self.ssxr - local_mean) > (cutoff * local_std)
+
+                # Create a lightweight copy and replace spikes with the local mean
+                ss_crr = copy.copy(self)
+                ss_crr.ssxr = xr.where(crrpos, local_mean, self.ssxr)
+
+                # add comment to attributes
+                ss_crr.ssxr.attrs['comments'] += 'replaced cosmic ray values with local mean at ' + f'{crrpos.sum().data}' + ' Ramanshift coordinates.\n'
+
+		return ss_crr
 
 
 	# internal functions ----------------------------------
@@ -781,6 +944,8 @@ class singlespec:
 		self.filename = spec_path
 		# fit mask	
 		self.mask = None
+		# normalization factor, factor by which the raman intensity values are divided during normalize
+		self.normfactor = None
 		# Load the metadata
 		self._load_info(info_path)
 		# Load the Raman map
@@ -805,7 +970,7 @@ class singlespec:
 		# time of measurement
 		self.time = re.findall(r'(?<=Start Time:\t)-?.+', metadata)[0]
 		# sample name
-		self.samplename = re.findall(r'(?<=Sample Name:\t)-?.+', metadata)[0]
+		self.samplename = re.findall(r'(?<=Sample Name:\t).*', metadata)[0] # new regex to match also no characters after sample name
 		# laser energy
 		self.laser = float(re.findall(r'(?<=Excitation Wavelength \[nm\]:\t)-?.+', metadata)[0])
 		# integration time
@@ -826,16 +991,63 @@ class singlespec:
 		"""
 		Load the Raman map data into a numpy array.
 		"""
-		ss = np.loadtxt(spec_path, skiprows = 17, encoding = 'latin1')
+
+		# Load the first part of the file to search for metadata
+		with open(spec_path, 'r', encoding='latin1') as file:
+			lines = []
+			for _ in range(40): # start reading the first 40 lines
+				line = file.readline()
+				if not line:  # stop if end of file is reached
+					break
+				lines.append(line.strip())
+		
+		# define a regular expression to search for the start of the data. It looks for any number, followed by a dot, with more numbers after, then any character and a tab or space and more numbers
+		data_pattern = r'(\d+\.\d+.+[\t ]+)+'
+		# initialize lineskip parameter
+		toskip = 0
+		# Check each line for a match
+		for idx, line in enumerate(lines, start=0):
+			if re.search(data_pattern, line):
+				toskip = idx
+				break  # Stop after finding the first match
+
+		# save datafile metadata
+		if toskip == 0:
+			# there is no header
+			self.wipfilename = spec_path
+			self.metadata_datafile = ''
+		else:
+			# add the data metadata to a class variable
+			with open(spec_path, 'r', encoding = 'latin1') as file:
+				lines = [next(file).strip() for _ in range(toskip)]
+				self.metadata_datafile = '\n'.join(lines)
+			# extract the WIP filename
+			self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+
+		# # Check to see if metadata are present in the data file
+		# with open(spec_path, 'r', encoding = 'latin1') as file:
+		# 	lines = [next(file).strip() for _ in range(2)]
+		
+		# if 'Header' in lines[1]:
+		# 	# we have a header
+		# 	# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
+		# 	with open(spec_path, 'r', encoding = 'latin1') as file:
+		# 		lines = [next(file).strip() for _ in range(17)]
+		# 		self.metadata_datafile = '\n'.join(lines)
+		# 	# need to skip the header when loading
+		# 	toskip = 17
+
+		# 	# extract the WIP filename
+		# 	self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+		# else:
+		# 	# there is no header
+		# 	toskip = 0
+		# 	self.wipfilename = spec_path
+		
+		# Load the data
+		ss = np.loadtxt(spec_path, skiprows = toskip, encoding = 'latin1')
 		self.ramanshift = ss[:, 0]
 		self.counts = ss[:, 1]
-
-		# load additional metadata from the data file itself, ie the first 19 lines we have skipped.
-		with open(spec_path, 'r', encoding = 'latin1') as file:
-			lines = [next(file).strip() for _ in range(17)]
-			self.metadata_datafile = '\n'.join(lines)
-
-		self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
 
 		return self.ramanshift, self.counts
 
@@ -851,6 +1063,7 @@ class singlespec:
 		# add a comment field
 		self.ssxr.attrs['comments'] = 'raw data loaded \n'
 		# adding attributes
+		self.ssxr.name = 'Raman intensity' # this is needed if used with hvplot
 		self.ssxr.attrs['wipfile name'] = self.wipfilename
 		self.ssxr.attrs['units'] = 'au'
 		self.ssxr.attrs['long_name'] = 'Raman intensity'
@@ -866,7 +1079,7 @@ class singlespec:
 		self.ssxr.attrs['objective magnification'] = self.objmagn + 'x'
 		self.ssxr.attrs['grating'] = self.grating
 		# coordinate attributes
-		self.ssxr.coords['ramanshift'].attrs['units'] = 'cm$^{-1}$'
+		self.ssxr.coords['ramanshift'].attrs['units'] = r'1/cm'
 		self.ssxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
 
 ## internal functions ------------------------------------------------------------
@@ -875,7 +1088,7 @@ class singlespec:
 
 ## Tools -----------------------------------------------------------------
 
-def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 900):
+def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 0):
 	"""Gaussian function. Width and amplitude parameters have the same meaning as for :func:`lorentz`.
 
 	:param x: values for the x coordinate
@@ -893,10 +1106,10 @@ def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 900):
 	:rtype: float, :py:mod:`numpy` array, etc.
 	"""	
 	# using the FWHM for the width
-	return offset + ampl * np.exp(-2*np.log(2)*(x - x0)**2 / (width**2))
+	return offset + ampl * np.exp(-4*np.log(2)*(x - x0)**2 / (width**2))
 
 
-def lorentz(x, x0 = 1580, ampl = 10, width = 15, offset = 900):
+def lorentz(x, x0 = 1580, ampl = 1, width = 14, offset = 0):
 	"""Single Lorentz function
 
 	:param x: values for the x coordinate
@@ -924,7 +1137,7 @@ def lorentz(x, x0 = 1580, ampl = 10, width = 15, offset = 900):
 	area = np.pi * ampl * width / 2
 	return offset + (2/np.pi) * (area * width) / (4*(x - x0)**2 + width**2)
 
-def lorentz2(x, x01 = 2700, ampl1 = 1, width1 = 15, x02 = 2730, ampl2 = 1, width2 = 15, offset = 900):
+def lorentz2(x, x01 = 2700, ampl1 = 1, width1 = 15, x02 = 2730, ampl2 = 1, width2 = 15, offset = 0):
 	"""Double Lorentz function
 
 	:return: values of a double Lorentz function
@@ -988,7 +1201,7 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 
 	:param x_data: Raman shift values
 	:type x_data: :py:mod:`numpy` array
-	:param y_data: Raman intesity values
+	:param y_data: Raman intensity values
 	:type y_data: :py:mod:`numpy` array
 	:param polyorder: order of polynomial used to fit the background, defaults to 1
 	:type polyorder: int, optional
@@ -1088,34 +1301,34 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 
 	if toplot == True:
 		# Plot the data and peaks
-		pl.plot(x_data, y_data, label = 'Raman spectrum')
+		plt.plot(x_data, y_data, label = 'Raman spectrum')
 
 		# Highlight the peaks
 		if fitmask is None:
-			pl.scatter(x_data[peak_indices], y_data[peak_indices], color = 'green', label = 'peaks')
+			plt.scatter(x_data[peak_indices], y_data[peak_indices], color = 'green', label = 'peaks')
 		else:
 			pass
 
 		# Plot the fitted polynomial
-		pl.plot(x_data, bg_values, color = 'k', ls = "dashed", label = 'fitted polynomial')
+		plt.plot(x_data, bg_values, color = 'k', ls = "dashed", label = 'fitted polynomial')
 
 		# Highlight the background used for fitting
-		pl.scatter(uncovered_x_data, uncovered_y_data, color = 'red', marker= 'o', alpha = 1, label = 'background used for fit') # type: ignore
+		plt.scatter(uncovered_x_data, uncovered_y_data, color = 'red', marker= 'o', alpha = 1, label = 'background used for fit') # type: ignore
 
-		pl.xlabel('Raman shift (cm$^{-1}$)')
-		pl.ylabel('Raman intensity (a.u.)')
-		pl.title('Data plot with peaks, fitted line and background highlighted.')
-		pl.legend()
+		plt.xlabel('Raman shift (cm$^{-1}$)')
+		plt.ylabel('Raman intensity (a.u.)')
+		plt.title('Data plot with peaks, fitted line and background highlighted.')
+		plt.legend()
 	
 	params_used_at_run = {'polyorder': polyorder, 'hmin': hmin, 'hmax': hmax, 'wmin': wmin, 'wmax': wmax, 'prom':prom, 'exclusion_factor': exclusion_factor, 'peak_pos': peak_pos}
 
 	return y_data_nobg, bg_values, coeff, params_used_at_run, mask, covar
 
 def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None, toplot = False, width = None, height = None, **kwargs):
-	"""Fitting a function to peaks in the data contained in ``xrobj``.
+	"""Fitting a function to peaks in the data contained in ``xrobj``, which can be a single spectrum, a map or a selected spectrum from a map.
 
 	:param xrobj: :py:mod:`xarray` DataArray, of a single spectrum or a map.
-	:type xrobj: :py:mod:`xarray`
+	:type xrobj: :py:mod:`xarray` DataArray
 	:param func: function to be used for fitting, defaults to lorentz
 	:type func: function, optional
 	:param fitresult: an :py:mod:`xarray` Dataset of a previous fit calculation, with matching dimensions. If this is passed to :func:`peakfit`, the fit calculation in skipped and the passed Dataset is used.
@@ -1203,13 +1416,10 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 				# get coordinates to plot, or take the middle spectrum
 				plotwidth = width
 				plotheight = height
-			else:
-				wmin = np.min(xrobj.width.data)
-				wmax = np.max(xrobj.width.data)
-				hmin = np.min(xrobj.height.data)
-				hmax = np.max(xrobj.height.data)
-				plotwidth = (wmax - wmin)/2 + wmin
-				plotheight = (hmax - hmin)/2 + hmin
+                        else:
+                                # Use the helper to compute central coordinates for plotting
+                                plotwidth = _midpoint(xrobj.width.data)
+                                plotheight = _midpoint(xrobj.height.data)
 			
 			paramnames = fit['curvefit_coefficients'].sel(width = plotwidth, height = plotheight, method = 'nearest').param.values
 			funcparams = fit['curvefit_coefficients'].sel(width = plotwidth, height = plotheight, method = 'nearest').data
@@ -1238,10 +1448,10 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
 		plotarea_x = 100
 		plotarea_y = [0.8*np.min(funcvalues), 1.1*np.max(funcvalues)]
 
-		pl.plot(shift, funcvalues, color = 'red', lw = 3, alpha = 0.5, label = 'fit')
-		pl.xlim([fitpeakpos - plotarea_x, fitpeakpos + plotarea_x])
-		pl.ylim(plotarea_y)
-		pl.legend()
+		plt.plot(shift, funcvalues, color = 'red', lw = 3, alpha = 0.5, label = 'fit')
+		plt.xlim([fitpeakpos - plotarea_x, fitpeakpos + plotarea_x])
+		plt.ylim(plotarea_y)
+		plt.legend()
 	
 	# copy attributes to the fit dataset, update the 'comments'
 	fit.attrs = xrobj.attrs.copy()
