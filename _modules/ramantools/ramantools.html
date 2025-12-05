@@ -517,6 +517,9 @@
                 <span class="c1"># untouched data elsewhere.</span>
                 <span class="n">map_crr_removed</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">crrpos</span><span class="p">,</span> <span class="n">local_mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">)</span>
 
+                <span class="c1"># Explicitly copy attributes since xr.where may not preserve them</span>
+                <span class="n">map_crr_removed</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
                 <span class="c1"># Make a lightweight copy of the instance and attach the cleaned data</span>
                 <span class="n">map_crr</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
                 <span class="n">map_crr</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">map_crr_removed</span>
@@ -1049,7 +1052,11 @@
 
                 <span class="c1"># Create a lightweight copy and replace spikes with the local mean</span>
                 <span class="n">ss_crr</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-                <span class="n">ss_crr</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">crrpos</span><span class="p">,</span> <span class="n">local_mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">)</span>
+                <span class="n">ss_crr_data</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">crrpos</span><span class="p">,</span> <span class="n">local_mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">)</span>
+
+                <span class="c1"># Explicitly copy attributes since xr.where may not preserve them</span>
+                <span class="n">ss_crr_data</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">ss_crr</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="n">ss_crr_data</span>
 
                 <span class="c1"># add comment to attributes</span>
                 <span class="n">ss_crr</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;replaced cosmic ray values with local mean at &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">crrpos</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; Ramanshift coordinates.</span><span class="se">\n</span><span class="s1">&#39;</span>
