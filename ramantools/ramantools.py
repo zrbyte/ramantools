@@ -180,6 +180,25 @@ class ramanmap:
                         new_m.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest').plot()
 
                 """
+                # Validate optional parameters
+                if mode not in ['const', 'individual']:
+                        raise ValueError(f"mode must be 'const' or 'individual', got '{mode}'")
+
+                if fitmask is not None:
+                        if not isinstance(fitmask, (np.ndarray, list)):
+                                raise TypeError(f"fitmask must be a numpy array or list, got {type(fitmask)}")
+                        fitmask = np.asarray(fitmask, dtype=bool)
+
+                if width is not None:
+                        if not isinstance(width, (int, float, np.number)):
+                                raise TypeError(f"width must be a number, got {type(width)}")
+                        width = float(width)
+
+                if height is not None:
+                        if not isinstance(height, (int, float, np.number)):
+                                raise TypeError(f"height must be a number, got {type(height)}")
+                        height = float(height)
+
                 # create a lightweight copy of the instance; we avoid deepcopy to
                 # reduce memory churn and instead copy only the data array below
                 map_mod = copy.copy(self)
@@ -189,9 +208,9 @@ class ramanmap:
                         # Remove the same background for all spectra in the map
                         # Set the spectra selected for background fitting
                         middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest')
-                        
+
                         # check if width and height are specified
-                        if (width is None) or (height is None): 
+                        if (width is None) or (height is None):
                                 spectofit = middle
                         else:
                                 spectofit = self.mapxr.sel(width = width, height = height, method = 'nearest')
@@ -247,11 +266,30 @@ class ramanmap:
                 :return: calibrated :class:`ramanmap` instance
                 :rtype: :class:`ramanmap`
                 """
+                # Validate parameters
+                if not isinstance(peakshift, (int, float, np.number)):
+                        raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
+                peakshift = float(peakshift)
+
+                if not isinstance(calibfactor, (int, float, np.number)):
+                        raise TypeError(f"calibfactor must be a number, got {type(calibfactor)}")
+                calibfactor = float(calibfactor)
+
+                if width is not None:
+                        if not isinstance(width, (int, float, np.number)):
+                                raise TypeError(f"width must be a number, got {type(width)}")
+                        width = float(width)
+
+                if height is not None:
+                        if not isinstance(height, (int, float, np.number)):
+                                raise TypeError(f"height must be a number, got {type(height)}")
+                        height = float(height)
+
                 # Get the middle spectrum
                 middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest')
-                
+
                 # check if width and height are specified
-                if (width is None) or (height is None): 
+                if (width is None) or (height is None):
                         spectofit = middle
                 else:
                         spectofit = self.mapxr.sel(width = width, height = height, method = 'nearest')
@@ -316,6 +354,23 @@ class ramanmap:
                         In ``mode == 'individual'``, each spectrum in the map will be normalized to the local peak amplitude. In ``mode == 'const'``, the peak at the position specified by ``width`` and ``height`` is used for normalization.
                         If ``mode == 'individual'``, the ``width`` and ``height`` parameters are ignored.
                 """
+                # Validate parameters
+                if not isinstance(peakshift, (int, float, np.number)):
+                        raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
+                peakshift = float(peakshift)
+
+                if mode not in ['const', 'individual']:
+                        raise ValueError(f"mode must be 'const' or 'individual', got '{mode}'")
+
+                if width is not None:
+                        if not isinstance(width, (int, float, np.number)):
+                                raise TypeError(f"width must be a number, got {type(width)}")
+                        width = float(width)
+
+                if height is not None:
+                        if not isinstance(height, (int, float, np.number)):
+                                raise TypeError(f"height must be a number, got {type(height)}")
+                        height = float(height)
 
                 # Determine reference coordinates. When none are supplied we use
                 # the midpoint of the map, computed via the helper above to
@@ -465,6 +520,27 @@ class ramanmap:
                         The method uses :func:`peakfit` to find the peak near ``peakpos``.
                         Keyword arguments used by :func:`peakfit` can be passed to the method.
                 """
+                # Validate parameters
+                if not isinstance(peakpos, (int, float, np.number)):
+                        raise TypeError(f"peakpos must be a number, got {type(peakpos)}")
+                peakpos = float(peakpos)
+
+                if not isinstance(cutoff, (int, float, np.number)):
+                        raise TypeError(f"cutoff must be a number, got {type(cutoff)}")
+                cutoff = float(cutoff)
+                if not (0 <= cutoff <= 1):
+                        raise ValueError(f"cutoff must be between 0 and 1, got {cutoff}")
+
+                if width is not None:
+                        if not isinstance(width, (int, float, np.number)):
+                                raise TypeError(f"width must be a number, got {type(width)}")
+                        width = float(width)
+
+                if height is not None:
+                        if not isinstance(height, (int, float, np.number)):
+                                raise TypeError(f"height must be a number, got {type(height)}")
+                        height = float(height)
+
                 # Determine reference coordinates using supplied values or the
                 # midpoint of the map when absent. The helper function above
                 # encapsulates midpoint math for clarity.
@@ -816,7 +892,15 @@ class singlespec:
                 
                 :return: calibrated :class:`singlespec` instance
                 :rtype: :class:`singlespec`
-                """                
+                """
+                # Validate parameters
+                if not isinstance(peakshift, (int, float, np.number)):
+                        raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
+                peakshift = float(peakshift)
+
+                if not isinstance(calibfactor, (int, float, np.number)):
+                        raise TypeError(f"calibfactor must be a number, got {type(calibfactor)}")
+                calibfactor = float(calibfactor)
 
                 # if a calibration factor is specified, don't fit just shift the values by calibfactor
                 if calibfactor == 0:
@@ -868,6 +952,10 @@ class singlespec:
                 .. note::
                         Attributes of :class:`singlespec.ssxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.
                 """
+                # Validate parameters
+                if not isinstance(peakshift, (int, float, np.number)):
+                        raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
+                peakshift = float(peakshift)
 
                 # crop the data to around the peak specified
                 cropregion = 100
