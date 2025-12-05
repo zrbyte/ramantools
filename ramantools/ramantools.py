@@ -1,10 +1,10 @@
 import re  # Regular expressions for parsing metadata
 import copy  # Object copying utilities
-import numpy as np
-import matplotlib.pyplot as plt  # Widely used alias for matplotlib's pyplot
-from scipy.optimize import curve_fit
-from scipy.signal import find_peaks
-import xarray as xr
+import numpy as np # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
+from scipy.optimize import curve_fit # type: ignore
+from scipy.signal import find_peaks # type: ignore
+import xarray as xr # type: ignore
 
 """
 Module ramantools
