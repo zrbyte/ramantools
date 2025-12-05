@@ -25,13 +25,15 @@ def data_paths():
 
     Returns dictionary with paths to map and spectrum data and metadata files.
     Using module scope ensures paths are computed once per test module.
+    Uses real data from test-data/ folder for comprehensive testing.
     """
-    data_dir = Path(__file__).parent
+    # Use real data from test-data folder (not pushed to repo)
+    data_dir = Path(__file__).parent.parent / "test-data"
     return {
-        "map_path": data_dir / "map.txt",
-        "map_info": data_dir / "map_info.txt",
-        "spec_path": data_dir / "spectrum.txt",
-        "spec_info": data_dir / "spectrum_info.txt",
+        "map_path": data_dir / "specmap.txt",
+        "map_info": data_dir / "specmap_metadata.txt",
+        "spec_path": data_dir / "singlespec.txt",
+        "spec_info": data_dir / "singlespec_metadata.txt",
     }
 
 
@@ -86,8 +88,9 @@ class TestDataLoading:
         assert ramanmap_instance is not None
         assert hasattr(ramanmap_instance, "mapxr")
         assert hasattr(ramanmap_instance, "ramanshift")
-        assert ramanmap_instance.pixel_x == 3  # Expected 3x3 map
-        assert ramanmap_instance.pixel_y == 3
+        # Verify dimensions are positive integers
+        assert ramanmap_instance.pixel_x > 0
+        assert ramanmap_instance.pixel_y > 0
 
     def test_load_singlespec(self, singlespec_instance):
         """Verify singlespec loads without errors and has expected structure."""
@@ -108,8 +111,9 @@ class TestRamanmapMethods:
         """Verify metadata printing executes without errors."""
         ramanmap_instance.print_metadata()
         captured = capsys.readouterr()
-        assert "TestMap" in captured.out
-        assert "TestSample" in captured.out
+        # Check that some metadata is printed
+        assert len(captured.out) > 0
+        assert "raw data loaded" in captured.out
 
     def test_remove_bg(self, ramanmap_instance, fit_mask_map):
         """Verify background removal returns valid ramanmap instance."""
@@ -146,26 +150,37 @@ class TestRamanmapMethods:
         import matplotlib.pyplot as plt
         plt.close('all')  # Clean up plots
 
-    @pytest.mark.skip(reason="Requires more spectral points for curve fitting")
     def test_peakmask(self, ramanmap_instance):
-        """Test peakmask method (skipped due to minimal test data)."""
-        mapmasked, mask = ramanmap_instance.peakmask(peakpos=300, cutoff=0.1)
+        """Test peakmask method creates valid mask and masked map."""
+        # Use a peak position that should exist in real Raman data
+        mapmasked, mask = ramanmap_instance.peakmask(peakpos=1580, cutoff=0.1)
         assert mapmasked is not None
         assert mask is not None
+        assert hasattr(mapmasked, "mapxr")
+        # Verify mask has correct dimensions (width x height)
+        assert mask.dims == ('height', 'width')
 
-    @pytest.mark.skip(reason="Requires more spectral points for curve fitting")
     def test_normalize(self, ramanmap_instance, fit_mask_map):
-        """Test normalization (skipped due to minimal test data)."""
+        """Test normalization to a peak returns valid normalized map."""
         # Remove background first as required by normalize
         map_mod, _, _ = ramanmap_instance.remove_bg(fitmask=fit_mask_map)
-        map_norm = map_mod.normalize(peakshift=300)
+        # Normalize to a common Raman peak (e.g., G-band around 1580 cm^-1)
+        map_norm = map_mod.normalize(peakshift=1580)
         assert map_norm is not None
+        assert hasattr(map_norm, "mapxr")
+        assert map_norm.normfactor is not None
+        # Verify units are dimensionless after normalization
+        assert map_norm.mapxr.attrs['units'] == ' '
 
-    @pytest.mark.skip(reason="Requires more spectral points for curve fitting")
     def test_calibrate(self, ramanmap_instance):
-        """Test calibration (skipped due to minimal test data)."""
-        map_calib = ramanmap_instance.calibrate(peakshift=300)
+        """Test calibration shifts Raman shift coordinate correctly."""
+        # Calibrate using a known peak position
+        map_calib = ramanmap_instance.calibrate(peakshift=1580)
         assert map_calib is not None
+        assert hasattr(map_calib, "mapxr")
+        # Verify ramanshift coordinate exists and has been modified
+        assert 'ramanshift' in map_calib.mapxr.coords
+        assert 'calibrated' in map_calib.mapxr.attrs['comments']
 
 
 # ---------------------------------------------------------------------------
@@ -179,8 +194,9 @@ class TestSinglespecMethods:
         """Verify metadata printing executes without errors."""
         singlespec_instance.print_metadata()
         captured = capsys.readouterr()
-        assert "TestSpectrum" in captured.out
-        assert "TestSample" in captured.out
+        # Check that some metadata is printed
+        assert len(captured.out) > 0
+        assert "raw data loaded" in captured.out
 
     def test_history(self, singlespec_instance, capsys):
         """Verify history method displays processing comments."""
@@ -203,19 +219,27 @@ class TestSinglespecMethods:
         assert ss_crr is not None
         assert hasattr(ss_crr, "ssxr")
 
-    @pytest.mark.skip(reason="Requires more spectral points for curve fitting")
     def test_normalize(self, singlespec_instance, fit_mask_spec):
-        """Test normalization (skipped due to minimal test data)."""
+        """Test normalization to a peak returns valid normalized spectrum."""
         # Remove background first as required by normalize
         ss_mod, _, _ = singlespec_instance.remove_bg(fitmask=fit_mask_spec)
-        ss_norm = ss_mod.normalize(peakshift=300)
+        # Normalize to a common Raman peak (e.g., G-band around 1580 cm^-1)
+        ss_norm = ss_mod.normalize(peakshift=1580)
         assert ss_norm is not None
+        assert hasattr(ss_norm, "ssxr")
+        assert ss_norm.normfactor is not None
+        # Verify units are dimensionless after normalization
+        assert ss_norm.ssxr.attrs['units'] == ' '
 
-    @pytest.mark.skip(reason="Requires more spectral points for curve fitting")
     def test_calibrate(self, singlespec_instance):
-        """Test calibration (skipped due to minimal test data)."""
-        ss_calib = singlespec_instance.calibrate(peakshift=300)
+        """Test calibration shifts Raman shift coordinate correctly."""
+        # Calibrate using a known peak position
+        ss_calib = singlespec_instance.calibrate(peakshift=1580)
         assert ss_calib is not None
+        assert hasattr(ss_calib, "ssxr")
+        # Verify ramanshift coordinate exists and has been modified
+        assert 'ramanshift' in ss_calib.ssxr.coords
+        assert 'calibrated' in ss_calib.ssxr.attrs['comments']
 
 
 # ---------------------------------------------------------------------------
