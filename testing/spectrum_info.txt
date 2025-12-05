@@ -7,6 +7,6 @@ Integration Time [s]:	1
 Grating:	TestGrating
 Objective Name:	TestObjective
 Objective Magnification:	100
-Position X [m]:	0
-Position Y [m]:	0
-Position Z [m]:	0
+Position X [µm]:	0
+Position Y [µm]:	0
+Position Z [µm]:	0

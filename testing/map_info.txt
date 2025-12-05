@@ -1,8 +1,8 @@
 TestMap
-Points per Line:	1
-Lines per Image:	1
-Scan Width [m]:	1.0
-Scan Height [m]:	1.0
+Points per Line:	3
+Lines per Image:	3
+Scan Width [µm]:	10.0
+Scan Height [µm]:	10.0
 Start Date:	2023-01-01
 Start Time:	00:00:00
 Sample Name:	TestSample
@@ -11,5 +11,5 @@ Integration Time [s]:	1
 Grating:	TestGrating
 Objective Name:	TestObjective
 Objective Magnification:	100
-Position X [m]:	0
-Position Y [m]:	0
+Position X [µm]:	0
+Position Y [µm]:	0
