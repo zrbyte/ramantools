@@ -1,0 +1,15 @@
+TestMap
+Points per Line:	1
+Lines per Image:	1
+Scan Width [m]:	1.0
+Scan Height [m]:	1.0
+Start Date:	2023-01-01
+Start Time:	00:00:00
+Sample Name:	TestSample
+Excitation Wavelength [nm]:	532
+Integration Time [s]:	1
+Grating:	TestGrating
+Objective Name:	TestObjective
+Objective Magnification:	100
+Position X [m]:	0
+Position Y [m]:	0
