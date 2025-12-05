@@ -420,6 +420,9 @@ class ramanmap:
                 # untouched data elsewhere.
                 map_crr_removed = xr.where(crrpos, local_mean, self.mapxr)
 
+                # Explicitly copy attributes since xr.where may not preserve them
+                map_crr_removed.attrs = self.mapxr.attrs.copy()
+
                 # Make a lightweight copy of the instance and attach the cleaned data
                 map_crr = copy.copy(self)
                 map_crr.mapxr = map_crr_removed
@@ -928,7 +931,11 @@ class singlespec:
 
                 # Create a lightweight copy and replace spikes with the local mean
                 ss_crr = copy.copy(self)
-                ss_crr.ssxr = xr.where(crrpos, local_mean, self.ssxr)
+                ss_crr_data = xr.where(crrpos, local_mean, self.ssxr)
+
+                # Explicitly copy attributes since xr.where may not preserve them
+                ss_crr_data.attrs = self.ssxr.attrs.copy()
+                ss_crr.ssxr = ss_crr_data
 
                 # add comment to attributes
                 ss_crr.ssxr.attrs['comments'] += 'replaced cosmic ray values with local mean at ' + f'{crrpos.sum().data}' + ' Ramanshift coordinates.\n'
