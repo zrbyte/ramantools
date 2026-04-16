@@ -249,6 +249,33 @@ class TestRamanmapMethods:
         assert coeff is not None
         assert covar is not None
 
+    def test_remove_bg_individual_not_implemented(self, ramanmap_instance):
+        """Verify mode='individual' raises NotImplementedError.
+
+        Guards against regression where the stub silently returned the
+        unmodified map with ``coeff=0``, ``covar=0`` — callers could
+        believe the background was subtracted when it wasn't.
+        """
+        with pytest.raises(NotImplementedError, match="not implemented"):
+            ramanmap_instance.remove_bg(mode='individual')
+
+    def test_calibrate_rejects_lorentz2(self, ramanmap_instance):
+        """calibrate() must reject double-peak shapes loudly.
+
+        Previously this produced a confusing KeyError deep in xarray
+        because calibrate hardcodes ``.sel(param='x0')``, and lorentz2
+        emits ``x01`` / ``x02`` parameter names instead.
+        """
+        with pytest.raises(ValueError, match="single-peak"):
+            ramanmap_instance.calibrate(peakshift=1580, func=rt.lorentz2)
+
+    def test_normalize_rejects_lorentz2(self, ramanmap_instance, fit_mask_map):
+        """normalize() must reject double-peak shapes for the same reason."""
+        # Need background-removed map first — normalize refuses otherwise.
+        map_mod, _, _ = ramanmap_instance.remove_bg(fitmask=fit_mask_map)
+        with pytest.raises(ValueError, match="single-peak"):
+            map_mod.normalize(peakshift=1580, func=rt.lorentz2)
+
     def test_history(self, ramanmap_instance, capsys):
         """Verify history method displays processing comments."""
         ramanmap_instance.history()
@@ -338,6 +365,18 @@ class TestSinglespecMethods:
         assert hasattr(ss_mod, "ssxr")
         assert coeff is not None
         assert covar is not None
+
+    def test_calibrate_rejects_lorentz2(self, singlespec_instance):
+        """calibrate() must reject lorentz2 loudly rather than KeyError."""
+        with pytest.raises(ValueError, match="single-peak"):
+            singlespec_instance.calibrate(peakshift=1580, func=rt.lorentz2)
+
+    def test_normalize_rejects_lorentz2(self, singlespec_instance, fit_mask_spec):
+        """normalize() must reject lorentz2 loudly rather than KeyError."""
+        # Need background-removed spec first — normalize refuses otherwise.
+        ss_mod, _, _ = singlespec_instance.remove_bg(fitmask=fit_mask_spec)
+        with pytest.raises(ValueError, match="single-peak"):
+            ss_mod.normalize(peakshift=1580, func=rt.lorentz2)
 
     def test_crr(self, singlespec_instance):
         """Verify cosmic ray removal executes and returns valid instance."""

@@ -358,12 +358,18 @@ class ramanmap:
                                 map_mod.mapxr.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
 
                 elif mode == 'individual':
-                        # Make an individual fit to all spectra in the map
-                        print('not implemented yet. Sorry')
-                        coeff = 0
-                        covar = 0
-                        pass
-                
+                        # TODO(future): implement per-pixel background subtraction.
+                        # Intended behavior: fit a polynomial to each (width, height)
+                        # spectrum independently — likely via xr.apply_ufunc for speed.
+                        # Raising loudly (instead of printing and returning an
+                        # unmodified map with coeff=0, covar=0) prevents silent
+                        # data-corruption bugs where callers believe the background
+                        # was removed but it wasn't.
+                        raise NotImplementedError(
+                                "remove_bg(mode='individual') is not implemented yet — "
+                                "use mode='const' or supply a pre-computed fitmask."
+                        )
+
                 else:
                         coeff = 0
                         covar = 0
@@ -388,7 +394,23 @@ class ramanmap:
 
                 :return: calibrated :class:`ramanmap` instance
                 :rtype: :class:`ramanmap`
+
+                .. note::
+                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).
+                        Passing ``func=lorentz2`` raises ``ValueError`` because the method
+                        hardcodes ``.sel(param='x0')`` on the fit result — ``lorentz2`` emits
+                        ``x01`` / ``x02`` parameter names instead.
                 """
+                # Guard against double-peak shapes. calibrate relies on a single
+                # ``x0`` parameter existing in the fit result; lorentz2 breaks
+                # that contract. Fail loudly rather than hit a confusing KeyError
+                # deep in xarray.
+                if kwargs.get('func') is lorentz2:
+                        raise ValueError(
+                                "calibrate() requires a single-peak shape function "
+                                "(use func=gaussian or func=lorentz); lorentz2 is not supported."
+                        )
+
                 # Validate parameters
                 if not isinstance(peakshift, (int, float, np.number)):
                         raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
@@ -476,7 +498,19 @@ class ramanmap:
 
                         In ``mode == 'individual'``, each spectrum in the map will be normalized to the local peak amplitude. In ``mode == 'const'``, the peak at the position specified by ``width`` and ``height`` is used for normalization.
                         If ``mode == 'individual'``, the ``width`` and ``height`` parameters are ignored.
+
+                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).
+                        Passing ``func=lorentz2`` raises ``ValueError`` because the method
+                        hardcodes ``.sel(param='x0')`` and ``.sel(param='ampl')`` on the fit
+                        result.
                 """
+                # Guard against double-peak shapes — see :py:meth:`calibrate`.
+                if kwargs.get('func') is lorentz2:
+                        raise ValueError(
+                                "normalize() requires a single-peak shape function "
+                                "(use func=gaussian or func=lorentz); lorentz2 is not supported."
+                        )
+
                 # Validate parameters
                 if not isinstance(peakshift, (int, float, np.number)):
                         raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
@@ -1145,7 +1179,18 @@ class singlespec:
                 
                 :return: calibrated :class:`singlespec` instance
                 :rtype: :class:`singlespec`
+
+                .. note::
+                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).
+                        Passing ``func=lorentz2`` raises ``ValueError``.
                 """
+                # Guard against double-peak shapes — see :py:meth:`ramanmap.calibrate`.
+                if kwargs.get('func') is lorentz2:
+                        raise ValueError(
+                                "calibrate() requires a single-peak shape function "
+                                "(use func=gaussian or func=lorentz); lorentz2 is not supported."
+                        )
+
                 # Validate parameters
                 if not isinstance(peakshift, (int, float, np.number)):
                         raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
@@ -1159,7 +1204,7 @@ class singlespec:
                 if calibfactor == 0:
                         # before fitting crop to the area around the peak
                         fitrange = [peakshift - 100, peakshift + 100]
-                        
+
                         # if one of the ranges out of bounds with the data
                         if fitrange[0] < self.ssxr.ramanshift.min().data:
                                 fitrange[0] = self.ssxr.ramanshift.min().data
@@ -1204,7 +1249,17 @@ class singlespec:
 
                 .. note::
                         Attributes of :class:`singlespec.ssxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.
+
+                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).
+                        Passing ``func=lorentz2`` raises ``ValueError``.
                 """
+                # Guard against double-peak shapes — see :py:meth:`ramanmap.normalize`.
+                if kwargs.get('func') is lorentz2:
+                        raise ValueError(
+                                "normalize() requires a single-peak shape function "
+                                "(use func=gaussian or func=lorentz); lorentz2 is not supported."
+                        )
+
                 # Validate parameters
                 if not isinstance(peakshift, (int, float, np.number)):
                         raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
