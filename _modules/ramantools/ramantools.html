@@ -7,14 +7,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ramantools.ramantools &mdash; Ramantools 2023 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="../../_static/documentation_options.js?v=a4664895"></script>
-      <script src="../../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -73,7 +73,8 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ramantools.ramantools</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>  <span class="c1"># Regular expressions for parsing metadata</span>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>  <span class="c1"># Filename handling for the no-info-file fallback path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>  <span class="c1"># Regular expressions for parsing metadata</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>  <span class="c1"># Object copying utilities</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span> <span class="c1"># type: ignore</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>  <span class="c1"># type: ignore</span>
@@ -101,6 +102,114 @@
         <span class="n">vmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">vmax</span> <span class="o">-</span> <span class="n">vmin</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">vmin</span>
 
+
+<span class="c1"># Sentinels used when no info file is available. Strings use &quot;N/A&quot; so printed</span>
+<span class="c1"># metadata stays self-describing; numeric fields use NaN so downstream math</span>
+<span class="c1"># that touches them propagates NaN rather than a silent zero.</span>
+<span class="n">_NO_INFO_STR</span> <span class="o">=</span> <span class="s1">&#39;N/A&#39;</span>
+<span class="n">_NO_INFO_NUM</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;nan&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_witec_datafile_header</span><span class="p">(</span><span class="n">header_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract metadata from a Witec &quot;table-export&quot; data-file header.</span>
+
+<span class="sd">        Handles both the Witec Project **v5** (&quot;old table export&quot;) and **v7**</span>
+<span class="sd">        (&quot;new table export&quot;) header formats. Their ``[Header]`` blocks share</span>
+<span class="sd">        the same set of key=value lines; the only observed difference is that</span>
+<span class="sd">        v7 leaves ``FileName =`` empty while v5 fills in the source ``.wip``</span>
+<span class="sd">        path. Maps include ``SizeX`` / ``SizeY`` (pixel counts),</span>
+<span class="sd">        ``ScanWidth`` / ``ScanHeight`` (physical size in the unit given by</span>
+<span class="sd">        ``ScanUnit``) and ``ScanOriginX/Y/Z``. Single spectra include</span>
+<span class="sd">        ``PositionX/Y/Z`` and trivial ``SizeX = SizeY = 1``. This helper</span>
+<span class="sd">        returns a dict of whatever fields it finds; missing fields are simply</span>
+<span class="sd">        absent from the dict so callers can decide how to fall back.</span>
+
+<span class="sd">        :param header_text: raw text of the header block as captured by</span>
+<span class="sd">                :py:meth:`ramanmap._load_map` / :py:meth:`singlespec._load_singlespec`</span>
+<span class="sd">                into the ``metadata_datafile`` attribute.</span>
+<span class="sd">        :type header_text: str</span>
+<span class="sd">        :return: dict keyed by attribute name (``pixel_x``, ``pixel_y``,</span>
+<span class="sd">                ``size_x``, ``size_y``, ``positioner_x``, ``positioner_y``,</span>
+<span class="sd">                ``positioner_z``, ``wipfilename``, ``graphname``)</span>
+<span class="sd">        :rtype: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">out</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">header_text</span><span class="p">:</span>
+                <span class="c1"># No header captured (bare data file). Nothing to extract.</span>
+                <span class="k">return</span> <span class="n">out</span>
+
+        <span class="c1"># Small helper that pulls the first regex match and casts it; returns</span>
+        <span class="c1"># None (rather than raising) if the pattern is absent or the cast</span>
+        <span class="c1"># fails — callers handle missing keys via dict.get / &quot;in&quot; checks.</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_first</span><span class="p">(</span><span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cast</span><span class="o">=</span><span class="nb">str</span><span class="p">):</span>
+                <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">matches</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="kc">None</span>
+                <span class="k">try</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">matches</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Both map and spec headers carry FileName and GraphName.</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=FileName = ).+&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">file_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Strip in case the line ends with whitespace or \r.</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;wipfilename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">graph_name</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=GraphName = ).+&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">graph_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;graphname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">graph_name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="c1"># Integer pixel dimensions. Map files set these to real pixel counts;</span>
+        <span class="c1"># spec files set them to 1. Either way they&#39;re correct to propagate.</span>
+        <span class="n">pix_x</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=SizeX = )-?\d+&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pix_x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;pixel_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pix_x</span>
+        <span class="n">pix_y</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=SizeY = )-?\d+&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pix_y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;pixel_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pix_y</span>
+
+        <span class="c1"># Map-only: physical scan dimensions and scan origin. We don&#39;t guard</span>
+        <span class="c1"># with a &quot;map vs spec&quot; flag — spec headers simply don&#39;t have these</span>
+        <span class="c1"># keys, so the regex returns None and the dict keys are skipped.</span>
+        <span class="n">scan_width</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=ScanWidth = )-?\d+(?:\.\d+)?&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">scan_width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;size_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scan_width</span>
+        <span class="n">scan_height</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=ScanHeight = )-?\d+(?:\.\d+)?&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">scan_height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;size_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scan_height</span>
+        <span class="n">scan_origin_x</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=ScanOriginX = )-?\d+(?:\.\d+)?&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">scan_origin_x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;positioner_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scan_origin_x</span>
+        <span class="n">scan_origin_y</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=ScanOriginY = )-?\d+(?:\.\d+)?&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">scan_origin_y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;positioner_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scan_origin_y</span>
+
+        <span class="c1"># Spec-only: absolute sample-positioner coordinates. Overwrites any</span>
+        <span class="c1"># map-origin values if both appear (they shouldn&#39;t in practice).</span>
+        <span class="n">pos_x</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=PositionX = )-?\d+(?:\.\d+)?&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pos_x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;positioner_x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pos_x</span>
+        <span class="n">pos_y</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=PositionY = )-?\d+(?:\.\d+)?&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pos_y</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;positioner_y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pos_y</span>
+        <span class="n">pos_z</span> <span class="o">=</span> <span class="n">_first</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(?&lt;=PositionZ = )-?\d+(?:\.\d+)?&#39;</span><span class="p">,</span> <span class="n">header_text</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pos_z</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">out</span><span class="p">[</span><span class="s1">&#39;positioner_z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pos_z</span>
+
+        <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_graphname_to_name</span><span class="p">(</span><span class="n">graphname</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Normalize a Witec GraphName into a mapname/specname.</span>
+
+<span class="sd">        GraphName lines in data headers look like</span>
+<span class="sd">        ``MK_FLG_ABC_111--Spectrum--092--Spec.Data 1``; the info-file first line</span>
+<span class="sd">        omits the trailing ``--Spec.Data N`` suffix. Strip it so attributes</span>
+<span class="sd">        match between the info-file and header-only load paths.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Remove the trailing &quot;--Spec.Data &lt;N&gt;&quot; token plus any trailing whitespace.</span>
+        <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;--Spec\.Data\s*\d+\s*$&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">graphname</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
 <div class="viewcode-block" id="ramanmap">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ramanmap</span><span class="p">:</span>
@@ -115,8 +224,18 @@
 
 <span class="sd">        :param map_path: Path to the text file, containing the Raman map, exported from Witec</span>
 <span class="sd">        :type map_path: str</span>
-<span class="sd">        :param info_path: Path to the info file, containing the metadata, exported from Witec</span>
-<span class="sd">        :type info_path: str</span>
+<span class="sd">        :param info_path: Path to the info file, containing the metadata, exported from Witec.</span>
+<span class="sd">                Optional — when omitted (``None``), metadata is populated from the data file&#39;s</span>
+<span class="sd">                own ``[Header]`` block. The parser recognizes both the Witec Project v5</span>
+<span class="sd">                &quot;old table export&quot; format (``FileName`` carries the source ``.wip`` path) and</span>
+<span class="sd">                the v7 &quot;new table export&quot; format (``FileName =`` is left empty); the keys</span>
+<span class="sd">                ``SizeX`` / ``SizeY`` (pixel counts), ``ScanWidth`` / ``ScanHeight`` (physical</span>
+<span class="sd">                size), ``ScanOriginX`` / ``Y`` and ``GraphName`` are identical between the two.</span>
+<span class="sd">                Fields not present in the header fall back to ``&#39;N/A&#39;`` (strings) or</span>
+<span class="sd">                ``NaN`` (numerics). If the data file has no ``[Header]`` block either,</span>
+<span class="sd">                constructing the map fails with a clear error because pixel dimensions</span>
+<span class="sd">                cannot be inferred.</span>
+<span class="sd">        :type info_path: str, optional</span>
 
 <span class="sd">        Most important variables of the :class:`ramanmap` instance:</span>
 
@@ -142,8 +261,12 @@
 <span class="sd">                map = rt.ramanmap(map_path, info_path)</span>
 <span class="sd">                # list of the variables stored in the `ramanmap` instance</span>
 <span class="sd">                print(list(map.__dict__))</span>
-<span class="sd">        </span>
-<span class="sd">        &quot;&quot;&quot;</span>        
+
+<span class="sd">                # Load without a metadata file — the data file&#39;s [Header]</span>
+<span class="sd">                # block supplies pixel_x / pixel_y / size_x / size_y:</span>
+<span class="sd">                map_noinfo = rt.ramanmap(map_path)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="ramanmap.history">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.history">[docs]</a>
@@ -323,12 +446,18 @@
                                 <span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted - mode == const, background fit: middle spectrum </span><span class="se">\n</span><span class="s1">&#39;</span>
 
                 <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;individual&#39;</span><span class="p">:</span>
-                        <span class="c1"># Make an individual fit to all spectra in the map</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;not implemented yet. Sorry&#39;</span><span class="p">)</span>
-                        <span class="n">coeff</span> <span class="o">=</span> <span class="mi">0</span>
-                        <span class="n">covar</span> <span class="o">=</span> <span class="mi">0</span>
-                        <span class="k">pass</span>
-                
+                        <span class="c1"># TODO(future): implement per-pixel background subtraction.</span>
+                        <span class="c1"># Intended behavior: fit a polynomial to each (width, height)</span>
+                        <span class="c1"># spectrum independently — likely via xr.apply_ufunc for speed.</span>
+                        <span class="c1"># Raising loudly (instead of printing and returning an</span>
+                        <span class="c1"># unmodified map with coeff=0, covar=0) prevents silent</span>
+                        <span class="c1"># data-corruption bugs where callers believe the background</span>
+                        <span class="c1"># was removed but it wasn&#39;t.</span>
+                        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                                <span class="s2">&quot;remove_bg(mode=&#39;individual&#39;) is not implemented yet — &quot;</span>
+                                <span class="s2">&quot;use mode=&#39;const&#39; or supply a pre-computed fitmask.&quot;</span>
+                        <span class="p">)</span>
+
                 <span class="k">else</span><span class="p">:</span>
                         <span class="n">coeff</span> <span class="o">=</span> <span class="mi">0</span>
                         <span class="n">covar</span> <span class="o">=</span> <span class="mi">0</span>
@@ -356,7 +485,23 @@
 
 <span class="sd">                :return: calibrated :class:`ramanmap` instance</span>
 <span class="sd">                :rtype: :class:`ramanmap`</span>
+
+<span class="sd">                .. note::</span>
+<span class="sd">                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).</span>
+<span class="sd">                        Passing ``func=lorentz2`` raises ``ValueError`` because the method</span>
+<span class="sd">                        hardcodes ``.sel(param=&#39;x0&#39;)`` on the fit result — ``lorentz2`` emits</span>
+<span class="sd">                        ``x01`` / ``x02`` parameter names instead.</span>
 <span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Guard against double-peak shapes. calibrate relies on a single</span>
+                <span class="c1"># ``x0`` parameter existing in the fit result; lorentz2 breaks</span>
+                <span class="c1"># that contract. Fail loudly rather than hit a confusing KeyError</span>
+                <span class="c1"># deep in xarray.</span>
+                <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;func&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="n">lorentz2</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="s2">&quot;calibrate() requires a single-peak shape function &quot;</span>
+                                <span class="s2">&quot;(use func=gaussian or func=lorentz); lorentz2 is not supported.&quot;</span>
+                        <span class="p">)</span>
+
                 <span class="c1"># Validate parameters</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">peakshift</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)):</span>
                         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;peakshift must be a number, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">peakshift</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -447,7 +592,19 @@
 
 <span class="sd">                        In ``mode == &#39;individual&#39;``, each spectrum in the map will be normalized to the local peak amplitude. In ``mode == &#39;const&#39;``, the peak at the position specified by ``width`` and ``height`` is used for normalization.</span>
 <span class="sd">                        If ``mode == &#39;individual&#39;``, the ``width`` and ``height`` parameters are ignored.</span>
+
+<span class="sd">                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).</span>
+<span class="sd">                        Passing ``func=lorentz2`` raises ``ValueError`` because the method</span>
+<span class="sd">                        hardcodes ``.sel(param=&#39;x0&#39;)`` and ``.sel(param=&#39;ampl&#39;)`` on the fit</span>
+<span class="sd">                        result.</span>
 <span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Guard against double-peak shapes — see :py:meth:`calibrate`.</span>
+                <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;func&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="n">lorentz2</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="s2">&quot;normalize() requires a single-peak shape function &quot;</span>
+                                <span class="s2">&quot;(use func=gaussian or func=lorentz); lorentz2 is not supported.&quot;</span>
+                        <span class="p">)</span>
+
                 <span class="c1"># Validate parameters</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">peakshift</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)):</span>
                         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;peakshift must be a number, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">peakshift</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -689,21 +846,106 @@
 
         <span class="c1"># internal functions --------------------------</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Constructor for :class:`ramanmap`</span>
-<span class="sd">                &quot;&quot;&quot;</span>                
+        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Constructor for :class:`ramanmap`.</span>
+
+<span class="sd">                ``info_path`` is optional. When ``None``, metadata defaults to</span>
+<span class="sd">                sentinels and :py:meth:`_load_map` parses the data file&#39;s</span>
+<span class="sd">                ``[Header]`` block to fill in dimensional attributes.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
                 <span class="c1"># filename</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">map_path</span>
                 <span class="c1"># fitmask</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="c1"># normalization factor, factor by which the raman intensity values are divided during normalize</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">normfactor</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="c1"># Load the metadata</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_load_info</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
-                <span class="c1"># Load the Raman map</span>
+                <span class="c1"># Track whether an info file was supplied. Used by _load_map to</span>
+                <span class="c1"># decide whether to parse the data header, and by _toxarray to</span>
+                <span class="c1"># decide the comment text and coord unit label.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span> <span class="o">=</span> <span class="n">info_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="c1"># Populate metadata: either from info file or from sentinel defaults</span>
+                <span class="c1"># that the data-file header may later override in _load_map.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_load_info</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_load_defaults</span><span class="p">()</span>
+                <span class="c1"># Load the Raman map — if no info file, this also parses the data</span>
+                <span class="c1"># header to fill in pixel_x / pixel_y / size_x / size_y before</span>
+                <span class="c1"># attempting the reshape.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_load_map</span><span class="p">(</span><span class="n">map_path</span><span class="p">)</span>
                 <span class="c1"># load the data into an xarray container</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_toxarray</span><span class="p">()</span>
+
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_load_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Populate metadata attributes with placeholder values.</span>
+
+<span class="sd">                Called by :py:meth:`__init__` when no info file is supplied.</span>
+<span class="sd">                Dimensional attributes (``pixel_x``, ``pixel_y``, ``size_x``,</span>
+<span class="sd">                ``size_y``) are set to ``None`` so :py:meth:`_load_map` knows</span>
+<span class="sd">                they still need to be filled — from the data-file header if</span>
+<span class="sd">                present, or via a clear error if not. All other metadata</span>
+<span class="sd">                attributes get sentinels (``&#39;N/A&#39;`` for strings, ``NaN`` for</span>
+<span class="sd">                floats) so the rest of the pipeline — especially</span>
+<span class="sd">                :py:meth:`_toxarray` — can run unchanged.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># No raw metadata text yet; print_metadata then shows just the</span>
+                <span class="c1"># processing comments, which is what we want.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="c1"># Best-effort mapname derived from the data file&#39;s stem. If a</span>
+                <span class="c1"># GraphName appears in the data header, _apply_datafile_header</span>
+                <span class="c1"># will overwrite this.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="c1"># Dimensional attrs stay None until the data header is parsed</span>
+                <span class="c1"># (or an error is raised if the header doesn&#39;t supply them).</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pixel_x</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pixel_y</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="c1"># Info-file-only fields; headers don&#39;t carry them.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">samplename</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">laser</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">itime</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">grating</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">objname</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">objmagn</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="c1"># Positioner values: defaults may be overridden by the data</span>
+                <span class="c1"># header (ScanOriginX / PositionX etc).</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">positioner_x</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">positioner_y</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_apply_datafile_header</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Override sentinel metadata with values parsed from the data header.</span>
+
+<span class="sd">                Called by :py:meth:`_load_map` after ``self.metadata_datafile``</span>
+<span class="sd">                has been captured. Mutates attributes directly. Missing header</span>
+<span class="sd">                fields leave the corresponding attribute at its sentinel value.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Parse whatever key=value pairs the header contains — unknown</span>
+                <span class="c1"># or missing keys are simply absent from the result dict.</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="n">_parse_witec_datafile_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">)</span>
+                <span class="c1"># Apply only the keys that were found, so sentinels remain for</span>
+                <span class="c1"># the rest. The mapname override uses _graphname_to_name to</span>
+                <span class="c1"># strip the trailing &quot;--Spec.Data N&quot; token.</span>
+                <span class="k">if</span> <span class="s1">&#39;graphname&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mapname</span> <span class="o">=</span> <span class="n">_graphname_to_name</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s1">&#39;graphname&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="s1">&#39;wipfilename&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;wipfilename&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;pixel_x&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">pixel_x</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;pixel_x&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;pixel_y&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">pixel_y</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;pixel_y&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;size_x&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;size_x&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;size_y&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;size_y&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;positioner_x&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">positioner_x</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;positioner_x&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;positioner_y&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">positioner_y</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;positioner_y&#39;</span><span class="p">]</span>
 
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_load_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -783,8 +1025,16 @@
                         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
                                 <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">toskip</span><span class="p">)]</span>
                                 <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
-                        <span class="c1"># extract the WIP filename</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;FileName = (.*?)(?:\n|$)&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="c1"># Extract the WIP filename. ``[ \t]*`` after ``=`` (but</span>
+                        <span class="c1"># NOT ``\s*``, which would swallow the line&#39;s ``\n``</span>
+                        <span class="c1"># and capture the next line) tolerates stripped</span>
+                        <span class="c1"># trailing whitespace: newer v7 exports emit</span>
+                        <span class="c1"># ``FileName = \n`` that ``strip()`` reduces to</span>
+                        <span class="c1"># ``FileName =``, breaking a literal ``FileName = ``</span>
+                        <span class="c1"># match. The ``if matches`` guard defends against the</span>
+                        <span class="c1"># FileName line being absent entirely.</span>
+                        <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;FileName =[ \t]*(.*?)(?:\n|$)&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">matches</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
 
                 <span class="c1"># if &#39;Header&#39; in lines[1]:</span>
                 <span class="c1">#         # we have a header</span>
@@ -802,6 +1052,20 @@
                 <span class="c1">#         toskip = 0</span>
                 <span class="c1">#         self.wipfilename = map_path</span>
                 
+                <span class="c1"># When no info file was supplied, the data-file header is our</span>
+                <span class="c1"># only source for pixel_x / pixel_y / size_x / size_y. Parse</span>
+                <span class="c1"># it now so the reshape below succeeds.</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_datafile_header</span><span class="p">()</span>
+                <span class="c1"># Guard: without dims, reshape would fail with an opaque error.</span>
+                <span class="c1"># Raise a clear message instead pointing at the real cause.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;cannot determine pixel dimensions for &#39;</span><span class="si">{</span><span class="n">map_path</span><span class="si">}</span><span class="s2">&#39;: &quot;</span>
+                                <span class="s2">&quot;no info file was supplied and the data file&#39;s header &quot;</span>
+                                <span class="s2">&quot;does not contain SizeX / SizeY. Pass an info_path or &quot;</span>
+                                <span class="s2">&quot;export the map with Witec&#39;s table option.&quot;</span>
+                        <span class="p">)</span>
                 <span class="c1"># Load the data</span>
                 <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="n">skiprows</span> <span class="o">=</span> <span class="n">toskip</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span>
                 <span class="c1"># The raman shift is the first column in the exported table.</span>
@@ -825,8 +1089,13 @@
                                 <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span>
                                 <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="n">height</span>
                                 <span class="p">})</span>
-                <span class="c1"># add a comment field</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="c1"># Comment text notes the load provenance so a downstream reader</span>
+                <span class="c1"># can tell whether metadata came from an info file or purely</span>
+                <span class="c1"># from the data-file header.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded (no info file; metadata from data header) </span><span class="se">\n</span><span class="s1">&#39;</span>
                 <span class="c1"># adding attributes</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Raman intensity&#39;</span> <span class="c1"># this is needed if used with hvplot</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;wipfile name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span>
@@ -842,7 +1111,13 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;sample positioner X&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positioner_x</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;sample positioner Y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positioner_y</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;objective name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objname</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;objective magnification&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objmagn</span> <span class="o">+</span> <span class="s1">&#39;x&#39;</span>
+                <span class="c1"># Only append the conventional &#39;x&#39; multiplier when a real</span>
+                <span class="c1"># magnification value is present; otherwise the N/A sentinel</span>
+                <span class="c1"># would produce an awkward &#39;N/Ax&#39; string.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;objective magnification&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objmagn</span> <span class="o">+</span> <span class="s1">&#39;x&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;objective magnification&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objmagn</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;grating&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grating</span>
                 <span class="c1"># coordinate attributes</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;1/cm&#39;</span>
@@ -869,8 +1144,16 @@
 
 <span class="sd">        :param spec_path: Path to the text file, containing the Raman spectrum, exported from Witec</span>
 <span class="sd">        :type spec_path: str</span>
-<span class="sd">        :param info_path: Path to the info file, containing the metadata, exported from Witec</span>
-<span class="sd">        :type info_path: str</span>
+<span class="sd">        :param info_path: Path to the info file, containing the metadata, exported from Witec.</span>
+<span class="sd">                Optional — when omitted (``None``), metadata is populated from the data file&#39;s</span>
+<span class="sd">                own ``[Header]`` block if present. Both the Witec Project v5 &quot;old table</span>
+<span class="sd">                export&quot; (``FileName`` carries the source ``.wip`` path) and the v7 &quot;new</span>
+<span class="sd">                table export&quot; (``FileName =`` empty) formats are recognized; the</span>
+<span class="sd">                ``PositionX`` / ``PositionY`` / ``PositionZ`` and ``GraphName`` keys used to</span>
+<span class="sd">                populate metadata are identical between the two. Fields not present in the</span>
+<span class="sd">                header fall back to ``&#39;N/A&#39;`` (strings) or ``NaN`` (numerics); a bare data</span>
+<span class="sd">                file (no header) still loads because spectra don&#39;t need dimensional metadata.</span>
+<span class="sd">        :type info_path: str, optional</span>
 
 <span class="sd">        Most important variables of the :class:`singlespec` instance:</span>
 
@@ -899,6 +1182,10 @@
 <span class="sd">                single_spectrum = rt.singlespec(spec_path, info_path)</span>
 <span class="sd">                # list of variables stored in the `singlespec` instance</span>
 <span class="sd">                print(list(single_spectrum.__dict__))</span>
+
+<span class="sd">                # Load without a metadata file — the data file&#39;s [Header]</span>
+<span class="sd">                # block (if present) fills in positioner coordinates etc:</span>
+<span class="sd">                spec_noinfo = rt.singlespec(spec_path)</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -1007,7 +1294,18 @@
 <span class="sd">                </span>
 <span class="sd">                :return: calibrated :class:`singlespec` instance</span>
 <span class="sd">                :rtype: :class:`singlespec`</span>
+
+<span class="sd">                .. note::</span>
+<span class="sd">                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).</span>
+<span class="sd">                        Passing ``func=lorentz2`` raises ``ValueError``.</span>
 <span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Guard against double-peak shapes — see :py:meth:`ramanmap.calibrate`.</span>
+                <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;func&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="n">lorentz2</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="s2">&quot;calibrate() requires a single-peak shape function &quot;</span>
+                                <span class="s2">&quot;(use func=gaussian or func=lorentz); lorentz2 is not supported.&quot;</span>
+                        <span class="p">)</span>
+
                 <span class="c1"># Validate parameters</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">peakshift</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)):</span>
                         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;peakshift must be a number, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">peakshift</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -1021,7 +1319,7 @@
                 <span class="k">if</span> <span class="n">calibfactor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                         <span class="c1"># before fitting crop to the area around the peak</span>
                         <span class="n">fitrange</span> <span class="o">=</span> <span class="p">[</span><span class="n">peakshift</span> <span class="o">-</span> <span class="mi">100</span><span class="p">,</span> <span class="n">peakshift</span> <span class="o">+</span> <span class="mi">100</span><span class="p">]</span>
-                        
+
                         <span class="c1"># if one of the ranges out of bounds with the data</span>
                         <span class="k">if</span> <span class="n">fitrange</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
                                 <span class="n">fitrange</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">data</span>
@@ -1069,7 +1367,17 @@
 
 <span class="sd">                .. note::</span>
 <span class="sd">                        Attributes of :class:`singlespec.ssxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.</span>
+
+<span class="sd">                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).</span>
+<span class="sd">                        Passing ``func=lorentz2`` raises ``ValueError``.</span>
 <span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Guard against double-peak shapes — see :py:meth:`ramanmap.normalize`.</span>
+                <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;func&#39;</span><span class="p">)</span> <span class="ow">is</span> <span class="n">lorentz2</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="s2">&quot;normalize() requires a single-peak shape function &quot;</span>
+                                <span class="s2">&quot;(use func=gaussian or func=lorentz); lorentz2 is not supported.&quot;</span>
+                        <span class="p">)</span>
+
                 <span class="c1"># Validate parameters</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">peakshift</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)):</span>
                         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;peakshift must be a number, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">peakshift</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -1155,21 +1463,91 @@
 
         <span class="c1"># internal functions ----------------------------------</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Constructor for :class:`singlespec`</span>
-<span class="sd">                &quot;&quot;&quot;</span>        
+        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Constructor for :class:`singlespec`.</span>
+
+<span class="sd">                ``info_path`` is optional. When ``None``, metadata defaults to</span>
+<span class="sd">                sentinels and :py:meth:`_load_singlespec` parses the data file&#39;s</span>
+<span class="sd">                ``[Header]`` block if present to fill in positioner coordinates</span>
+<span class="sd">                etc.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
                 <span class="c1"># filename</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">spec_path</span>
-                <span class="c1"># fit mask        </span>
+                <span class="c1"># fit mask</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
                 <span class="c1"># normalization factor, factor by which the raman intensity values are divided during normalize</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">normfactor</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="c1"># Load the metadata</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_load_info</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
-                <span class="c1"># Load the Raman map</span>
+                <span class="c1"># Track whether an info file was supplied; consumed by</span>
+                <span class="c1"># _load_singlespec (whether to parse the header) and by</span>
+                <span class="c1"># _toxarray (comment text / objmagn suffix).</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span> <span class="o">=</span> <span class="n">info_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="c1"># Populate metadata: info-file path takes full control; the</span>
+                <span class="c1"># default path writes sentinels that the data header may later</span>
+                <span class="c1"># override in _load_singlespec.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_load_info</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_load_defaults</span><span class="p">()</span>
+                <span class="c1"># Load the Raman single spectrum (ramanshift + counts columns).</span>
+                <span class="c1"># When no info file was supplied this call also invokes</span>
+                <span class="c1"># _apply_datafile_header to enrich metadata from the header.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_load_singlespec</span><span class="p">(</span><span class="n">spec_path</span><span class="p">)</span>
                 <span class="c1"># load the data into an xarray container</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_toxarray</span><span class="p">()</span>
+
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_load_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Populate metadata attributes with placeholder values.</span>
+
+<span class="sd">                Mirror of :py:meth:`ramanmap._load_defaults` for single spectra.</span>
+<span class="sd">                Unlike the map variant, there are no dimensional attributes to</span>
+<span class="sd">                defer — a 1-D spectrum is fully described by the two columns</span>
+<span class="sd">                in the data file.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="c1"># Spectrum name derived from the data file&#39;s stem; the data</span>
+                <span class="c1"># header&#39;s GraphName, if present, will overwrite this via</span>
+                <span class="c1"># _apply_datafile_header.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">specname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">date</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">samplename</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">laser</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">itime</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">grating</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">objname</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">objmagn</span> <span class="o">=</span> <span class="n">_NO_INFO_STR</span>
+                <span class="c1"># Positioner values: defaults may be overridden by the data</span>
+                <span class="c1"># header (PositionX / PositionY / PositionZ).</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">positioner_x</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">positioner_y</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">positioner_z</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_apply_datafile_header</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Override sentinel metadata with values parsed from the data header.</span>
+
+<span class="sd">                Called by :py:meth:`_load_singlespec` after</span>
+<span class="sd">                ``self.metadata_datafile`` has been captured. Overrides are</span>
+<span class="sd">                limited to keys the parser actually finds; missing fields</span>
+<span class="sd">                leave sentinels in place.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="n">_parse_witec_datafile_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">)</span>
+                <span class="c1"># GraphName (if any) becomes the spectrum name — strip the</span>
+                <span class="c1"># trailing &quot;--Spec.Data N&quot; suffix for parity with info-file loads.</span>
+                <span class="k">if</span> <span class="s1">&#39;graphname&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">specname</span> <span class="o">=</span> <span class="n">_graphname_to_name</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s1">&#39;graphname&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="s1">&#39;wipfilename&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;wipfilename&#39;</span><span class="p">]</span>
+                <span class="c1"># Spectra don&#39;t use pixel_x / pixel_y / size_x / size_y even if</span>
+                <span class="c1"># SizeX / SizeY = 1 appear in the header — skip those keys.</span>
+                <span class="k">if</span> <span class="s1">&#39;positioner_x&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">positioner_x</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;positioner_x&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;positioner_y&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">positioner_y</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;positioner_y&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s1">&#39;positioner_z&#39;</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">positioner_z</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="s1">&#39;positioner_z&#39;</span><span class="p">]</span>
+
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_load_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
 <span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1239,8 +1617,11 @@
                         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
                                 <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">toskip</span><span class="p">)]</span>
                                 <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
-                        <span class="c1"># extract the WIP filename</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;FileName = (.*?)(?:\n|$)&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="c1"># See :py:meth:`ramanmap._load_map` for rationale on</span>
+                        <span class="c1"># ``[ \t]*`` and the ``if matches`` fallback — newer</span>
+                        <span class="c1"># v7 Witec exports emit an empty ``FileName =`` line.</span>
+                        <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;FileName =[ \t]*(.*?)(?:\n|$)&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">matches</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
 
                 <span class="c1"># # Check to see if metadata are present in the data file</span>
                 <span class="c1"># with open(spec_path, &#39;r&#39;, encoding = &#39;latin1&#39;) as file:</span>
@@ -1262,6 +1643,12 @@
                 <span class="c1">#         toskip = 0</span>
                 <span class="c1">#         self.wipfilename = spec_path</span>
                 
+                <span class="c1"># When no info file was supplied, the data-file header (if any)</span>
+                <span class="c1"># is our only source for extra metadata such as PositionX/Y/Z.</span>
+                <span class="c1"># A spectrum with no header still loads fine — the parser just</span>
+                <span class="c1"># returns an empty dict and sentinels remain in place.</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_datafile_header</span><span class="p">()</span>
                 <span class="c1"># Load the data</span>
                 <span class="n">ss</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="n">skiprows</span> <span class="o">=</span> <span class="n">toskip</span><span class="p">,</span> <span class="n">encoding</span> <span class="o">=</span> <span class="s1">&#39;latin1&#39;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">ss</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
@@ -1278,8 +1665,12 @@
                         <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">],</span>
                         <span class="n">coords</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">})</span>
                 
-                <span class="c1"># add a comment field</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="c1"># Comment text flags whether metadata came from an info file</span>
+                <span class="c1"># or from the data-file header / defaults.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded (no info file; metadata from data header) </span><span class="se">\n</span><span class="s1">&#39;</span>
                 <span class="c1"># adding attributes</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;Raman intensity&#39;</span> <span class="c1"># this is needed if used with hvplot</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;wipfile name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span>
@@ -1294,7 +1685,12 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;sample positioner Y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positioner_y</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;sample positioner Z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positioner_z</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;objective name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objname</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;objective magnification&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objmagn</span> <span class="o">+</span> <span class="s1">&#39;x&#39;</span>
+                <span class="c1"># Only append the &#39;x&#39; multiplier when a real magnification</span>
+                <span class="c1"># value is present — avoids awkward &#39;N/Ax&#39; in the no-info path.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;objective magnification&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objmagn</span> <span class="o">+</span> <span class="s1">&#39;x&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;objective magnification&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">objmagn</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;grating&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grating</span>
                 <span class="c1"># coordinate attributes</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;1/cm&#39;</span>
