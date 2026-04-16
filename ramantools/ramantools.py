@@ -1,3 +1,4 @@
+import os  # Filename handling for the no-info-file fallback path
 import re  # Regular expressions for parsing metadata
 import copy  # Object copying utilities
 import numpy as np # type: ignore
@@ -26,6 +27,114 @@ def _midpoint(values: np.ndarray) -> float:
         vmax = np.max(values)
         return (vmax - vmin) / 2 + vmin
 
+
+# Sentinels used when no info file is available. Strings use "N/A" so printed
+# metadata stays self-describing; numeric fields use NaN so downstream math
+# that touches them propagates NaN rather than a silent zero.
+_NO_INFO_STR = 'N/A'
+_NO_INFO_NUM = float('nan')
+
+
+def _parse_witec_datafile_header(header_text: str) -> dict:
+        """Extract metadata from a Witec "table-export" data-file header.
+
+        Handles both the Witec Project **v5** ("old table export") and **v7**
+        ("new table export") header formats. Their ``[Header]`` blocks share
+        the same set of key=value lines; the only observed difference is that
+        v7 leaves ``FileName =`` empty while v5 fills in the source ``.wip``
+        path. Maps include ``SizeX`` / ``SizeY`` (pixel counts),
+        ``ScanWidth`` / ``ScanHeight`` (physical size in the unit given by
+        ``ScanUnit``) and ``ScanOriginX/Y/Z``. Single spectra include
+        ``PositionX/Y/Z`` and trivial ``SizeX = SizeY = 1``. This helper
+        returns a dict of whatever fields it finds; missing fields are simply
+        absent from the dict so callers can decide how to fall back.
+
+        :param header_text: raw text of the header block as captured by
+                :py:meth:`ramanmap._load_map` / :py:meth:`singlespec._load_singlespec`
+                into the ``metadata_datafile`` attribute.
+        :type header_text: str
+        :return: dict keyed by attribute name (``pixel_x``, ``pixel_y``,
+                ``size_x``, ``size_y``, ``positioner_x``, ``positioner_y``,
+                ``positioner_z``, ``wipfilename``, ``graphname``)
+        :rtype: dict
+        """
+        out: dict = {}
+        if not header_text:
+                # No header captured (bare data file). Nothing to extract.
+                return out
+
+        # Small helper that pulls the first regex match and casts it; returns
+        # None (rather than raising) if the pattern is absent or the cast
+        # fails — callers handle missing keys via dict.get / "in" checks.
+        def _first(pattern: str, text: str, cast=str):
+                matches = re.findall(pattern, text)
+                if not matches:
+                        return None
+                try:
+                        return cast(matches[0])
+                except (ValueError, TypeError):
+                        return None
+
+        # Both map and spec headers carry FileName and GraphName.
+        file_name = _first(r'(?<=FileName = ).+', header_text)
+        if file_name is not None:
+                # Strip in case the line ends with whitespace or \r.
+                out['wipfilename'] = file_name.strip()
+        graph_name = _first(r'(?<=GraphName = ).+', header_text)
+        if graph_name is not None:
+                out['graphname'] = graph_name.strip()
+
+        # Integer pixel dimensions. Map files set these to real pixel counts;
+        # spec files set them to 1. Either way they're correct to propagate.
+        pix_x = _first(r'(?<=SizeX = )-?\d+', header_text, int)
+        if pix_x is not None:
+                out['pixel_x'] = pix_x
+        pix_y = _first(r'(?<=SizeY = )-?\d+', header_text, int)
+        if pix_y is not None:
+                out['pixel_y'] = pix_y
+
+        # Map-only: physical scan dimensions and scan origin. We don't guard
+        # with a "map vs spec" flag — spec headers simply don't have these
+        # keys, so the regex returns None and the dict keys are skipped.
+        scan_width = _first(r'(?<=ScanWidth = )-?\d+(?:\.\d+)?', header_text, float)
+        if scan_width is not None:
+                out['size_x'] = scan_width
+        scan_height = _first(r'(?<=ScanHeight = )-?\d+(?:\.\d+)?', header_text, float)
+        if scan_height is not None:
+                out['size_y'] = scan_height
+        scan_origin_x = _first(r'(?<=ScanOriginX = )-?\d+(?:\.\d+)?', header_text, float)
+        if scan_origin_x is not None:
+                out['positioner_x'] = scan_origin_x
+        scan_origin_y = _first(r'(?<=ScanOriginY = )-?\d+(?:\.\d+)?', header_text, float)
+        if scan_origin_y is not None:
+                out['positioner_y'] = scan_origin_y
+
+        # Spec-only: absolute sample-positioner coordinates. Overwrites any
+        # map-origin values if both appear (they shouldn't in practice).
+        pos_x = _first(r'(?<=PositionX = )-?\d+(?:\.\d+)?', header_text, float)
+        if pos_x is not None:
+                out['positioner_x'] = pos_x
+        pos_y = _first(r'(?<=PositionY = )-?\d+(?:\.\d+)?', header_text, float)
+        if pos_y is not None:
+                out['positioner_y'] = pos_y
+        pos_z = _first(r'(?<=PositionZ = )-?\d+(?:\.\d+)?', header_text, float)
+        if pos_z is not None:
+                out['positioner_z'] = pos_z
+
+        return out
+
+
+def _graphname_to_name(graphname: str) -> str:
+        """Normalize a Witec GraphName into a mapname/specname.
+
+        GraphName lines in data headers look like
+        ``MK_FLG_ABC_111--Spectrum--092--Spec.Data 1``; the info-file first line
+        omits the trailing ``--Spec.Data N`` suffix. Strip it so attributes
+        match between the info-file and header-only load paths.
+        """
+        # Remove the trailing "--Spec.Data <N>" token plus any trailing whitespace.
+        return re.sub(r'--Spec\.Data\s*\d+\s*$', '', graphname).strip()
+
 class ramanmap:
         """
         Container for Raman maps, imported from a text file.
@@ -38,8 +147,18 @@ class ramanmap:
 
         :param map_path: Path to the text file, containing the Raman map, exported from Witec
         :type map_path: str
-        :param info_path: Path to the info file, containing the metadata, exported from Witec
-        :type info_path: str
+        :param info_path: Path to the info file, containing the metadata, exported from Witec.
+                Optional — when omitted (``None``), metadata is populated from the data file's
+                own ``[Header]`` block. The parser recognizes both the Witec Project v5
+                "old table export" format (``FileName`` carries the source ``.wip`` path) and
+                the v7 "new table export" format (``FileName =`` is left empty); the keys
+                ``SizeX`` / ``SizeY`` (pixel counts), ``ScanWidth`` / ``ScanHeight`` (physical
+                size), ``ScanOriginX`` / ``Y`` and ``GraphName`` are identical between the two.
+                Fields not present in the header fall back to ``'N/A'`` (strings) or
+                ``NaN`` (numerics). If the data file has no ``[Header]`` block either,
+                constructing the map fails with a clear error because pixel dimensions
+                cannot be inferred.
+        :type info_path: str, optional
 
         Most important variables of the :class:`ramanmap` instance:
 
@@ -65,8 +184,12 @@ class ramanmap:
                 map = rt.ramanmap(map_path, info_path)
                 # list of the variables stored in the `ramanmap` instance
                 print(list(map.__dict__))
-        
-        """        
+
+                # Load without a metadata file — the data file's [Header]
+                # block supplies pixel_x / pixel_y / size_x / size_y:
+                map_noinfo = rt.ramanmap(map_path)
+
+        """
 
         def history(self):
                 """Display the notes accumulated in the 'comments' attribute of the :class:`ramanmap.mapxr` `xarray` variable.
@@ -588,21 +711,106 @@ class ramanmap:
 
         # internal functions --------------------------
 
-        def __init__(self, map_path, info_path):
-                """Constructor for :class:`ramanmap`
-                """                
+        def __init__(self, map_path, info_path=None):
+                """Constructor for :class:`ramanmap`.
+
+                ``info_path`` is optional. When ``None``, metadata defaults to
+                sentinels and :py:meth:`_load_map` parses the data file's
+                ``[Header]`` block to fill in dimensional attributes.
+                """
                 # filename
                 self.filename = map_path
                 # fitmask
                 self.mask = None
                 # normalization factor, factor by which the raman intensity values are divided during normalize
                 self.normfactor = None
-                # Load the metadata
-                self._load_info(info_path)
-                # Load the Raman map
+                # Track whether an info file was supplied. Used by _load_map to
+                # decide whether to parse the data header, and by _toxarray to
+                # decide the comment text and coord unit label.
+                self._info_loaded = info_path is not None
+                # Populate metadata: either from info file or from sentinel defaults
+                # that the data-file header may later override in _load_map.
+                if self._info_loaded:
+                        self._load_info(info_path)
+                else:
+                        self._load_defaults()
+                # Load the Raman map — if no info file, this also parses the data
+                # header to fill in pixel_x / pixel_y / size_x / size_y before
+                # attempting the reshape.
                 self._load_map(map_path)
                 # load the data into an xarray container
                 self._toxarray()
+
+
+        def _load_defaults(self):
+                """Populate metadata attributes with placeholder values.
+
+                Called by :py:meth:`__init__` when no info file is supplied.
+                Dimensional attributes (``pixel_x``, ``pixel_y``, ``size_x``,
+                ``size_y``) are set to ``None`` so :py:meth:`_load_map` knows
+                they still need to be filled — from the data-file header if
+                present, or via a clear error if not. All other metadata
+                attributes get sentinels (``'N/A'`` for strings, ``NaN`` for
+                floats) so the rest of the pipeline — especially
+                :py:meth:`_toxarray` — can run unchanged.
+                """
+                # No raw metadata text yet; print_metadata then shows just the
+                # processing comments, which is what we want.
+                self.metadata = ''
+                # Best-effort mapname derived from the data file's stem. If a
+                # GraphName appears in the data header, _apply_datafile_header
+                # will overwrite this.
+                self.mapname = os.path.splitext(os.path.basename(self.filename))[0]
+                # Dimensional attrs stay None until the data header is parsed
+                # (or an error is raised if the header doesn't supply them).
+                self.pixel_x = None
+                self.pixel_y = None
+                self.size_x = None
+                self.size_y = None
+                # Info-file-only fields; headers don't carry them.
+                self.date = _NO_INFO_STR
+                self.time = _NO_INFO_STR
+                self.samplename = _NO_INFO_STR
+                self.laser = _NO_INFO_NUM
+                self.itime = _NO_INFO_NUM
+                self.grating = _NO_INFO_STR
+                self.objname = _NO_INFO_STR
+                self.objmagn = _NO_INFO_STR
+                # Positioner values: defaults may be overridden by the data
+                # header (ScanOriginX / PositionX etc).
+                self.positioner_x = _NO_INFO_NUM
+                self.positioner_y = _NO_INFO_NUM
+
+
+        def _apply_datafile_header(self):
+                """Override sentinel metadata with values parsed from the data header.
+
+                Called by :py:meth:`_load_map` after ``self.metadata_datafile``
+                has been captured. Mutates attributes directly. Missing header
+                fields leave the corresponding attribute at its sentinel value.
+                """
+                # Parse whatever key=value pairs the header contains — unknown
+                # or missing keys are simply absent from the result dict.
+                fields = _parse_witec_datafile_header(self.metadata_datafile)
+                # Apply only the keys that were found, so sentinels remain for
+                # the rest. The mapname override uses _graphname_to_name to
+                # strip the trailing "--Spec.Data N" token.
+                if 'graphname' in fields:
+                        self.mapname = _graphname_to_name(fields['graphname'])
+                if 'wipfilename' in fields:
+                        self.wipfilename = fields['wipfilename']
+                if 'pixel_x' in fields:
+                        self.pixel_x = fields['pixel_x']
+                if 'pixel_y' in fields:
+                        self.pixel_y = fields['pixel_y']
+                if 'size_x' in fields:
+                        self.size_x = fields['size_x']
+                if 'size_y' in fields:
+                        self.size_y = fields['size_y']
+                if 'positioner_x' in fields:
+                        self.positioner_x = fields['positioner_x']
+                if 'positioner_y' in fields:
+                        self.positioner_y = fields['positioner_y']
 
 
         def _load_info(self, info_path, **kwargs):
@@ -682,8 +890,16 @@ class ramanmap:
                         with open(map_path, 'r', encoding = 'latin1') as file:
                                 lines = [next(file).strip() for _ in range(toskip)]
                                 self.metadata_datafile = '\n'.join(lines)
-                        # extract the WIP filename
-                        self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+                        # Extract the WIP filename. ``[ \t]*`` after ``=`` (but
+                        # NOT ``\s*``, which would swallow the line's ``\n``
+                        # and capture the next line) tolerates stripped
+                        # trailing whitespace: newer v7 exports emit
+                        # ``FileName = \n`` that ``strip()`` reduces to
+                        # ``FileName =``, breaking a literal ``FileName = ``
+                        # match. The ``if matches`` guard defends against the
+                        # FileName line being absent entirely.
+                        matches = re.findall(r'FileName =[ \t]*(.*?)(?:\n|$)', self.metadata_datafile)
+                        self.wipfilename = matches[0] if matches else ''
 
                 # if 'Header' in lines[1]:
                 #         # we have a header
@@ -701,6 +917,20 @@ class ramanmap:
                 #         toskip = 0
                 #         self.wipfilename = map_path
                 
+                # When no info file was supplied, the data-file header is our
+                # only source for pixel_x / pixel_y / size_x / size_y. Parse
+                # it now so the reshape below succeeds.
+                if not self._info_loaded:
+                        self._apply_datafile_header()
+                # Guard: without dims, reshape would fail with an opaque error.
+                # Raise a clear message instead pointing at the real cause.
+                if self.pixel_x is None or self.pixel_y is None:
+                        raise ValueError(
+                                f"cannot determine pixel dimensions for '{map_path}': "
+                                "no info file was supplied and the data file's header "
+                                "does not contain SizeX / SizeY. Pass an info_path or "
+                                "export the map with Witec's table option."
+                        )
                 # Load the data
                 m = np.loadtxt(map_path, skiprows = toskip, encoding = 'latin1')
                 # The raman shift is the first column in the exported table.
@@ -724,8 +954,13 @@ class ramanmap:
                                 'width': width,
                                 'height': height
                                 })
-                # add a comment field
-                self.mapxr.attrs['comments'] = 'raw data loaded \n'
+                # Comment text notes the load provenance so a downstream reader
+                # can tell whether metadata came from an info file or purely
+                # from the data-file header.
+                if self._info_loaded:
+                        self.mapxr.attrs['comments'] = 'raw data loaded \n'
+                else:
+                        self.mapxr.attrs['comments'] = 'raw data loaded (no info file; metadata from data header) \n'
                 # adding attributes
                 self.mapxr.name = 'Raman intensity' # this is needed if used with hvplot
                 self.mapxr.attrs['wipfile name'] = self.wipfilename
@@ -741,7 +976,13 @@ class ramanmap:
                 self.mapxr.attrs['sample positioner X'] = self.positioner_x
                 self.mapxr.attrs['sample positioner Y'] = self.positioner_y
                 self.mapxr.attrs['objective name'] = self.objname
-                self.mapxr.attrs['objective magnification'] = self.objmagn + 'x'
+                # Only append the conventional 'x' multiplier when a real
+                # magnification value is present; otherwise the N/A sentinel
+                # would produce an awkward 'N/Ax' string.
+                if self._info_loaded:
+                        self.mapxr.attrs['objective magnification'] = self.objmagn + 'x'
+                else:
+                        self.mapxr.attrs['objective magnification'] = self.objmagn
                 self.mapxr.attrs['grating'] = self.grating
                 # coordinate attributes
                 self.mapxr.coords['ramanshift'].attrs['units'] = r'1/cm'
@@ -765,8 +1006,16 @@ class singlespec:
 
         :param spec_path: Path to the text file, containing the Raman spectrum, exported from Witec
         :type spec_path: str
-        :param info_path: Path to the info file, containing the metadata, exported from Witec
-        :type info_path: str
+        :param info_path: Path to the info file, containing the metadata, exported from Witec.
+                Optional — when omitted (``None``), metadata is populated from the data file's
+                own ``[Header]`` block if present. Both the Witec Project v5 "old table
+                export" (``FileName`` carries the source ``.wip`` path) and the v7 "new
+                table export" (``FileName =`` empty) formats are recognized; the
+                ``PositionX`` / ``PositionY`` / ``PositionZ`` and ``GraphName`` keys used to
+                populate metadata are identical between the two. Fields not present in the
+                header fall back to ``'N/A'`` (strings) or ``NaN`` (numerics); a bare data
+                file (no header) still loads because spectra don't need dimensional metadata.
+        :type info_path: str, optional
 
         Most important variables of the :class:`singlespec` instance:
 
@@ -795,6 +1044,10 @@ class singlespec:
                 single_spectrum = rt.singlespec(spec_path, info_path)
                 # list of variables stored in the `singlespec` instance
                 print(list(single_spectrum.__dict__))
+
+                # Load without a metadata file — the data file's [Header]
+                # block (if present) fills in positioner coordinates etc:
+                spec_noinfo = rt.singlespec(spec_path)
 
         """
 
@@ -1033,21 +1286,91 @@ class singlespec:
 
         # internal functions ----------------------------------
 
-        def __init__(self, spec_path, info_path):
-                """Constructor for :class:`singlespec`
-                """        
+        def __init__(self, spec_path, info_path=None):
+                """Constructor for :class:`singlespec`.
+
+                ``info_path`` is optional. When ``None``, metadata defaults to
+                sentinels and :py:meth:`_load_singlespec` parses the data file's
+                ``[Header]`` block if present to fill in positioner coordinates
+                etc.
+                """
                 # filename
                 self.filename = spec_path
-                # fit mask        
+                # fit mask
                 self.mask = None
                 # normalization factor, factor by which the raman intensity values are divided during normalize
                 self.normfactor = None
-                # Load the metadata
-                self._load_info(info_path)
-                # Load the Raman map
+                # Track whether an info file was supplied; consumed by
+                # _load_singlespec (whether to parse the header) and by
+                # _toxarray (comment text / objmagn suffix).
+                self._info_loaded = info_path is not None
+                # Populate metadata: info-file path takes full control; the
+                # default path writes sentinels that the data header may later
+                # override in _load_singlespec.
+                if self._info_loaded:
+                        self._load_info(info_path)
+                else:
+                        self._load_defaults()
+                # Load the Raman single spectrum (ramanshift + counts columns).
+                # When no info file was supplied this call also invokes
+                # _apply_datafile_header to enrich metadata from the header.
                 self._load_singlespec(spec_path)
                 # load the data into an xarray container
                 self._toxarray()
+
+
+        def _load_defaults(self):
+                """Populate metadata attributes with placeholder values.
+
+                Mirror of :py:meth:`ramanmap._load_defaults` for single spectra.
+                Unlike the map variant, there are no dimensional attributes to
+                defer — a 1-D spectrum is fully described by the two columns
+                in the data file.
+                """
+                self.metadata = ''
+                # Spectrum name derived from the data file's stem; the data
+                # header's GraphName, if present, will overwrite this via
+                # _apply_datafile_header.
+                self.specname = os.path.splitext(os.path.basename(self.filename))[0]
+                self.date = _NO_INFO_STR
+                self.time = _NO_INFO_STR
+                self.samplename = _NO_INFO_STR
+                self.laser = _NO_INFO_NUM
+                self.itime = _NO_INFO_NUM
+                self.grating = _NO_INFO_STR
+                self.objname = _NO_INFO_STR
+                self.objmagn = _NO_INFO_STR
+                # Positioner values: defaults may be overridden by the data
+                # header (PositionX / PositionY / PositionZ).
+                self.positioner_x = _NO_INFO_NUM
+                self.positioner_y = _NO_INFO_NUM
+                self.positioner_z = _NO_INFO_NUM
+
+
+        def _apply_datafile_header(self):
+                """Override sentinel metadata with values parsed from the data header.
+
+                Called by :py:meth:`_load_singlespec` after
+                ``self.metadata_datafile`` has been captured. Overrides are
+                limited to keys the parser actually finds; missing fields
+                leave sentinels in place.
+                """
+                fields = _parse_witec_datafile_header(self.metadata_datafile)
+                # GraphName (if any) becomes the spectrum name — strip the
+                # trailing "--Spec.Data N" suffix for parity with info-file loads.
+                if 'graphname' in fields:
+                        self.specname = _graphname_to_name(fields['graphname'])
+                if 'wipfilename' in fields:
+                        self.wipfilename = fields['wipfilename']
+                # Spectra don't use pixel_x / pixel_y / size_x / size_y even if
+                # SizeX / SizeY = 1 appear in the header — skip those keys.
+                if 'positioner_x' in fields:
+                        self.positioner_x = fields['positioner_x']
+                if 'positioner_y' in fields:
+                        self.positioner_y = fields['positioner_y']
+                if 'positioner_z' in fields:
+                        self.positioner_z = fields['positioner_z']
+
 
         def _load_info(self, info_path):
                 """
@@ -1117,8 +1440,11 @@ class singlespec:
                         with open(spec_path, 'r', encoding = 'latin1') as file:
                                 lines = [next(file).strip() for _ in range(toskip)]
                                 self.metadata_datafile = '\n'.join(lines)
-                        # extract the WIP filename
-                        self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
+                        # See :py:meth:`ramanmap._load_map` for rationale on
+                        # ``[ \t]*`` and the ``if matches`` fallback — newer
+                        # v7 Witec exports emit an empty ``FileName =`` line.
+                        matches = re.findall(r'FileName =[ \t]*(.*?)(?:\n|$)', self.metadata_datafile)
+                        self.wipfilename = matches[0] if matches else ''
 
                 # # Check to see if metadata are present in the data file
                 # with open(spec_path, 'r', encoding = 'latin1') as file:
@@ -1140,6 +1466,12 @@ class singlespec:
                 #         toskip = 0
                 #         self.wipfilename = spec_path
                 
+                # When no info file was supplied, the data-file header (if any)
+                # is our only source for extra metadata such as PositionX/Y/Z.
+                # A spectrum with no header still loads fine — the parser just
+                # returns an empty dict and sentinels remain in place.
+                if not self._info_loaded:
+                        self._apply_datafile_header()
                 # Load the data
                 ss = np.loadtxt(spec_path, skiprows = toskip, encoding = 'latin1')
                 self.ramanshift = ss[:, 0]
@@ -1156,8 +1488,12 @@ class singlespec:
                         dims = ['ramanshift'],
                         coords = {'ramanshift': self.ramanshift})
                 
-                # add a comment field
-                self.ssxr.attrs['comments'] = 'raw data loaded \n'
+                # Comment text flags whether metadata came from an info file
+                # or from the data-file header / defaults.
+                if self._info_loaded:
+                        self.ssxr.attrs['comments'] = 'raw data loaded \n'
+                else:
+                        self.ssxr.attrs['comments'] = 'raw data loaded (no info file; metadata from data header) \n'
                 # adding attributes
                 self.ssxr.name = 'Raman intensity' # this is needed if used with hvplot
                 self.ssxr.attrs['wipfile name'] = self.wipfilename
@@ -1172,7 +1508,12 @@ class singlespec:
                 self.ssxr.attrs['sample positioner Y'] = self.positioner_y
                 self.ssxr.attrs['sample positioner Z'] = self.positioner_z
                 self.ssxr.attrs['objective name'] = self.objname
-                self.ssxr.attrs['objective magnification'] = self.objmagn + 'x'
+                # Only append the 'x' multiplier when a real magnification
+                # value is present — avoids awkward 'N/Ax' in the no-info path.
+                if self._info_loaded:
+                        self.ssxr.attrs['objective magnification'] = self.objmagn + 'x'
+                else:
+                        self.ssxr.attrs['objective magnification'] = self.objmagn
                 self.ssxr.attrs['grating'] = self.grating
                 # coordinate attributes
                 self.ssxr.coords['ramanshift'].attrs['units'] = r'1/cm'

@@ -99,6 +99,132 @@ class TestDataLoading:
         assert hasattr(singlespec_instance, "ramanshift")
         assert hasattr(singlespec_instance, "counts")
 
+    # --- no-info-file loading via data-file header --------------------
+
+    def test_load_singlespec_header_only(self):
+        """Load a single spectrum using only the data file's [Header] block.
+
+        ``ss_old_table_export.txt`` carries a Witec "old table export"
+        header whose PositionX / Y / Z and GraphName fields the loader now
+        consumes when no info file is supplied. All info-file-only fields
+        (sample name, grating, laser, objective etc.) fall back to
+        ``'N/A'`` / ``NaN`` sentinels.
+        """
+        bare_path = Path(__file__).parent.parent / "test-data" / "ss_old_table_export.txt"
+        # One-arg call exercises the new default ``info_path=None`` branch.
+        spec = rt.singlespec(str(bare_path))
+        # Core data attributes should still be present.
+        assert hasattr(spec, "ssxr")
+        assert hasattr(spec, "ramanshift")
+        assert hasattr(spec, "counts")
+        # PositionX / Y / Z from the header should populate the positioner
+        # attributes exactly (not as sentinels).
+        assert spec.positioner_x == pytest.approx(-165.510999992635)
+        assert spec.positioner_y == pytest.approx(4193.09300156985)
+        assert spec.positioner_z == pytest.approx(0.0)
+        # GraphName gets normalized by stripping the trailing --Spec.Data N.
+        assert spec.specname == "MK_FLG_ABC_111--Spectrum--092"
+        # Fields not present in the header should remain at sentinels.
+        assert spec.samplename == "N/A"
+        assert spec.grating == "N/A"
+        assert np.isnan(spec.laser)
+        # Comment must advertise the no-info-file load path.
+        assert "no info file" in spec.ssxr.attrs["comments"]
+
+    def test_load_ramanmap_header_only(self):
+        """Load a map using only the data file's [Header] block.
+
+        ``map_old_table_export.txt`` carries SizeX / SizeY / ScanWidth /
+        ScanHeight / ScanOriginX / ScanOriginY in its header; the loader
+        uses these to reshape the data and build coordinates without
+        needing the info file.
+        """
+        bare_path = Path(__file__).parent.parent / "test-data" / "map_old_table_export.txt"
+        specmap = rt.ramanmap(str(bare_path))
+        # Pixel dimensions should come straight from the header.
+        assert specmap.pixel_x == 250
+        assert specmap.pixel_y == 120
+        # Physical scan size from the header (ScanWidth / ScanHeight).
+        assert specmap.size_x == pytest.approx(250.0)
+        assert specmap.size_y == pytest.approx(120.0, abs=1e-6)
+        # ScanOriginX / Y populate the positioner attributes.
+        assert specmap.positioner_x == pytest.approx(-131.899993849918)
+        assert specmap.positioner_y == pytest.approx(4139.39990239032)
+        # GraphName becomes mapname (with the --Spec.Data suffix stripped).
+        assert specmap.mapname == "MK_FLG_ABC_111--Scan LA--096"
+        # xarray carries the inference-provenance comment.
+        assert hasattr(specmap, "mapxr")
+        assert "no info file" in specmap.mapxr.attrs["comments"]
+        # Info-only fields remain sentinels.
+        assert specmap.samplename == "N/A"
+        assert np.isnan(specmap.laser)
+
+    # --- new-format exports (identical [Header] keys, empty FileName) ---
+
+    def test_load_singlespec_new_format(self):
+        """Load a single spectrum from the newer Witec export format.
+
+        The "new" table export differs from the "old" one only in that
+        ``FileName =`` is empty; all other header keys (GraphName, SizeX,
+        SizeY, PositionX/Y/Z, ...) are identical. This test confirms the
+        shared parser handles both formats without branching.
+        """
+        bare_path = Path(__file__).parent.parent / "test-data" / "ss_new_table_export.txt"
+        spec = rt.singlespec(str(bare_path))
+        # Core data attributes present.
+        assert hasattr(spec, "ssxr")
+        assert hasattr(spec, "ramanshift")
+        assert hasattr(spec, "counts")
+        # PositionX / Y / Z parsed straight out of the header.
+        assert spec.positioner_x == pytest.approx(6873.29400184061)
+        assert spec.positioner_y == pytest.approx(4614.00599958236)
+        assert spec.positioner_z == pytest.approx(0.0)
+        # GraphName normalized (trailing --Spec.Data N stripped).
+        assert spec.specname == "Graphite_on_PVC_10_after_strain--Spectrum--028"
+        # wipfilename reflects the empty FileName value from this variant —
+        # the outer regex captures the empty string; the override parser
+        # leaves it alone because its stricter pattern won't match empty.
+        assert spec.wipfilename == ""
+        # Info-only fields stay sentinel.
+        assert spec.samplename == "N/A"
+        assert np.isnan(spec.laser)
+        # Comment records the no-info-file provenance.
+        assert "no info file" in spec.ssxr.attrs["comments"]
+
+    def test_load_ramanmap_new_format(self):
+        """Load a map from the newer Witec export format.
+
+        Header keys match the old format (SizeX / SizeY / ScanWidth /
+        ScanHeight / ScanOriginX / ScanOriginY); only FileName is empty.
+        The fixture header says SizeX = 50, SizeY = 25, so reshape goes
+        (ramanshift, 25, 50).
+        """
+        bare_path = Path(__file__).parent.parent / "test-data" / "map_new_table_export.txt"
+        specmap = rt.ramanmap(str(bare_path))
+        # Pixel dimensions from SizeX / SizeY.
+        assert specmap.pixel_x == 50
+        assert specmap.pixel_y == 25
+        # Physical scan size — the fixture stores odd floating-point values
+        # (99.99999... ≈ 100, 49.99999... ≈ 50) because of float precision
+        # in the Witec exporter; we match what's actually in the file.
+        assert specmap.size_x == pytest.approx(99.9999999999998)
+        assert specmap.size_y == pytest.approx(49.9999999999995)
+        # ScanOriginX / Y → positioner coordinates.
+        assert specmap.positioner_x == pytest.approx(6895.3280002594)
+        assert specmap.positioner_y == pytest.approx(4609.94099998474)
+        # GraphName → mapname (suffix stripped).
+        assert specmap.mapname == "Graphite_on_PVC_10_after_strain--Scan Piezo--027"
+        # Reshape must have produced the expected grid.
+        assert specmap.mapxr.sizes["width"] == 50
+        assert specmap.mapxr.sizes["height"] == 25
+        # Empty FileName means wipfilename is '' (see singlespec test note).
+        assert specmap.wipfilename == ""
+        # Info-only fields stay sentinel.
+        assert specmap.samplename == "N/A"
+        assert np.isnan(specmap.laser)
+        # Comment records the no-info-file provenance.
+        assert "no info file" in specmap.mapxr.attrs["comments"]
+
 
 # ---------------------------------------------------------------------------
 # Tests: Ramanmap Methods
