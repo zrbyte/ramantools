@@ -5,19 +5,39 @@ The public API (class name, attributes, method signatures, return shapes)
 is unchanged; this file only moves the code, it does not modify it.
 """
 import os  # Filename handling for the no-info-file fallback path
-import re  # Regular expressions for parsing metadata
 import copy  # Object copying utilities
 import numpy as np  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 import xarray as xr  # type: ignore
 
-# Internal helpers (moved out of the original single-file layout).
-from ._helpers import _midpoint, _NO_INFO_STR, _NO_INFO_NUM
-from ._witec import _parse_witec_datafile_header, _graphname_to_name
-# lorentz2 is referenced only as a guard target (``is lorentz2``); bgsubtract
-# and peakfit are called directly by ``remove_bg`` / ``calibrate`` /
-# ``normalize`` / ``peakmask``.
-from ._fitting import lorentz2, bgsubtract, peakfit
+# Shared helpers (dedup core extracted during Phase 1.2 of the refactor).
+# ``_apply_default_common_metadata`` / ``_apply_parsed_header`` /
+# ``_set_common_xarray_attrs`` fold the metadata-scaffolding that used to
+# be copy-pasted between map and spec; ``_crr_xarray`` is the rolling-
+# window CRR core; ``_as_float`` / ``_require_mode`` are the validator
+# helpers.
+from ._helpers import (
+        _midpoint,
+        _as_float,
+        _require_mode,
+        _crr_xarray,
+        _apply_default_common_metadata,
+        _apply_parsed_header,
+        _set_common_xarray_attrs,
+)
+from ._witec import _parse_info_file
+from ._io import _load_witec_datafile
+# bgsubtract + peakfit are used by remove_bg / peakmask.
+# _compute_calibshift / _normalize_to_peak are the shared algorithm
+# cores for calibrate / normalize. _reject_double_peak replaces the
+# four inlined lorentz2 guards in calibrate + normalize.
+from ._fitting import (
+        bgsubtract,
+        peakfit,
+        _compute_calibshift,
+        _normalize_to_peak,
+        _reject_double_peak,
+)
 
 class ramanmap:
         """
@@ -187,24 +207,19 @@ class ramanmap:
                         new_m.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest').plot()
 
                 """
-                # Validate optional parameters
-                if mode not in ['const', 'individual']:
-                        raise ValueError(f"mode must be 'const' or 'individual', got '{mode}'")
-
+                # Validate optional parameters. Centralized helpers replace
+                # the four near-identical inline isinstance blocks the
+                # pre-refactor code carried.
+                _require_mode(mode, ['const', 'individual'])
                 if fitmask is not None:
+                        # fitmask stays inline because it accepts list/ndarray
+                        # (not scalar) and needs a dtype=bool cast — no other
+                        # caller in the package duplicates this idiom.
                         if not isinstance(fitmask, (np.ndarray, list)):
                                 raise TypeError(f"fitmask must be a numpy array or list, got {type(fitmask)}")
                         fitmask = np.asarray(fitmask, dtype=bool)
-
-                if width is not None:
-                        if not isinstance(width, (int, float, np.number)):
-                                raise TypeError(f"width must be a number, got {type(width)}")
-                        width = float(width)
-
-                if height is not None:
-                        if not isinstance(height, (int, float, np.number)):
-                                raise TypeError(f"height must be a number, got {type(height)}")
-                        height = float(height)
+                width = _as_float('width', width, optional=True)
+                height = _as_float('height', height, optional=True)
 
                 # create a lightweight copy of the instance; we avoid deepcopy to
                 # reduce memory churn and instead copy only the data array below
@@ -285,75 +300,44 @@ class ramanmap:
                         hardcodes ``.sel(param='x0')`` on the fit result — ``lorentz2`` emits
                         ``x01`` / ``x02`` parameter names instead.
                 """
-                # Guard against double-peak shapes. calibrate relies on a single
-                # ``x0`` parameter existing in the fit result; lorentz2 breaks
-                # that contract. Fail loudly rather than hit a confusing KeyError
-                # deep in xarray.
-                if kwargs.get('func') is lorentz2:
-                        raise ValueError(
-                                "calibrate() requires a single-peak shape function "
-                                "(use func=gaussian or func=lorentz); lorentz2 is not supported."
-                        )
+                # Reject double-peak shape functions early — calibrate hardcodes
+                # ``.sel(param='x0')`` which lorentz2 (x01/x02 names) breaks.
+                _reject_double_peak(kwargs.get('func'), 'calibrate')
+                # Validate parameters via the shared helpers.
+                peakshift = _as_float('peakshift', peakshift)
+                calibfactor = _as_float('calibfactor', calibfactor)
+                width = _as_float('width', width, optional=True)
+                height = _as_float('height', height, optional=True)
 
-                # Validate parameters
-                if not isinstance(peakshift, (int, float, np.number)):
-                        raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
-                peakshift = float(peakshift)
-
-                if not isinstance(calibfactor, (int, float, np.number)):
-                        raise TypeError(f"calibfactor must be a number, got {type(calibfactor)}")
-                calibfactor = float(calibfactor)
-
-                if width is not None:
-                        if not isinstance(width, (int, float, np.number)):
-                                raise TypeError(f"width must be a number, got {type(width)}")
-                        width = float(width)
-
-                if height is not None:
-                        if not isinstance(height, (int, float, np.number)):
-                                raise TypeError(f"height must be a number, got {type(height)}")
-                        height = float(height)
-
-                # Get the middle spectrum
-                middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest')
-
-                # check if width and height are specified
+                # Pick the reference spectrum — user-supplied coords if both
+                # width and height are given, otherwise the middle of the map.
                 if (width is None) or (height is None):
-                        spectofit = middle
+                        spectofit = self.mapxr.sel(
+                                width=self.size_x / 2,
+                                height=self.size_y / 2,
+                                method='nearest',
+                        )
                 else:
-                        spectofit = self.mapxr.sel(width = width, height = height, method = 'nearest')
+                        spectofit = self.mapxr.sel(width=width, height=height, method='nearest')
 
-                # if a calibration factor is specified, don't fit just shift the values by calibfactor
-                if calibfactor == 0:
-                        # before fitting crop to the area around the peak
-                        fitrange = [peakshift - 100, peakshift + 100]
-                        
-                        # if one of the ranges out of bounds with the data
-                        if fitrange[0] < self.mapxr.ramanshift.min().data:
-                                fitrange[0] = self.mapxr.ramanshift.min().data
-                        if fitrange[1] > self.mapxr.ramanshift.max().data:
-                                fitrange[1] = self.mapxr.ramanshift.max().data
-                        # crop the spectrum
-                        spectofit_crop = spectofit.sel(ramanshift = slice(fitrange[0], fitrange[1]))
+                # Delegate to the shared calibshift core (crops, fits, returns
+                # the correction factor; skips the fit when calibfactor != 0).
+                calibshift = _compute_calibshift(spectofit, peakshift, calibfactor, **kwargs)
 
-                        # fit to the peak around `peakshift`
-                        fit = peakfit(spectofit_crop, stval = {'x0': peakshift}, **kwargs)
-                        # correction factor relative to the expected value: peakshift
-                        calibshift = peakshift - fit['curvefit_coefficients'].sel(param = 'x0').data
-                else:
-                        calibshift = calibfactor
-
-                # create a shallow copy of the instance; the new coordinates are
-                # assigned below so a deep copy is unnecessary
+                # Lightweight copy of the instance — only the ramanshift coord
+                # changes, so a full deep copy would be wasteful.
                 map_mod = copy.copy(self)
-
-                # shift the ramanshift values by the correction factor in the new singlespec instance
-                map_mod.mapxr = self.mapxr.assign_coords(ramanshift = self.mapxr['ramanshift'] + calibshift)
-
-                # add to the comments attribute of the new instance if it exists
+                map_mod.mapxr = self.mapxr.assign_coords(
+                        ramanshift=self.mapxr['ramanshift'] + calibshift
+                )
+                # Append to the processing history (guard just in case attrs
+                # was wiped somewhere upstream).
                 if hasattr(map_mod.mapxr, 'comments'):
-                        map_mod.mapxr.attrs['comments'] += 'calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift \n'
-
+                        map_mod.mapxr.attrs['comments'] += (
+                                'calibrated Raman shift by adding '
+                                + f'{calibshift:.2f}'
+                                + ' cm^-1 to the raw ramanshift \n'
+                        )
                 return map_mod
 
         def normalize(self, peakshift, width = None, height = None, mode = 'const', **kwargs):
@@ -388,100 +372,47 @@ class ramanmap:
                         hardcodes ``.sel(param='x0')`` and ``.sel(param='ampl')`` on the fit
                         result.
                 """
-                # Guard against double-peak shapes — see :py:meth:`calibrate`.
-                if kwargs.get('func') is lorentz2:
-                        raise ValueError(
-                                "normalize() requires a single-peak shape function "
-                                "(use func=gaussian or func=lorentz); lorentz2 is not supported."
-                        )
+                # Guard + validate via the shared helpers.
+                _reject_double_peak(kwargs.get('func'), 'normalize')
+                peakshift = _as_float('peakshift', peakshift)
+                _require_mode(mode, ['const', 'individual'])
+                width = _as_float('width', width, optional=True)
+                height = _as_float('height', height, optional=True)
 
-                # Validate parameters
-                if not isinstance(peakshift, (int, float, np.number)):
-                        raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
-                peakshift = float(peakshift)
-
-                if mode not in ['const', 'individual']:
-                        raise ValueError(f"mode must be 'const' or 'individual', got '{mode}'")
-
-                if width is not None:
-                        if not isinstance(width, (int, float, np.number)):
-                                raise TypeError(f"width must be a number, got {type(width)}")
-                        width = float(width)
-
-                if height is not None:
-                        if not isinstance(height, (int, float, np.number)):
-                                raise TypeError(f"height must be a number, got {type(height)}")
-                        height = float(height)
-
-                # Determine reference coordinates. When none are supplied we use
-                # the midpoint of the map, computed via the helper above to
-                # avoid duplicated midpoint logic.
+                # Build the reference-coords dict for the shared core. Only
+                # both-or-neither here — the legacy behaviour ignored a
+                # partial specification, and we preserve that.
                 if (width is not None) and (height is not None):
-                        mapwidth = width
-                        mapheight = height
+                        ref_coords = {'width': width, 'height': height}
                 else:
-                        mapwidth = _midpoint(self.mapxr.width.data)
-                        mapheight = _midpoint(self.mapxr.height.data)
+                        # None lets the core compute midpoints of the non-
+                        # ramanshift dims itself (width + height for maps).
+                        ref_coords = None
 
-                # crop the data in ramanshift to around the peak specified
-                cropregion = 100
-                cropped = self.mapxr.sel(ramanshift = slice(peakshift - cropregion, peakshift + cropregion))
+                # Delegate the crop / bg-check / fit / divide dance to the
+                # shared core; we keep only the class-specific wrap-up here.
+                normalized, peakampl, peakpos = _normalize_to_peak(
+                        self.mapxr,
+                        peakshift,
+                        ref_coords=ref_coords,
+                        mode=mode,
+                        **kwargs,
+                )
+                # Map-specific comment line includes the ``in mode == XXX``
+                # token (singlespec's version omits it).
+                normalized.attrs['comments'] += (
+                        'normalized to peak at: '
+                        + f'{peakpos:.2f}'
+                        + f' in mode == {mode}'
+                        + ' by a factor of '
+                        + f'{peakampl:.2f}'
+                        + '\n'
+                )
 
-                # take the offset value, as the intensity value near the peak edge
-                cropped_middle = cropped.sel(width = mapwidth, height = mapheight, method = 'nearest')
-                bgoffset_low = cropped_middle[0].data
-                bgoffset_high = cropped_middle[-1].data
-
-                # check to see of if the background was removed for the spectrum
-                if ((bgoffset_high + bgoffset_low)/2 > 500) or ('background subtracted' not in self.mapxr.attrs['comments']):
-                        raise ValueError("The background was not removed, or the peak selected is not suitable for normalization. This should be done in case of normalizing to a peak amplitude")
-                        return
-
-                if mode == 'const':
-                        # pick the spectrum to normalize to
-                        cropped = cropped.sel(width = mapwidth, height = mapheight, method = 'nearest')
-
-                        # fit to the cropped region
-                        fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2}, **kwargs)
-                        peakampl = fit['curvefit_coefficients'].sel(param = 'ampl').data
-                        peakpos = fit['curvefit_coefficients'].sel(param = 'x0').data
-
-                        # normalize to the peak amplitde
-                        normalized = self.mapxr / peakampl
-
-                        # copy attributes and change them acccordingly
-                        normalized.attrs = self.mapxr.attrs.copy()
-                        normalized.attrs['units'] = ' '
-                        normalized.attrs['long_name'] = 'normalized Raman intensity'
-                        normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == const' + ' by a factor of ' + f'{peakampl:.2f}' + '\n'
-
-                elif mode == 'individual':
-                        # fit to the cropped region
-                        fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2}, **kwargs)
-                        peakampl = fit['curvefit_coefficients'].sel(param = 'ampl').data
-                        peakpos = fit['curvefit_coefficients'].sel(param = 'x0').sel(width = mapwidth, height = mapheight).data
-
-                        # normalize to the peak amplitde
-                        normalized = self.mapxr / peakampl
-
-                        # copy attributes and change them acccordingly
-                        normalized.attrs = self.mapxr.attrs.copy()
-                        normalized.attrs['units'] = ' '
-                        normalized.attrs['long_name'] = 'normalized Raman intensity'
-                        normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' in mode == individual' + ' by a factor of ' + f'{peakampl:.2f}' + '\n'
-                        
-                else:
-                        raise ValueError('`mode` parameter must be either: \'const\' or \'individual\'')
-                        return
-                
-                # create a shallow copy of the instance and attach the new
-                # normalized data array computed above
+                # Lightweight copy of the instance and attach the new data.
                 map_norm = copy.copy(self)
                 map_norm.mapxr = normalized.copy()
-
-                # add the normalization factor to the ramanmap instance
                 map_norm.normfactor = peakampl
-
                 return map_norm
 
 
@@ -501,31 +432,18 @@ class ramanmap:
                         If CRR is not satisfactory, keep reducing the `cutoff` value and compare to the original data.
                 """
 
-                # Compute rolling statistics to estimate local noise and mean.
-                # Using xarray's vectorized rolling operations clarifies intent
-                # and avoids manual shifting of data arrays.
-                rolling = self.mapxr.rolling(ramanshift=2*window+1, center=True)
-                local_mean = rolling.mean()
-                local_std = rolling.std()
-
-                # Identify positions where the signal significantly exceeds the
-                # local mean by ``cutoff`` standard deviations.
-                crrpos = (self.mapxr - local_mean) > (cutoff * local_std)
-
-                # Replace cosmic-ray spikes with the local mean while preserving
-                # untouched data elsewhere.
-                map_crr_removed = xr.where(crrpos, local_mean, self.mapxr)
-
-                # Explicitly copy attributes since xr.where may not preserve them
-                map_crr_removed.attrs = self.mapxr.attrs.copy()
-
-                # Make a lightweight copy of the instance and attach the cleaned data
+                # Delegate to the shared rolling-window CRR core; the attrs
+                # copy that xr.where strips is handled inside _crr_xarray.
+                cleaned, n_spikes = _crr_xarray(self.mapxr, cutoff, window)
                 map_crr = copy.copy(self)
-                map_crr.mapxr = map_crr_removed
-
-                # add comment to attributes
-                map_crr.mapxr.attrs['comments'] += 'replaced cosmic ray values with local mean at ' + f'{crrpos.sum().data}' + ' coordinates.\n'
-
+                map_crr.mapxr = cleaned
+                # Map-specific comment wording — "coordinates" (vs. "Ramanshift
+                # coordinates" on singlespec.crr) preserved byte-for-byte.
+                map_crr.mapxr.attrs['comments'] += (
+                        'replaced cosmic ray values with local mean at '
+                        + f'{n_spikes}'
+                        + ' coordinates.\n'
+                )
                 return map_crr
 
 
@@ -561,26 +479,15 @@ class ramanmap:
                         The method uses :func:`peakfit` to find the peak near ``peakpos``.
                         Keyword arguments used by :func:`peakfit` can be passed to the method.
                 """
-                # Validate parameters
-                if not isinstance(peakpos, (int, float, np.number)):
-                        raise TypeError(f"peakpos must be a number, got {type(peakpos)}")
-                peakpos = float(peakpos)
-
-                if not isinstance(cutoff, (int, float, np.number)):
-                        raise TypeError(f"cutoff must be a number, got {type(cutoff)}")
-                cutoff = float(cutoff)
+                # Validate parameters via the shared float-coercer. The
+                # 0 <= cutoff <= 1 range check stays inline because no
+                # other method carries the same range constraint.
+                peakpos = _as_float('peakpos', peakpos)
+                cutoff = _as_float('cutoff', cutoff)
                 if not (0 <= cutoff <= 1):
                         raise ValueError(f"cutoff must be between 0 and 1, got {cutoff}")
-
-                if width is not None:
-                        if not isinstance(width, (int, float, np.number)):
-                                raise TypeError(f"width must be a number, got {type(width)}")
-                        width = float(width)
-
-                if height is not None:
-                        if not isinstance(height, (int, float, np.number)):
-                                raise TypeError(f"height must be a number, got {type(height)}")
-                        height = float(height)
+                width = _as_float('width', width, optional=True)
+                height = _as_float('height', height, optional=True)
 
                 # Determine reference coordinates using supplied values or the
                 # midpoint of the map when absent. The helper function above
@@ -672,9 +579,10 @@ class ramanmap:
                 floats) so the rest of the pipeline — especially
                 :py:meth:`_toxarray` — can run unchanged.
                 """
-                # No raw metadata text yet; print_metadata then shows just the
-                # processing comments, which is what we want.
-                self.metadata = ''
+                # Shared scaffolding (metadata / date / time / sample / laser /
+                # itime / grating / objname / objmagn / positioner_x / _y) in
+                # one call; map-specific extras follow below.
+                _apply_default_common_metadata(self)
                 # Best-effort mapname derived from the data file's stem. If a
                 # GraphName appears in the data header, _apply_datafile_header
                 # will overwrite this.
@@ -685,19 +593,6 @@ class ramanmap:
                 self.pixel_y = None
                 self.size_x = None
                 self.size_y = None
-                # Info-file-only fields; headers don't carry them.
-                self.date = _NO_INFO_STR
-                self.time = _NO_INFO_STR
-                self.samplename = _NO_INFO_STR
-                self.laser = _NO_INFO_NUM
-                self.itime = _NO_INFO_NUM
-                self.grating = _NO_INFO_STR
-                self.objname = _NO_INFO_STR
-                self.objmagn = _NO_INFO_STR
-                # Positioner values: defaults may be overridden by the data
-                # header (ScanOriginX / PositionX etc).
-                self.positioner_x = _NO_INFO_NUM
-                self.positioner_y = _NO_INFO_NUM
 
 
         def _apply_datafile_header(self):
@@ -707,28 +602,18 @@ class ramanmap:
                 has been captured. Mutates attributes directly. Missing header
                 fields leave the corresponding attribute at its sentinel value.
                 """
-                # Parse whatever key=value pairs the header contains — unknown
-                # or missing keys are simply absent from the result dict.
+                # Shared parse + setattr iteration. ``name_attr='mapname'``
+                # routes the GraphName override to this class's name field;
+                # the other five keys get copied verbatim.
+                from ._witec import _parse_witec_datafile_header
                 fields = _parse_witec_datafile_header(self.metadata_datafile)
-                # Apply only the keys that were found, so sentinels remain for
-                # the rest. The mapname override uses _graphname_to_name to
-                # strip the trailing "--Spec.Data N" token.
-                if 'graphname' in fields:
-                        self.mapname = _graphname_to_name(fields['graphname'])
-                if 'wipfilename' in fields:
-                        self.wipfilename = fields['wipfilename']
-                if 'pixel_x' in fields:
-                        self.pixel_x = fields['pixel_x']
-                if 'pixel_y' in fields:
-                        self.pixel_y = fields['pixel_y']
-                if 'size_x' in fields:
-                        self.size_x = fields['size_x']
-                if 'size_y' in fields:
-                        self.size_y = fields['size_y']
-                if 'positioner_x' in fields:
-                        self.positioner_x = fields['positioner_x']
-                if 'positioner_y' in fields:
-                        self.positioner_y = fields['positioner_y']
+                _apply_parsed_header(
+                        self,
+                        fields,
+                        name_attr='mapname',
+                        copy_keys=('pixel_x', 'pixel_y', 'size_x', 'size_y',
+                                   'positioner_x', 'positioner_y'),
+                )
 
 
         def _load_info(self, info_path, **kwargs):
@@ -736,105 +621,23 @@ class ramanmap:
                 Load the file containing the metadata.
                 The metadata will be filled by searching the info file for various patterns, using regular expressions.
                 """
-                with open(info_path, mode = 'r', encoding = 'latin1') as infofile:
-                        metadata = infofile.read()
-
-                self.metadata = metadata
-                # find any character up to a newline, show the forst result `[0]`, this will be the name of the map.
-                # Use raw strings: `r` to treat special characters as characters.
-                self.mapname = re.findall(r'.*', metadata)[0]
-                # find the pixel values in X and Y
-                pixel_x_match = re.findall(r'(?<=Points per Line:\t)-?\d+', metadata)
-                self.pixel_x = int(pixel_x_match[0])
-                pixel_y_match = re.findall(r'(?<=Lines per Image:\t)-?\d+', metadata)
-                self.pixel_y = int(pixel_y_match[0])
-                # get the size of the scan in microns
-                size_x_match = re.findall(r'(?<=Scan Width \[µm\]:\t)-?\d+\.\d+', metadata)
-                size_y_match = re.findall(r'(?<=Scan Height \[µm\]:\t)-?\d+\.\d+', metadata)
-                self.size_x = float(size_x_match[0])
-                self.size_y = float(size_y_match[0])
-                # date of measurement
-                self.date = re.findall(r'(?<=Start Date:\t)-?.+', metadata)[0]
-                # time of measurement
-                self.time = re.findall(r'(?<=Start Time:\t)-?.+', metadata)[0]
-                # sample name
-                self.samplename = re.findall(r'(?<=Sample Name:\t).*', metadata)[0] # new regex to match also no characters after sample name
-                # laser energy
-                self.laser = float(re.findall(r'(?<=Excitation Wavelength \[nm\]:\t)-?.+', metadata)[0])
-                # integration time
-                self.itime = float(re.findall(r'(?<=Integration Time \[s\]:\t)-?.+', metadata)[0])
-                # grating
-                self.grating = re.findall(r'(?<=Grating:\t)-?.+', metadata)[0]
-                # objective name and magnification
-                self.objname = re.findall('(?<=Objective Name:\t)-?.+', metadata)[0]
-                self.objmagn = re.findall('(?<=Objective Magnification:\t)-?.+', metadata)[0]
-                # positioner position
-                self.positioner_x = float(re.findall(r'(?<=Position X \[µm\]:\t)-?.+', metadata)[0])
-                self.positioner_y = float(re.findall(r'(?<=Position Y \[µm\]:\t)-?.+', metadata)[0])
-
-                return metadata
+                # Shared parser returns the raw text and a {attr: value} dict.
+                # The ``is_map=True`` flag adds pixel_x / pixel_y / size_x /
+                # size_y to the set of fields extracted.
+                self.metadata, fields = _parse_info_file(info_path, is_map=True)
+                # First line is the mapname; everything else copies 1:1 onto self.
+                self.mapname = fields.pop('name')
+                for attr, value in fields.items():
+                        setattr(self, attr, value)
+                return self.metadata
 
         def _load_map(self, map_path):
                 """
                 Load the Raman map data into a numpy array.
                 """
-
-                # Load the first part of the file to search for metadata
-                with open(map_path, 'r', encoding='latin1') as file:
-                        lines = []
-                        for _ in range(40): # start reading the first 40 lines
-                                line = file.readline()
-                                if not line:  # stop if end of file is reached
-                                        break
-                                lines.append(line.strip())
-                
-                # define a regular expression to search for the start of the data. It looks for any number, followed by a dot, with more numbers after, then any character and a tab or space and more numbers
-                data_pattern = r'(\d+\.\d+.+[\t ]+)+'
-                # initialize lineskip parameter
-                toskip = 0
-                # Check each line for a match
-                for idx, line in enumerate(lines, start=0):
-                        if re.search(data_pattern, line):
-                                toskip = idx
-                                break  # Stop after finding the first match
-
-                # save datafile metadata
-                if toskip == 0:
-                        # there is no header
-                        self.wipfilename = map_path
-                        self.metadata_datafile = ''
-                else:
-                        # add the data metadata to a class variable
-                        with open(map_path, 'r', encoding = 'latin1') as file:
-                                lines = [next(file).strip() for _ in range(toskip)]
-                                self.metadata_datafile = '\n'.join(lines)
-                        # Extract the WIP filename. ``[ \t]*`` after ``=`` (but
-                        # NOT ``\s*``, which would swallow the line's ``\n``
-                        # and capture the next line) tolerates stripped
-                        # trailing whitespace: newer v7 exports emit
-                        # ``FileName = \n`` that ``strip()`` reduces to
-                        # ``FileName =``, breaking a literal ``FileName = ``
-                        # match. The ``if matches`` guard defends against the
-                        # FileName line being absent entirely.
-                        matches = re.findall(r'FileName =[ \t]*(.*?)(?:\n|$)', self.metadata_datafile)
-                        self.wipfilename = matches[0] if matches else ''
-
-                # if 'Header' in lines[1]:
-                #         # we have a header
-                #         # load additional metadata from the data file itself, ie the first 19 lines we have skipped.
-                #         with open(map_path, 'r', encoding = 'latin1') as file:
-                #                 lines = [next(file).strip() for _ in range(17)]
-                #                 self.metadata_datafile = '\n'.join(lines)
-                #         # need to skip the header when loading
-                #         toskip = 19
-
-                #         # extract the WIP filename
-                #         self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
-                # else:
-                #         # there is no header
-                #         toskip = 0
-                #         self.wipfilename = map_path
-                
+                # One call owns: header-window scan, toskip detection,
+                # metadata capture, FileName extraction, and np.loadtxt.
+                _, self.metadata_datafile, self.wipfilename, m = _load_witec_datafile(map_path)
                 # When no info file was supplied, the data-file header is our
                 # only source for pixel_x / pixel_y / size_x / size_y. Parse
                 # it now so the reshape below succeeds.
@@ -849,65 +652,47 @@ class ramanmap:
                                 "does not contain SizeX / SizeY. Pass an info_path or "
                                 "export the map with Witec's table option."
                         )
-                # Load the data
-                m = np.loadtxt(map_path, skiprows = toskip, encoding = 'latin1')
-                # The raman shift is the first column in the exported table.
+                # The raman shift is the first column in the exported table;
+                # the remaining columns are the map intensities reshaped to
+                # the pixel grid.
                 self.ramanshift = m[:, 0]
                 self.map = np.reshape(m[:, 1:], (m.shape[0], self.pixel_y, self.pixel_x))
-
                 return self.map
 
         def _toxarray(self):
                 """
                 Load the raw numpy data, as well as the metadata into an xarray object.
                 """
-                width = np.linspace(0, self.size_x, num = self.pixel_x)
-                height = np.linspace(0, self.size_y, num = self.pixel_y)
-                # We need to flip the array along the height axis, so that the data show up in the same orientation as in Witec Project.
+                width = np.linspace(0, self.size_x, num=self.pixel_x)
+                height = np.linspace(0, self.size_y, num=self.pixel_y)
+                # We need to flip the array along the height axis, so that
+                # the data shows up in the same orientation as in Witec Project.
                 self.mapxr = xr.DataArray(
-                        np.flip(self.map, axis = 1),
-                        dims = ['ramanshift', 'height', 'width'],
-                        coords = {
+                        np.flip(self.map, axis=1),
+                        dims=['ramanshift', 'height', 'width'],
+                        coords={
                                 'ramanshift': self.ramanshift,
                                 'width': width,
-                                'height': height
-                                })
-                # Comment text notes the load provenance so a downstream reader
-                # can tell whether metadata came from an info file or purely
-                # from the data-file header.
+                                'height': height,
+                        },
+                )
+                # Comment text notes the load provenance so a downstream
+                # reader can tell whether metadata came from an info file or
+                # purely from the data-file header.
                 if self._info_loaded:
                         self.mapxr.attrs['comments'] = 'raw data loaded \n'
                 else:
                         self.mapxr.attrs['comments'] = 'raw data loaded (no info file; metadata from data header) \n'
-                # adding attributes
-                self.mapxr.name = 'Raman intensity' # this is needed if used with hvplot
-                self.mapxr.attrs['wipfile name'] = self.wipfilename
-                self.mapxr.attrs['units'] = 'au'
-                self.mapxr.attrs['long_name'] = 'Raman intensity'
-                self.mapxr.attrs['sample name'] = self.samplename
-                self.mapxr.attrs['laser excitation'] = str(self.laser) + ' nm'
-                self.mapxr.attrs['time of measurement'] = self.time
-                self.mapxr.attrs['date of measurement'] = self.date
-                self.mapxr.attrs['integration time'] = str(self.itime) + ' s'
+                # Shared attribute population (wipfile / units / long_name /
+                # sample / laser / time / date / integration time / positioner
+                # X + Y / objective name / magnification / grating, plus the
+                # ramanshift coord metadata).
+                _set_common_xarray_attrs(self.mapxr, self, self._info_loaded)
+                # Map-specific extras: physical scan dimensions in the attrs
+                # dict, plus width / height coord metadata (maps only).
                 self.mapxr.attrs['map width'] = str(self.size_x) + ' um'
                 self.mapxr.attrs['map height'] = str(self.size_y) + ' um'
-                self.mapxr.attrs['sample positioner X'] = self.positioner_x
-                self.mapxr.attrs['sample positioner Y'] = self.positioner_y
-                self.mapxr.attrs['objective name'] = self.objname
-                # Only append the conventional 'x' multiplier when a real
-                # magnification value is present; otherwise the N/A sentinel
-                # would produce an awkward 'N/Ax' string.
-                if self._info_loaded:
-                        self.mapxr.attrs['objective magnification'] = self.objmagn + 'x'
-                else:
-                        self.mapxr.attrs['objective magnification'] = self.objmagn
-                self.mapxr.attrs['grating'] = self.grating
-                # coordinate attributes
-                self.mapxr.coords['ramanshift'].attrs['units'] = r'1/cm'
-                self.mapxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'
-                # self.mapxr.coords['width'].attrs['units'] = r'$\mathrm{\mu m}$' # type: ignore
-                self.mapxr.coords['width'].attrs['units'] = 'um' # type: ignore
+                self.mapxr.coords['width'].attrs['units'] = 'um'  # type: ignore
                 self.mapxr.coords['width'].attrs['long_name'] = 'width'
-                # self.mapxr.coords['height'].attrs['units'] = r'$\mathrm{\mu m}$' # type: ignore
-                self.mapxr.coords['height'].attrs['units'] = 'um' # type: ignore
+                self.mapxr.coords['height'].attrs['units'] = 'um'  # type: ignore
                 self.mapxr.coords['height'].attrs['long_name'] = 'height'

@@ -4,14 +4,31 @@ Extracted from ``ramantools/ramantools.py`` during the Phase 1 refactor.
 Public API is unchanged; this file only moves the code.
 """
 import os  # Filename handling for the no-info-file fallback path
-import re  # Regular expressions for parsing metadata
 import copy  # Object copying utilities
 import numpy as np  # type: ignore
 import xarray as xr  # type: ignore
 
-from ._helpers import _NO_INFO_STR, _NO_INFO_NUM
-from ._witec import _parse_witec_datafile_header, _graphname_to_name
-from ._fitting import lorentz2, bgsubtract, peakfit
+# Shared helpers. Same set ``map.py`` imports from the internals, minus
+# the map-only _midpoint (singlespec methods never pick spatial coords).
+from ._helpers import (
+        _NO_INFO_NUM,
+        _as_float,
+        _crr_xarray,
+        _apply_default_common_metadata,
+        _apply_parsed_header,
+        _set_common_xarray_attrs,
+)
+from ._witec import _parse_info_file
+from ._io import _load_witec_datafile
+# bgsubtract is used by remove_bg; _compute_calibshift / _normalize_to_peak
+# are the shared cores for calibrate / normalize; _reject_double_peak
+# centralises the lorentz2 guard shared with map.
+from ._fitting import (
+        bgsubtract,
+        _compute_calibshift,
+        _normalize_to_peak,
+        _reject_double_peak,
+)
 
 class singlespec:
         """
@@ -167,53 +184,29 @@ class singlespec:
                         Only single-peak shape functions are supported (``gaussian``, ``lorentz``).
                         Passing ``func=lorentz2`` raises ``ValueError``.
                 """
-                # Guard against double-peak shapes — see :py:meth:`ramanmap.calibrate`.
-                if kwargs.get('func') is lorentz2:
-                        raise ValueError(
-                                "calibrate() requires a single-peak shape function "
-                                "(use func=gaussian or func=lorentz); lorentz2 is not supported."
-                        )
+                # Guard + validate via the shared helpers.
+                _reject_double_peak(kwargs.get('func'), 'calibrate')
+                peakshift = _as_float('peakshift', peakshift)
+                calibfactor = _as_float('calibfactor', calibfactor)
 
-                # Validate parameters
-                if not isinstance(peakshift, (int, float, np.number)):
-                        raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
-                peakshift = float(peakshift)
+                # Delegate: spec has no spatial coords, so the whole ssxr is
+                # already the 1-D "reference spectrum" the core expects.
+                calibshift = _compute_calibshift(self.ssxr, peakshift, calibfactor, **kwargs)
 
-                if not isinstance(calibfactor, (int, float, np.number)):
-                        raise TypeError(f"calibfactor must be a number, got {type(calibfactor)}")
-                calibfactor = float(calibfactor)
-
-                # if a calibration factor is specified, don't fit just shift the values by calibfactor
-                if calibfactor == 0:
-                        # before fitting crop to the area around the peak
-                        fitrange = [peakshift - 100, peakshift + 100]
-
-                        # if one of the ranges out of bounds with the data
-                        if fitrange[0] < self.ssxr.ramanshift.min().data:
-                                fitrange[0] = self.ssxr.ramanshift.min().data
-                        if fitrange[1] > self.ssxr.ramanshift.max().data:
-                                fitrange[1] = self.ssxr.ramanshift.max().data
-                        # crop the spectrum
-                        spectofit_crop = self.ssxr.sel(ramanshift = slice(fitrange[0], fitrange[1]))
-
-                        # fit to the peak around `peakshift`
-                        fit = peakfit(spectofit_crop, stval = {'x0': peakshift}, **kwargs)
-
-                        # correction factor relative to the expected value: peakshift
-                        calibshift = peakshift - fit['curvefit_coefficients'].sel(param = 'x0').data
-                else:
-                        calibshift = calibfactor
-
-                # create a shallow copy since assign_coords returns a new DataArray
+                # Shallow copy — ramanshift is the only coord that changes.
                 ss_mod = copy.copy(self)
-
-                # shift the ramanshift values by the correction factor in the new singlespec instance
-                ss_mod.ssxr = self.ssxr.assign_coords(ramanshift = self.ssxr['ramanshift'] + calibshift)
-
-                # add to the comments attribute of the new instance if it exists
+                ss_mod.ssxr = self.ssxr.assign_coords(
+                        ramanshift=self.ssxr['ramanshift'] + calibshift
+                )
+                # Note: no trailing space before ``\n`` on the singlespec
+                # comment (map carries a trailing space — keep the divergence
+                # byte-exact so the checksum test passes).
                 if hasattr(ss_mod.ssxr, 'comments'):
-                        ss_mod.ssxr.attrs['comments'] += 'calibrated Raman shift by adding ' + f'{calibshift:.2f}' + ' cm^-1 to the raw ramanshift\n'
-
+                        ss_mod.ssxr.attrs['comments'] += (
+                                'calibrated Raman shift by adding '
+                                + f'{calibshift:.2f}'
+                                + ' cm^-1 to the raw ramanshift\n'
+                        )
                 return ss_mod
 
         def normalize(self, peakshift, **kwargs):
@@ -236,51 +229,35 @@ class singlespec:
                         Only single-peak shape functions are supported (``gaussian``, ``lorentz``).
                         Passing ``func=lorentz2`` raises ``ValueError``.
                 """
-                # Guard against double-peak shapes — see :py:meth:`ramanmap.normalize`.
-                if kwargs.get('func') is lorentz2:
-                        raise ValueError(
-                                "normalize() requires a single-peak shape function "
-                                "(use func=gaussian or func=lorentz); lorentz2 is not supported."
-                        )
+                # Guard + validate.
+                _reject_double_peak(kwargs.get('func'), 'normalize')
+                peakshift = _as_float('peakshift', peakshift)
 
-                # Validate parameters
-                if not isinstance(peakshift, (int, float, np.number)):
-                        raise TypeError(f"peakshift must be a number, got {type(peakshift)}")
-                peakshift = float(peakshift)
+                # Delegate the crop / bg-check / fit / divide to the shared
+                # core. ``ref_coords=None`` + a 1-D DataArray means the core
+                # computes no midpoints (no non-ramanshift dims); mode is
+                # always 'const' for spectra (no per-pixel variant exists).
+                normalized, peakampl, peakpos = _normalize_to_peak(
+                        self.ssxr,
+                        peakshift,
+                        ref_coords=None,
+                        mode='const',
+                        **kwargs,
+                )
+                # Spec comment omits the ``in mode == XXX`` token that map's
+                # version carries. Preserved byte-for-byte for the checksum.
+                normalized.attrs['comments'] += (
+                        'normalized to peak at: '
+                        + f'{peakpos:.2f}'
+                        + ' by a factor of '
+                        + f'{peakampl:.2f}'
+                        + '\n'
+                )
 
-                # crop the data to around the peak specified
-                cropregion = 100
-                cropped = self.ssxr.sel(ramanshift = slice(peakshift - cropregion, peakshift + cropregion))
-                # take the offset value, as the intensity value near the peak edge
-                bgoffset_low = cropped[0].data
-                bgoffset_high = cropped[-1].data
-
-                # check to see of if the background was removed for the spectrum
-                if ((bgoffset_high + bgoffset_low)/2 > 500) or ('background subtracted' not in self.ssxr.attrs['comments']):
-                        raise ValueError("The background was not removed, or the peak selected is not suitable for normalization. This should be done in case of normalizing to a peak amplitude")
-                        return
-
-                # fit to the cropped region
-                fit = peakfit(cropped, stval = {'x0': peakshift, 'offset': (bgoffset_high + bgoffset_low)/2}, **kwargs)
-                peakampl = fit['curvefit_coefficients'].sel(param = 'ampl').data
-                peakpos = fit['curvefit_coefficients'].sel(param = 'x0').data
-
-                # normalize to the peak amplitde
-                normalized = self.ssxr / peakampl
-
-                # copy attributes and change them acccordingly
-                normalized.attrs = self.ssxr.attrs.copy()
-                normalized.attrs['units'] = ' '
-                normalized.attrs['long_name'] = 'normalized Raman intensity'
-                normalized.attrs['comments'] += 'normalized to peak at: ' + f'{peakpos:.2f}' + ' by a factor of ' + f'{peakampl:.2f}' + '\n'
-
-                # copy the singlespec instance lightly and attach normalized data
+                # Lightweight copy and attach normalized data.
                 ss_norm = copy.copy(self)
                 ss_norm.ssxr = normalized.copy()
-
-                # add the normalization factor to the singlespec instance
                 ss_norm.normfactor = peakampl
-
                 return ss_norm
 
         def crr(self, cutoff = 2, window = 2, **kwargs):
@@ -299,26 +276,18 @@ class singlespec:
                         If CRR is not satisfactory, keep reducing the `cutoff` value and compare to the original data.
                 """
 
-                # Use rolling window statistics to estimate local mean and
-                # standard deviation, replacing manual shifts.
-                rolling = self.ssxr.rolling(ramanshift=2*window+1, center=True)
-                local_mean = rolling.mean()
-                local_std = rolling.std()
-
-                # Identify spikes that exceed the local mean by ``cutoff`` standard deviations
-                crrpos = (self.ssxr - local_mean) > (cutoff * local_std)
-
-                # Create a lightweight copy and replace spikes with the local mean
+                # Delegate to the shared rolling-window CRR core.
+                cleaned, n_spikes = _crr_xarray(self.ssxr, cutoff, window)
                 ss_crr = copy.copy(self)
-                ss_crr_data = xr.where(crrpos, local_mean, self.ssxr)
-
-                # Explicitly copy attributes since xr.where may not preserve them
-                ss_crr_data.attrs = self.ssxr.attrs.copy()
-                ss_crr.ssxr = ss_crr_data
-
-                # add comment to attributes
-                ss_crr.ssxr.attrs['comments'] += 'replaced cosmic ray values with local mean at ' + f'{crrpos.sum().data}' + ' Ramanshift coordinates.\n'
-
+                ss_crr.ssxr = cleaned
+                # Spec comment wording differs from map — "Ramanshift
+                # coordinates" here vs. just "coordinates" on the map side.
+                # Preserved byte-for-byte to keep the pipeline checksum happy.
+                ss_crr.ssxr.attrs['comments'] += (
+                        'replaced cosmic ray values with local mean at '
+                        + f'{n_spikes}'
+                        + ' Ramanshift coordinates.\n'
+                )
                 return ss_crr
 
 
@@ -365,23 +334,14 @@ class singlespec:
                 defer — a 1-D spectrum is fully described by the two columns
                 in the data file.
                 """
-                self.metadata = ''
+                # Shared scaffolding (metadata / date / time / sample / laser /
+                # itime / grating / objname / objmagn / positioner_x / _y).
+                _apply_default_common_metadata(self)
                 # Spectrum name derived from the data file's stem; the data
                 # header's GraphName, if present, will overwrite this via
                 # _apply_datafile_header.
                 self.specname = os.path.splitext(os.path.basename(self.filename))[0]
-                self.date = _NO_INFO_STR
-                self.time = _NO_INFO_STR
-                self.samplename = _NO_INFO_STR
-                self.laser = _NO_INFO_NUM
-                self.itime = _NO_INFO_NUM
-                self.grating = _NO_INFO_STR
-                self.objname = _NO_INFO_STR
-                self.objmagn = _NO_INFO_STR
-                # Positioner values: defaults may be overridden by the data
-                # header (PositionX / PositionY / PositionZ).
-                self.positioner_x = _NO_INFO_NUM
-                self.positioner_y = _NO_INFO_NUM
+                # Spec-only extra: the Z positioner coordinate that maps lack.
                 self.positioner_z = _NO_INFO_NUM
 
 
@@ -393,21 +353,19 @@ class singlespec:
                 limited to keys the parser actually finds; missing fields
                 leave sentinels in place.
                 """
+                # Shared parse + setattr iteration. ``name_attr='specname'``
+                # routes the GraphName override to this class's name field.
+                # ``copy_keys`` deliberately excludes pixel_x / pixel_y / size_x
+                # / size_y: spectra ignore those keys even if ``SizeX = SizeY
+                # = 1`` appears in the header.
+                from ._witec import _parse_witec_datafile_header
                 fields = _parse_witec_datafile_header(self.metadata_datafile)
-                # GraphName (if any) becomes the spectrum name — strip the
-                # trailing "--Spec.Data N" suffix for parity with info-file loads.
-                if 'graphname' in fields:
-                        self.specname = _graphname_to_name(fields['graphname'])
-                if 'wipfilename' in fields:
-                        self.wipfilename = fields['wipfilename']
-                # Spectra don't use pixel_x / pixel_y / size_x / size_y even if
-                # SizeX / SizeY = 1 appear in the header — skip those keys.
-                if 'positioner_x' in fields:
-                        self.positioner_x = fields['positioner_x']
-                if 'positioner_y' in fields:
-                        self.positioner_y = fields['positioner_y']
-                if 'positioner_z' in fields:
-                        self.positioner_z = fields['positioner_z']
+                _apply_parsed_header(
+                        self,
+                        fields,
+                        name_attr='specname',
+                        copy_keys=('positioner_x', 'positioner_y', 'positioner_z'),
+                )
 
 
         def _load_info(self, info_path):
@@ -415,106 +373,32 @@ class singlespec:
                 Load the file containing the metadata.
                 The metadata will be filled by searching the info file for various patterns, using regular expressions.
                 """
-                with open(info_path, mode='r', encoding = 'latin1') as infofile:
-                        metadata = infofile.read()
-
-                self.metadata = metadata
-                # find any character up to a newline, show the forst result `[0]`, this will be the name of the map.
-                # Use raw strings: `r` to treat special characters as characters.
-                self.specname = re.findall(r'.*', metadata)[0]
-                # date of measurement
-                self.date = re.findall(r'(?<=Start Date:\t)-?.+', metadata)[0]
-                # time of measurement
-                self.time = re.findall(r'(?<=Start Time:\t)-?.+', metadata)[0]
-                # sample name
-                self.samplename = re.findall(r'(?<=Sample Name:\t).*', metadata)[0] # new regex to match also no characters after sample name
-                # laser energy
-                self.laser = float(re.findall(r'(?<=Excitation Wavelength \[nm\]:\t)-?.+', metadata)[0])
-                # integration time
-                self.itime = float(re.findall(r'(?<=Integration Time \[s\]:\t)-?.+', metadata)[0])
-                # grating
-                self.grating = re.findall(r'(?<=Grating:\t)-?.+', metadata)[0]
-                # objective name and magnification
-                self.objname = re.findall('(?<=Objective Name:\t)-?.+', metadata)[0]
-                self.objmagn = re.findall('(?<=Objective Magnification:\t)-?.+', metadata)[0]
-                # positioner position
-                self.positioner_x = float(re.findall(r'(?<=Position X \[µm\]:\t)-?.+', metadata)[0])
-                self.positioner_y = float(re.findall(r'(?<=Position Y \[µm\]:\t)-?.+', metadata)[0])
-                self.positioner_z = float(re.findall(r'(?<=Position Z \[µm\]:\t)-?.+', metadata)[0])
-
-                return metadata
+                # Shared parser returns raw text + a {attr: value} dict.
+                # ``is_map=False`` swaps the four map-only pixel / scan keys
+                # for the single spec-only ``positioner_z`` key.
+                self.metadata, fields = _parse_info_file(info_path, is_map=False)
+                self.specname = fields.pop('name')
+                for attr, value in fields.items():
+                        setattr(self, attr, value)
+                return self.metadata
 
         def _load_singlespec(self, spec_path):
                 """
                 Load the Raman map data into a numpy array.
                 """
-
-                # Load the first part of the file to search for metadata
-                with open(spec_path, 'r', encoding='latin1') as file:
-                        lines = []
-                        for _ in range(40): # start reading the first 40 lines
-                                line = file.readline()
-                                if not line:  # stop if end of file is reached
-                                        break
-                                lines.append(line.strip())
-                
-                # define a regular expression to search for the start of the data. It looks for any number, followed by a dot, with more numbers after, then any character and a tab or space and more numbers
-                data_pattern = r'(\d+\.\d+.+[\t ]+)+'
-                # initialize lineskip parameter
-                toskip = 0
-                # Check each line for a match
-                for idx, line in enumerate(lines, start=0):
-                        if re.search(data_pattern, line):
-                                toskip = idx
-                                break  # Stop after finding the first match
-
-                # save datafile metadata
-                if toskip == 0:
-                        # there is no header
-                        self.wipfilename = spec_path
-                        self.metadata_datafile = ''
-                else:
-                        # add the data metadata to a class variable
-                        with open(spec_path, 'r', encoding = 'latin1') as file:
-                                lines = [next(file).strip() for _ in range(toskip)]
-                                self.metadata_datafile = '\n'.join(lines)
-                        # See :py:meth:`ramanmap._load_map` for rationale on
-                        # ``[ \t]*`` and the ``if matches`` fallback — newer
-                        # v7 Witec exports emit an empty ``FileName =`` line.
-                        matches = re.findall(r'FileName =[ \t]*(.*?)(?:\n|$)', self.metadata_datafile)
-                        self.wipfilename = matches[0] if matches else ''
-
-                # # Check to see if metadata are present in the data file
-                # with open(spec_path, 'r', encoding = 'latin1') as file:
-                #         lines = [next(file).strip() for _ in range(2)]
-                
-                # if 'Header' in lines[1]:
-                #         # we have a header
-                #         # load additional metadata from the data file itself, ie the first 19 lines we have skipped.
-                #         with open(spec_path, 'r', encoding = 'latin1') as file:
-                #                 lines = [next(file).strip() for _ in range(17)]
-                #                 self.metadata_datafile = '\n'.join(lines)
-                #         # need to skip the header when loading
-                #         toskip = 17
-
-                #         # extract the WIP filename
-                #         self.wipfilename = re.findall(r'FileName = (.*?)(?:\n|$)', self.metadata_datafile)[0]
-                # else:
-                #         # there is no header
-                #         toskip = 0
-                #         self.wipfilename = spec_path
-                
+                # One call owns header detection, metadata capture, FileName
+                # extraction, and np.loadtxt — same shared loader map.py uses.
+                _, self.metadata_datafile, self.wipfilename, ss = _load_witec_datafile(spec_path)
                 # When no info file was supplied, the data-file header (if any)
                 # is our only source for extra metadata such as PositionX/Y/Z.
                 # A spectrum with no header still loads fine — the parser just
                 # returns an empty dict and sentinels remain in place.
                 if not self._info_loaded:
                         self._apply_datafile_header()
-                # Load the data
-                ss = np.loadtxt(spec_path, skiprows = toskip, encoding = 'latin1')
+                # Spec is a plain two-column table: ramanshift in col 0,
+                # counts in col 1. No reshape needed.
                 self.ramanshift = ss[:, 0]
                 self.counts = ss[:, 1]
-
                 return self.ramanshift, self.counts
 
         def _toxarray(self):
@@ -523,36 +407,18 @@ class singlespec:
                 """
                 self.ssxr = xr.DataArray(
                         self.counts,
-                        dims = ['ramanshift'],
-                        coords = {'ramanshift': self.ramanshift})
-                
+                        dims=['ramanshift'],
+                        coords={'ramanshift': self.ramanshift},
+                )
                 # Comment text flags whether metadata came from an info file
                 # or from the data-file header / defaults.
                 if self._info_loaded:
                         self.ssxr.attrs['comments'] = 'raw data loaded \n'
                 else:
                         self.ssxr.attrs['comments'] = 'raw data loaded (no info file; metadata from data header) \n'
-                # adding attributes
-                self.ssxr.name = 'Raman intensity' # this is needed if used with hvplot
-                self.ssxr.attrs['wipfile name'] = self.wipfilename
-                self.ssxr.attrs['units'] = 'au'
-                self.ssxr.attrs['long_name'] = 'Raman intensity'
-                self.ssxr.attrs['sample name'] = self.samplename
-                self.ssxr.attrs['laser excitation'] = str(self.laser) + ' nm'
-                self.ssxr.attrs['time of measurement'] = self.time
-                self.ssxr.attrs['date of measurement'] = self.date
-                self.ssxr.attrs['integration time'] = str(self.itime) + ' s'
-                self.ssxr.attrs['sample positioner X'] = self.positioner_x
-                self.ssxr.attrs['sample positioner Y'] = self.positioner_y
+                # Shared attribute population — same block map.py uses. The
+                # helper includes ramanshift coord units / long_name so they
+                # don't need to be set twice.
+                _set_common_xarray_attrs(self.ssxr, self, self._info_loaded)
+                # Spec-only extra: Z positioner coordinate (maps don't carry it).
                 self.ssxr.attrs['sample positioner Z'] = self.positioner_z
-                self.ssxr.attrs['objective name'] = self.objname
-                # Only append the 'x' multiplier when a real magnification
-                # value is present — avoids awkward 'N/Ax' in the no-info path.
-                if self._info_loaded:
-                        self.ssxr.attrs['objective magnification'] = self.objmagn + 'x'
-                else:
-                        self.ssxr.attrs['objective magnification'] = self.objmagn
-                self.ssxr.attrs['grating'] = self.grating
-                # coordinate attributes
-                self.ssxr.coords['ramanshift'].attrs['units'] = r'1/cm'
-                self.ssxr.coords['ramanshift'].attrs['long_name'] = 'Raman shift'

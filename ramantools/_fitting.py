@@ -15,6 +15,183 @@ from scipy.signal import find_peaks  # type: ignore
 # spectrum for plotting when no explicit width/height is given.
 from ._helpers import _midpoint
 
+
+def _compute_calibshift(spec_1d, peakshift: float, calibfactor: float, **kwargs) -> float:
+        """Compute the calibration shift for a target peak.
+
+        Shared core of ``ramanmap.calibrate`` and ``singlespec.calibrate``.
+        Given a 1-D Raman spectrum ``spec_1d`` (an xarray DataArray with a
+        ``ramanshift`` coord), figures out how much to shift the
+        ``ramanshift`` axis so the peak near ``peakshift`` lands exactly at
+        ``peakshift``.
+
+        Algorithm (unchanged from pre-refactor):
+          * If ``calibfactor != 0`` the caller already knows the shift —
+            return it verbatim and skip the fit.
+          * Otherwise crop the spectrum to ±100 cm⁻¹ around ``peakshift``,
+            fit a peak there, and return ``peakshift - fitted_x0``.
+
+        ``**kwargs`` flow through to ``peakfit``, matching the original
+        user-facing signatures.
+        """
+        if calibfactor != 0:
+                # Caller supplied the shift directly — no fit needed.
+                return calibfactor
+        # Crop to a generous ±100 cm⁻¹ window so the peak fit has enough
+        # baseline on either side; clip to actual data bounds so ``sel``
+        # doesn't return an empty slice at the spectrum edges.
+        fitrange = [peakshift - 100, peakshift + 100]
+        if fitrange[0] < spec_1d.ramanshift.min().data:
+                fitrange[0] = spec_1d.ramanshift.min().data
+        if fitrange[1] > spec_1d.ramanshift.max().data:
+                fitrange[1] = spec_1d.ramanshift.max().data
+        spectofit_crop = spec_1d.sel(ramanshift=slice(fitrange[0], fitrange[1]))
+        fit = peakfit(spectofit_crop, stval={'x0': peakshift}, **kwargs)
+        # correction factor relative to the expected value: peakshift
+        return peakshift - fit['curvefit_coefficients'].sel(param='x0').data
+
+
+def _normalize_to_peak(whole_da, peakshift: float, ref_coords=None, mode: str = 'const', **kwargs):
+        """Normalize ``whole_da`` to the amplitude of a peak near ``peakshift``.
+
+        Shared core of ``ramanmap.normalize`` and ``singlespec.normalize``.
+        Returns ``(normalized_da, peakampl, peakpos)`` — the caller is
+        responsible for wrapping the result into a new instance and
+        appending its class-specific comment line.
+
+        Parameters
+        ----------
+        whole_da
+            Full DataArray (map or spec) to be normalized. Its ``.attrs['comments']``
+            must mention ``'background subtracted'``; otherwise the
+            consistency check below raises.
+        peakshift
+            Rough position of the reference peak in cm⁻¹.
+        ref_coords
+            Optional dict of non-ramanshift coordinate selections (e.g.
+            ``{'width': 5.0, 'height': 3.0}``) identifying the reference
+            spectrum for the ``'const'`` fit. When ``None`` the midpoint
+            of each non-ramanshift dim is used. For 1-D spectra the dict
+            is naturally empty and ``ref_cropped`` becomes the whole
+            cropped array.
+        mode
+            ``'const'`` fits only the reference spectrum (scalar
+            ``peakampl``); ``'individual'`` fits per-pixel over the
+            cropped region (``peakampl`` becomes a 2-D DataArray).
+
+        Raises
+        ------
+        ValueError
+            If the background was not subtracted before calling
+            ``normalize`` or the selected peak is too close to the
+            baseline to normalize against.
+        """
+        # Crop to ±100 cm⁻¹ around the peak. The ±100 window is the same
+        # magic number the original code used; Phase 3 will factor it out.
+        cropregion = 100
+        cropped = whole_da.sel(ramanshift=slice(peakshift - cropregion, peakshift + cropregion))
+
+        # Determine reference coordinates. For maps we want the midpoint
+        # of (width, height); for spectra there are no extra dims so the
+        # dict is empty (and ``.sel(**{}) == no-op``).
+        if ref_coords is None:
+                ref_coords = {}
+                for dim in whole_da.dims:
+                        if dim == 'ramanshift':
+                                continue
+                        ref_coords[dim] = _midpoint(whole_da.coords[dim].data)
+
+        # Reference (1-D) cropped spectrum for the bg sanity check and the
+        # 'const'-mode fit. ``method='nearest'`` matches the pre-refactor
+        # behaviour so float-coordinate selections don't raise KeyError.
+        if ref_coords:
+                ref_cropped = cropped.sel(**ref_coords, method='nearest')
+        else:
+                ref_cropped = cropped
+
+        # take the offset value, as the intensity value near the peak edge
+        bgoffset_low = ref_cropped[0].data
+        bgoffset_high = ref_cropped[-1].data
+
+        # Sanity check: if the spectrum baseline is high (>500) or the
+        # 'background subtracted' marker is absent from the processing
+        # history, refuse to normalize. Same message + thresholds as the
+        # original code so upstream error-matching tests still pass.
+        if ((bgoffset_high + bgoffset_low) / 2 > 500) or ('background subtracted' not in whole_da.attrs['comments']):
+                raise ValueError(
+                        "The background was not removed, or the peak selected is not suitable "
+                        "for normalization. This should be done in case of normalizing to a peak amplitude"
+                )
+
+        # Starting-value for the offset parameter: midway between the two
+        # endpoint values of the cropped spectrum.
+        offset_start = (bgoffset_high + bgoffset_low) / 2
+
+        if mode == 'const':
+                # Fit only the reference spectrum — yields scalar peakampl / peakpos.
+                fit = peakfit(
+                        ref_cropped,
+                        stval={'x0': peakshift, 'offset': offset_start},
+                        **kwargs,
+                )
+                peakampl = fit['curvefit_coefficients'].sel(param='ampl').data
+                peakpos = fit['curvefit_coefficients'].sel(param='x0').data
+        elif mode == 'individual':
+                # Per-pixel fit across the map — peakampl becomes a DataArray
+                # over the non-ramanshift dims. peakpos is still captured as a
+                # scalar (at the reference coords) for the comment line,
+                # preserving the original behaviour in ``ramanmap.normalize``.
+                fit = peakfit(
+                        cropped,
+                        stval={'x0': peakshift, 'offset': offset_start},
+                        **kwargs,
+                )
+                peakampl = fit['curvefit_coefficients'].sel(param='ampl').data
+                # Note: no ``method='nearest'`` here — matches the pre-refactor
+                # behaviour which required an exact-match selection.
+                peakpos = fit['curvefit_coefficients'].sel(param='x0').sel(**ref_coords).data
+        else:
+                # _require_mode is the normal guard path in the class methods;
+                # keeping this branch defensive so direct callers also fail loudly.
+                raise ValueError("`mode` parameter must be either: 'const' or 'individual'")
+
+        # Divide through by the amplitude. ``peakampl`` broadcasts naturally
+        # over the map dims thanks to xarray's alignment rules.
+        normalized = whole_da / peakampl
+        normalized.attrs = whole_da.attrs.copy()
+        normalized.attrs['units'] = ' '
+        normalized.attrs['long_name'] = 'normalized Raman intensity'
+
+        return normalized, peakampl, peakpos
+
+
+def _reject_double_peak(func, method_name: str) -> None:
+        """Raise ``ValueError`` if ``func`` is the double-peak shape.
+
+        ``calibrate`` and ``normalize`` both hardcode ``.sel(param='x0')``
+        (and, for normalize, ``.sel(param='ampl')``) on fit results. When
+        ``func=lorentz2`` is supplied the parameter names become
+        ``x01``/``x02`` / ``ampl1``/``ampl2`` and those selections fail
+        deep inside xarray with a confusing KeyError.
+
+        The guard was inlined in four places before the refactor — all
+        with identical wording. Centralizing both the check and the
+        message here preserves byte-level error parity while removing the
+        duplication.
+
+        Lives in ``_fitting.py`` (alongside ``lorentz2`` itself) rather
+        than in ``_helpers.py`` to avoid a ``_helpers → _fitting`` circular
+        import. Callers in map / spec import this function directly.
+        """
+        # ``is`` identity instead of ``==`` because ``lorentz2`` is compared
+        # against a callable; function objects are singletons.
+        if func is lorentz2:
+                raise ValueError(
+                        f"{method_name}() requires a single-peak shape function "
+                        "(use func=gaussian or func=lorentz); lorentz2 is not supported."
+                )
+
+
 def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 0):
         """Gaussian function. Width and amplitude parameters have the same meaning as for :func:`lorentz`.
 

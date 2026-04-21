@@ -105,3 +105,81 @@ def _graphname_to_name(graphname: str) -> str:
         """
         # Remove the trailing "--Spec.Data <N>" token plus any trailing whitespace.
         return re.sub(r'--Spec\.Data\s*\d+\s*$', '', graphname).strip()
+
+
+# ---------------------------------------------------------------------------
+# Info-file ("metadata file") parsing
+# ---------------------------------------------------------------------------
+
+# Tuples of ``(attribute_name, regex, cast)`` describing the fields the
+# per-class ``_load_info`` used to extract with inline regexes. Factoring
+# the regexes into a table lets both classes share a single parser while
+# still controlling which subset of fields they want.
+#
+# The regexes match the pre-refactor inline patterns verbatim — any drift
+# here would show up as a pipeline-checksum mismatch via the safety-net
+# tests, but we also rely on behavioural identity (e.g. `.[0]` raising
+# IndexError for missing fields) to preserve the loud failure mode.
+_INFO_FILE_COMMON = [
+        ('date',          r'(?<=Start Date:\t)-?.+',                          str),
+        ('time',          r'(?<=Start Time:\t)-?.+',                          str),
+        # Sample Name uses ``.*`` rather than ``.+`` so an empty value
+        # (trailing tab with no text) still matches — legacy behaviour.
+        ('samplename',    r'(?<=Sample Name:\t).*',                           str),
+        ('laser',         r'(?<=Excitation Wavelength \[nm\]:\t)-?.+',         float),
+        ('itime',         r'(?<=Integration Time \[s\]:\t)-?.+',              float),
+        ('grating',       r'(?<=Grating:\t)-?.+',                             str),
+        # These two kept as raw (no r-prefix) because the original code did
+        # the same; changing it could alter regex semantics in edge cases.
+        ('objname',       '(?<=Objective Name:\t)-?.+',                       str),
+        ('objmagn',       '(?<=Objective Magnification:\t)-?.+',              str),
+        ('positioner_x',  r'(?<=Position X \[µm\]:\t)-?.+',                    float),
+        ('positioner_y',  r'(?<=Position Y \[µm\]:\t)-?.+',                    float),
+]
+
+# Map-only fields: pixel counts + physical scan dimensions.
+_INFO_FILE_MAP_ONLY = [
+        ('pixel_x',  r'(?<=Points per Line:\t)-?\d+',          int),
+        ('pixel_y',  r'(?<=Lines per Image:\t)-?\d+',          int),
+        ('size_x',   r'(?<=Scan Width \[µm\]:\t)-?\d+\.\d+',    float),
+        ('size_y',   r'(?<=Scan Height \[µm\]:\t)-?\d+\.\d+',   float),
+]
+
+# Spec-only field: the Z positioner coordinate that maps don't carry.
+_INFO_FILE_SPEC_ONLY = [
+        ('positioner_z', r'(?<=Position Z \[µm\]:\t)-?.+', float),
+]
+
+
+def _parse_info_file(info_path: str, *, is_map: bool):
+        """Load and parse a Witec info (metadata) file.
+
+        Returns ``(raw_text, fields)`` where ``fields`` is a dict keyed by
+        the attribute the class will assign to — e.g. ``'laser'``,
+        ``'pixel_x'``, ``'positioner_z'`` — plus a special ``'name'`` key
+        holding the first line of the file (the map / spec name).
+
+        Set ``is_map=True`` to include the pixel / scan-dimension fields;
+        ``is_map=False`` swaps in ``positioner_z`` instead. Matches the
+        pre-refactor inline regex bodies exactly so the pipeline-checksum
+        safety net stays green.
+
+        Missing required fields still raise ``IndexError`` — the same loud
+        failure mode the original inline ``re.findall(...)[0]`` produced.
+        """
+        # latin1 encoding handles the µm symbol that appears in the
+        # "Position X [µm]" / "Scan Width [µm]" header lines.
+        with open(info_path, mode='r', encoding='latin1') as infofile:
+                text = infofile.read()
+
+        # First line is always the instance name (mapname / specname).
+        # ``re.findall(r'.*', ...)[0]`` matches the original behaviour,
+        # including the fact that it stops at the first newline.
+        fields = {'name': re.findall(r'.*', text)[0]}
+        table = _INFO_FILE_COMMON + (_INFO_FILE_MAP_ONLY if is_map else _INFO_FILE_SPEC_ONLY)
+        for attr, pattern, cast in table:
+                # ``[0]`` preserves the legacy "IndexError if the key is
+                # missing" failure behaviour — no silent fallback to a
+                # sentinel when the info file is present but malformed.
+                fields[attr] = cast(re.findall(pattern, text)[0])
+        return text, fields
