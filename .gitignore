@@ -1,5 +1,9 @@
 *.ipynb
 /test-data/*
-ramantools/__pycache__/*
+# Python bytecode caches — ignore wherever they appear (not just ramantools/).
+__pycache__/
+*.pyc
+# macOS Finder metadata — ignore at any depth in the tree.
+.DS_Store
 .vscode/*
 CLAUDE.md
