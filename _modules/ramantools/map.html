@@ -1,0 +1,840 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ramantools.map &mdash; Ramantools 2023 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=a4664895"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ramantools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#examples">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ramantools.html">ramantools package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">ramantools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ramantools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ramantools.map</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ramantools.map</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;The ``ramanmap`` container class.</span>
+
+<span class="sd">Extracted from ``ramantools/ramantools.py`` during the Phase 1 refactor.</span>
+<span class="sd">The public API (class name, attributes, method signatures, return shapes)</span>
+<span class="sd">is unchanged; this file only moves the code, it does not modify it.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># Defer annotation evaluation so ``X | None`` and forward references (e.g.</span>
+<span class="c1"># ``-&gt; ramanmap`` inside its own class body) work without runtime cost or</span>
+<span class="c1"># Python-version gymnastics.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>  <span class="c1"># Filename handling for the no-info-file fallback path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>  <span class="c1"># Object copying utilities</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>  <span class="c1"># type: ignore</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>  <span class="c1"># type: ignore</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>  <span class="c1"># type: ignore</span>
+
+<span class="c1"># Shared helpers (dedup core extracted during Phase 1.2 of the refactor).</span>
+<span class="c1"># ``_apply_default_common_metadata`` / ``_apply_parsed_header`` /</span>
+<span class="c1"># ``_set_common_xarray_attrs`` fold the metadata-scaffolding that used to</span>
+<span class="c1"># be copy-pasted between map and spec; ``_crr_xarray`` is the rolling-</span>
+<span class="c1"># window CRR core; ``_as_float`` / ``_require_mode`` are the validator</span>
+<span class="c1"># helpers.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._helpers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">_midpoint</span><span class="p">,</span>
+        <span class="n">_as_float</span><span class="p">,</span>
+        <span class="n">_require_mode</span><span class="p">,</span>
+        <span class="n">_crr_xarray</span><span class="p">,</span>
+        <span class="n">_apply_default_common_metadata</span><span class="p">,</span>
+        <span class="n">_apply_parsed_header</span><span class="p">,</span>
+        <span class="n">_set_common_xarray_attrs</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._witec</span><span class="w"> </span><span class="kn">import</span> <span class="n">_parse_info_file</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._io</span><span class="w"> </span><span class="kn">import</span> <span class="n">_load_witec_datafile</span>
+<span class="c1"># Named thresholds previously spelled as magic numbers in peakmask.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">PEAKMASK_VICINITY_FACTOR</span>
+<span class="c1"># bgsubtract + peakfit are used by remove_bg / peakmask.</span>
+<span class="c1"># _compute_calibshift / _normalize_to_peak are the shared algorithm</span>
+<span class="c1"># cores for calibrate / normalize. _reject_double_peak replaces the</span>
+<span class="c1"># four inlined lorentz2 guards in calibrate + normalize.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._fitting</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">bgsubtract</span><span class="p">,</span>
+        <span class="n">peakfit</span><span class="p">,</span>
+        <span class="n">_compute_calibshift</span><span class="p">,</span>
+        <span class="n">_normalize_to_peak</span><span class="p">,</span>
+        <span class="n">_reject_double_peak</span><span class="p">,</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="ramanmap">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ramanmap</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Container for Raman maps, imported from a text file.</span>
+<span class="sd">        The text file needs to be exported as a “table” from Witec Project or Witec Control.</span>
+<span class="sd">        Additional info also needs to be exported, containing the metadata for the measurement.</span>
+<span class="sd">        This is the text next to the map data in the Witec software.</span>
+
+<span class="sd">        :return: object containing the data and metadata</span>
+<span class="sd">        :rtype: :class:`ramanmap` instance</span>
+
+<span class="sd">        :param map_path: Path to the text file, containing the Raman map, exported from Witec</span>
+<span class="sd">        :type map_path: str</span>
+<span class="sd">        :param info_path: Path to the info file, containing the metadata, exported from Witec.</span>
+<span class="sd">                Optional — when omitted (``None``), metadata is populated from the data file&#39;s</span>
+<span class="sd">                own ``[Header]`` block. The parser recognizes both the Witec Project v5</span>
+<span class="sd">                &quot;old table export&quot; format (``FileName`` carries the source ``.wip`` path) and</span>
+<span class="sd">                the v7 &quot;new table export&quot; format (``FileName =`` is left empty); the keys</span>
+<span class="sd">                ``SizeX`` / ``SizeY`` (pixel counts), ``ScanWidth`` / ``ScanHeight`` (physical</span>
+<span class="sd">                size), ``ScanOriginX`` / ``Y`` and ``GraphName`` are identical between the two.</span>
+<span class="sd">                Fields not present in the header fall back to ``&#39;N/A&#39;`` (strings) or</span>
+<span class="sd">                ``NaN`` (numerics). If the data file has no ``[Header]`` block either,</span>
+<span class="sd">                constructing the map fails with a clear error because pixel dimensions</span>
+<span class="sd">                cannot be inferred.</span>
+<span class="sd">        :type info_path: str, optional</span>
+
+<span class="sd">        Most important variables of the :class:`ramanmap` instance:</span>
+
+<span class="sd">        :var mapxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata</span>
+<span class="sd">        :var map: (type :py:mod:`numpy` array) Raman intensity values</span>
+<span class="sd">        :var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`</span>
+<span class="sd">        :var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It&#39;s only available if :py:meth:`singlespec.remove_bg` or :py:meth:`ramanmap.remove_bg` is called.</span>
+<span class="sd">        :var samplename: (type: str) name of the sample, as shown in the Witec software.</span>
+<span class="sd">        :var mapname: (type: str) contains the name of the Raman map, as shown in the Witec software.</span>
+
+<span class="sd">        For a compete list see example below.</span>
+
+<span class="sd">        :Example:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">                import ramantools as rt</span>
+
+<span class="sd">                map_path = r&#39;data path on you machine&#39;</span>
+<span class="sd">                info_path = r&#39;metadata path on your machine&#39;</span>
+<span class="sd">                # use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+
+<span class="sd">                map = rt.ramanmap(map_path, info_path)</span>
+<span class="sd">                # list of the variables stored in the `ramanmap` instance</span>
+<span class="sd">                print(list(map.__dict__))</span>
+
+<span class="sd">                # Load without a metadata file — the data file&#39;s [Header]</span>
+<span class="sd">                # block supplies pixel_x / pixel_y / size_x / size_y:</span>
+<span class="sd">                map_noinfo = rt.ramanmap(map_path)</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ramanmap.history">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.history">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Display the notes accumulated in the &#39;comments&#39; attribute of the :class:`ramanmap.mapxr` `xarray` variable.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Data modification history:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ramanmap.print_metadata">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.print_metadata">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                Prints the metadata of the :class:`ramanmap` instance, imported from the info file.</span>
+
+<span class="sd">                :return: none</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Comments of the `xarray` DataArray </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;------------------&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ramanmap.plotspec">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.plotspec">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">plotspec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">shift</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.</span>
+<span class="sd">                Needs width and height coordinates for the single spectrum and the Raman shift where we want to plot the Raman intensity in the map.</span>
+<span class="sd">                </span>
+<span class="sd">                :return: none</span>
+
+<span class="sd">                :param width: &#39;width&#39; coordinate in um, from :class:`ramanmap.mapxr`</span>
+<span class="sd">                :type width: float</span>
+<span class="sd">                :param height: &#39;height&#39; coordinate in um, from :class:`ramanmap.mapxr`</span>
+<span class="sd">                :type height: float</span>
+<span class="sd">                :param shift: &#39;ramanshift&#39; coordinate in um, from :class:`ramanmap.mapxr`</span>
+<span class="sd">                :type shift: float</span>
+
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="n">spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">height</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+                <span class="n">ramanintensity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">shift</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
+                <span class="c1"># Creating two subplots; the figure handle is intentionally</span>
+                <span class="c1"># discarded (&quot;_&quot; variable) because it is not used later.</span>
+                <span class="n">_</span><span class="p">,</span> <span class="p">[</span><span class="n">ax0</span><span class="p">,</span> <span class="n">ax1</span><span class="p">]</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+                <span class="c1"># plotting the density plot of the 2D peak area ratio</span>
+                <span class="n">ramanintensity</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                        <span class="n">ax</span> <span class="o">=</span> <span class="n">ax0</span><span class="p">,</span>
+                        <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;plasma&#39;</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+                <span class="c1"># plotting the spectrum at the given coordinates on the right plot</span>
+                <span class="n">spec</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;lime&#39;</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+                <span class="c1"># plotting a dot on the density map, where the selected spectrum was measured</span>
+                <span class="n">ax0</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+                        <span class="n">spec</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                        <span class="n">spec</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                        <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;lime&#39;</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">&#39;x&#39;</span><span class="p">)</span>
+                <span class="n">ax0</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s1">&#39;equal&#39;</span><span class="p">,</span> <span class="s1">&#39;box&#39;</span><span class="p">)</span>
+                <span class="n">ax0</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">set_size</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>  <span class="c1"># Adjust subplot spacing for readability</span></div>
+
+
+<div class="viewcode-block" id="ramanmap.remove_bg">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.remove_bg">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Remove the background of Raman maps.</span>
+<span class="sd">                It takes the same optional arguments as :func:`bgsubtract`.</span>
+<span class="sd">                Default fit function is a first order polynomial. This can be changed by the ``polyorder`` parameter.</span>
+
+<span class="sd">                There are several modes of background fitting, as a function of the optional variables: ``mode`` and ``fitmask``:</span>
+<span class="sd">                </span>
+<span class="sd">                * ``mode`` = `&#39;const&#39;`: (this is the default) Subtracts the same background from all spectra in the map. The background is determined by either a fitmask calculated by :func:`bgsubtract` or passed to the method using the ``fitmask`` parameter. Additionally, a ``height`` and ``width`` parameter can be passed in which case, the spectrum at those coordinates is used to determine the background. If a fitmask is supplied, it is used instead of the coordinates.</span>
+<span class="sd">                * ``mode`` = `&#39;individual&#39;`: An individual background is subtracted from all spectra.</span>
+
+<span class="sd">                        * If ``fitmask`` = `None`, :func:`bgsubtract` does a peak search for each Raman spectrum and the fitmask is determined based on the parameters passed to :func:`bgsubtract`.</span>
+<span class="sd">                        * If a ``fitmask`` is passed to :py:meth:`~ramanmap.remove_bg`, :func:`bgsubtract` only does the polynomial fit.</span>
+
+<span class="sd">                :param mode: Values can be: `&#39;const&#39;`, `&#39;individual&#39;`</span>
+<span class="sd">                :type mode: str, optional, default: `&#39;const&#39;`</span>
+<span class="sd">                :param fitmask: fitmask as returned by :func:`bgsubtract` or as contained in the `singlespec.mask` variable of the :class:`singlespec` class, or in :class:`ramanmap`</span>
+<span class="sd">                :type fitmask: :py:mod:`numpy` array, optional</span>
+<span class="sd">                :param height: height coordinate of the :class:`ramanmap.mapxr` `xarray`</span>
+<span class="sd">                :type height: float, optional</span>
+<span class="sd">                :param width: width coordinate of the :class:`ramanmap.mapxr` `xarray`</span>
+<span class="sd">                :type width: float, optional</span>
+<span class="sd">                </span>
+<span class="sd">                :return:</span>
+<span class="sd">                        </span>
+<span class="sd">                        * ``map_mod``: new :class:`ramanmap` instance, containing the data with background removed.</span>
+<span class="sd">                        * ``coeff``: the coefficients and</span>
+<span class="sd">                        * ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.</span>
+<span class="sd">                </span>
+<span class="sd">                :rtype: tuple: (:class:`ramanmap`, :py:mod:`numpy`, :py:mod:`numpy`)</span>
+
+<span class="sd">                .. note::</span>
+<span class="sd">                        If the peaks and background are complicated, it is advised to test the background fit, by selecting the most difficult spectrum from the map and tweaking the fit parameters directly, using :func:`bgsubtract`.</span>
+
+<span class="sd">                        Metadata is copied over to the returned :class:`ramanmap` instance, because there are no unit changes, in removing the background.</span>
+<span class="sd">                        After running, the &#39;comments&#39; attribute of the new `xarray` instance is updated with the background fit information.</span>
+
+<span class="sd">                .. seealso::</span>
+<span class="sd">                        ``mode = &#39;individual&#39;`` is not implemented yet.</span>
+
+<span class="sd">                :Example:</span>
+<span class="sd">                </span>
+<span class="sd">                .. code-block:: python</span>
+
+<span class="sd">                        import ramantools as rt</span>
+
+<span class="sd">                        spec_path = r&#39;data path on you machine&#39;</span>
+<span class="sd">                        info_path = r&#39;metadata path on your machine&#39;</span>
+<span class="sd">                        # use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+
+<span class="sd">                        # Loading a single spectrum from files</span>
+<span class="sd">                        m = rt.ramanmap(spec_path, info_path)</span>
+
+<span class="sd">                        # create a new `ramanmap` instance `new_m`, with the background removed</span>
+<span class="sd">                        new_m, coeff, covar = m.remove_bg(fitmask = mask, toplot = True)</span>
+<span class="sd">                        # plot the spectrum in the middle of the map</span>
+<span class="sd">                        new_m.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = &#39;nearest&#39;).plot()</span>
+
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Validate optional parameters. Centralized helpers replace</span>
+                <span class="c1"># the four near-identical inline isinstance blocks the</span>
+                <span class="c1"># pre-refactor code carried.</span>
+                <span class="n">_require_mode</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="s1">&#39;individual&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">fitmask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="c1"># fitmask stays inline because it accepts list/ndarray</span>
+                        <span class="c1"># (not scalar) and needs a dtype=bool cast — no other</span>
+                        <span class="c1"># caller in the package duplicates this idiom.</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fitmask</span><span class="p">,</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+                                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;fitmask must be a numpy array or list, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">fitmask</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                        <span class="n">fitmask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">fitmask</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="c1"># create a lightweight copy of the instance; we avoid deepcopy to</span>
+                <span class="c1"># reduce memory churn and instead copy only the data array below</span>
+                <span class="n">map_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+                <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;const&#39;</span><span class="p">:</span>
+                        <span class="c1"># Remove the same background for all spectra in the map</span>
+                        <span class="c1"># Set the spectra selected for background fitting</span>
+                        <span class="n">middle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
+                        <span class="c1"># check if width and height are specified</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">height</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+                                <span class="n">spectofit</span> <span class="o">=</span> <span class="n">middle</span>
+                        <span class="k">else</span><span class="p">:</span>
+                                <span class="n">spectofit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">height</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
+                        <span class="c1"># check for fitmask</span>
+                        <span class="k">if</span> <span class="n">fitmask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="c1"># take the spectrum at the middle of the map and fit the background</span>
+                                <span class="n">spectofit</span> <span class="o">=</span> <span class="n">middle</span>
+                                <span class="n">_</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">spectofit</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">spectofit</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                                <span class="c1"># add the mask to the new `ramanmap` instance</span>
+                                <span class="n">map_mod</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
+                        <span class="k">else</span><span class="p">:</span>
+                                <span class="n">map_mod</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">fitmask</span>
+                                <span class="n">_</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">spectofit</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">spectofit</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="n">map_mod</span><span class="o">.</span><span class="n">mask</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+                        <span class="c1"># extending bg_values to have two more axes, to allow adding to bg</span>
+                        <span class="n">bg_values</span> <span class="o">=</span> <span class="n">bg_values</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+                        <span class="c1"># subtract these along the ramanshift dimension of bg</span>
+                        <span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="p">[:]</span> <span class="o">-=</span> <span class="n">bg_values</span>
+                        <span class="c1"># update the comments attribute if it exists</span>
+                        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
+                                <span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted - mode == const, background fit: middle spectrum </span><span class="se">\n</span><span class="s1">&#39;</span>
+
+                <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;individual&#39;</span><span class="p">:</span>
+                        <span class="c1"># TODO(future): implement per-pixel background subtraction.</span>
+                        <span class="c1"># Intended behavior: fit a polynomial to each (width, height)</span>
+                        <span class="c1"># spectrum independently — likely via xr.apply_ufunc for speed.</span>
+                        <span class="c1"># Raising loudly (instead of printing and returning an</span>
+                        <span class="c1"># unmodified map with coeff=0, covar=0) prevents silent</span>
+                        <span class="c1"># data-corruption bugs where callers believe the background</span>
+                        <span class="c1"># was removed but it wasn&#39;t.</span>
+                        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                                <span class="s2">&quot;remove_bg(mode=&#39;individual&#39;) is not implemented yet — &quot;</span>
+                                <span class="s2">&quot;use mode=&#39;const&#39; or supply a pre-computed fitmask.&quot;</span>
+                        <span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">coeff</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="n">covar</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="k">pass</span>
+
+                <span class="k">return</span> <span class="n">map_mod</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span></div>
+
+
+<div class="viewcode-block" id="ramanmap.calibrate">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.calibrate">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">calibfactor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ramanmap</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Calibrating a Raman map.</span>
+<span class="sd">                It uses :func:`peakfit` to find the Raman peak closest to ``peakshift`` and returns a new :class:`ramanmap` instance, with the ramanshift coordinate offset to have the position of the peak at ``peakshift``.</span>
+<span class="sd">                If the optional argument ``calibfactor`` is passed, ``peakshift`` is ignored and the data is shifted by the given value.</span>
+<span class="sd">                All possible keyword arguments of :func:`peakfit` can be passed.</span>
+
+<span class="sd">                :param peakshift: expected position, in 1/cm, of the peak used for calibration</span>
+<span class="sd">                :type peakshift: float</span>
+<span class="sd">                :param calibfactor: If the calibration factor is known it can be passed directly. In this case ``peakshift`` is ignored, defaults to 0</span>
+<span class="sd">                :type calibfactor: int, optional</span>
+<span class="sd">                :param width: width coordinate of the spectrum, which will be used for calibration. Defaults to the middle of the map.</span>
+<span class="sd">                :type width: float, optional</span>
+<span class="sd">                :param height: height coordinate of the spectrum, which will be used for calibration. Defaults to the middle of the map.</span>
+<span class="sd">                :type height: float, optional</span>
+
+<span class="sd">                :return: calibrated :class:`ramanmap` instance</span>
+<span class="sd">                :rtype: :class:`ramanmap`</span>
+
+<span class="sd">                .. note::</span>
+<span class="sd">                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).</span>
+<span class="sd">                        Passing ``func=lorentz2`` raises ``ValueError`` because the method</span>
+<span class="sd">                        hardcodes ``.sel(param=&#39;x0&#39;)`` on the fit result — ``lorentz2`` emits</span>
+<span class="sd">                        ``x01`` / ``x02`` parameter names instead.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Reject double-peak shape functions early — calibrate hardcodes</span>
+                <span class="c1"># ``.sel(param=&#39;x0&#39;)`` which lorentz2 (x01/x02 names) breaks.</span>
+                <span class="n">_reject_double_peak</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;func&#39;</span><span class="p">),</span> <span class="s1">&#39;calibrate&#39;</span><span class="p">)</span>
+                <span class="c1"># Validate parameters via the shared helpers.</span>
+                <span class="n">peakshift</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;peakshift&#39;</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">)</span>
+                <span class="n">calibfactor</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;calibfactor&#39;</span><span class="p">,</span> <span class="n">calibfactor</span><span class="p">)</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="c1"># Pick the reference spectrum — user-supplied coords if both</span>
+                <span class="c1"># width and height are given, otherwise the middle of the map.</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">width</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">height</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+                        <span class="n">spectofit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span>
+                                <span class="n">width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">size_x</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                                <span class="n">height</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">size_y</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+                                <span class="n">method</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span>
+                        <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">spectofit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+
+                <span class="c1"># Delegate to the shared calibshift core (crops, fits, returns</span>
+                <span class="c1"># the correction factor; skips the fit when calibfactor != 0).</span>
+                <span class="n">calibshift</span> <span class="o">=</span> <span class="n">_compute_calibshift</span><span class="p">(</span><span class="n">spectofit</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+                <span class="c1"># Lightweight copy of the instance — only the ramanshift coord</span>
+                <span class="c1"># changes, so a full deep copy would be wasteful.</span>
+                <span class="n">map_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span>
+                        <span class="n">ramanshift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">calibshift</span>
+                <span class="p">)</span>
+                <span class="c1"># Append to the processing history (guard just in case attrs</span>
+                <span class="c1"># was wiped somewhere upstream).</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
+                        <span class="n">map_mod</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+                                <span class="s1">&#39;calibrated Raman shift by adding &#39;</span>
+                                <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">calibshift</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span>
+                                <span class="o">+</span> <span class="s1">&#39; cm^-1 to the raw ramanshift </span><span class="se">\n</span><span class="s1">&#39;</span>
+                        <span class="p">)</span>
+                <span class="k">return</span> <span class="n">map_mod</span></div>
+
+
+<div class="viewcode-block" id="ramanmap.normalize">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.normalize">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ramanmap</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
+<span class="sd">                Returns a normalized :class:`ramanmap` instance.</span>
+<span class="sd">                An exception will be raised if the background has not been removed.</span>
+<span class="sd">                It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.</span>
+
+<span class="sd">                :param peakshift: rough position of the peak in :class:`ramanmap.mapxr.ramanshift` dimension</span>
+<span class="sd">                :type peakshift: float</span>
+<span class="sd">                :param mode: Has two modes: &#39;const&#39; and &#39;individual&#39;. defaults to &#39;const&#39;.</span>
+<span class="sd">                :type mode: str, optional</span>
+<span class="sd">                :param width: width coordinate of the spectrum, which will be used for normalization in &#39;const&#39; mode, defaults to the middle of the map.</span>
+<span class="sd">                :type width: float, optional</span>
+<span class="sd">                :param height: height coordinate of the spectrum, which will be used for normalization in &#39;const&#39; mode, defaults to the middle of the map.</span>
+<span class="sd">                :type height: float, optional</span>
+
+<span class="sd">                :return: normalized :class:`ramanmap` instance</span>
+<span class="sd">                :rtype: :class:`ramanmap`</span>
+
+<span class="sd">                :raises ValueError: Background needs to be removed for normalization to make sense.</span>
+<span class="sd">                :raises ValueError: `mode` parameter must be either: &#39;const&#39; or &#39;individual&#39;.</span>
+
+<span class="sd">                .. note::</span>
+<span class="sd">                        Attributes of :class:`ramanmap.mapxr` are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new `long_name`.</span>
+
+<span class="sd">                        In ``mode == &#39;individual&#39;``, each spectrum in the map will be normalized to the local peak amplitude. In ``mode == &#39;const&#39;``, the peak at the position specified by ``width`` and ``height`` is used for normalization.</span>
+<span class="sd">                        If ``mode == &#39;individual&#39;``, the ``width`` and ``height`` parameters are ignored.</span>
+
+<span class="sd">                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).</span>
+<span class="sd">                        Passing ``func=lorentz2`` raises ``ValueError`` because the method</span>
+<span class="sd">                        hardcodes ``.sel(param=&#39;x0&#39;)`` and ``.sel(param=&#39;ampl&#39;)`` on the fit</span>
+<span class="sd">                        result.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Guard + validate via the shared helpers.</span>
+                <span class="n">_reject_double_peak</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;func&#39;</span><span class="p">),</span> <span class="s1">&#39;normalize&#39;</span><span class="p">)</span>
+                <span class="n">peakshift</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;peakshift&#39;</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">)</span>
+                <span class="n">_require_mode</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;const&#39;</span><span class="p">,</span> <span class="s1">&#39;individual&#39;</span><span class="p">])</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="c1"># Build the reference-coords dict for the shared core. Only</span>
+                <span class="c1"># both-or-neither here — the legacy behaviour ignored a</span>
+                <span class="c1"># partial specification, and we preserve that.</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+                        <span class="n">ref_coords</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="n">height</span><span class="p">}</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># None lets the core compute midpoints of the non-</span>
+                        <span class="c1"># ramanshift dims itself (width + height for maps).</span>
+                        <span class="n">ref_coords</span> <span class="o">=</span> <span class="kc">None</span>
+
+                <span class="c1"># Delegate the crop / bg-check / fit / divide dance to the</span>
+                <span class="c1"># shared core; we keep only the class-specific wrap-up here.</span>
+                <span class="n">normalized</span><span class="p">,</span> <span class="n">peakampl</span><span class="p">,</span> <span class="n">peakpos</span> <span class="o">=</span> <span class="n">_normalize_to_peak</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span>
+                        <span class="n">peakshift</span><span class="p">,</span>
+                        <span class="n">ref_coords</span><span class="o">=</span><span class="n">ref_coords</span><span class="p">,</span>
+                        <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="c1"># Map-specific comment line includes the ``in mode == XXX``</span>
+                <span class="c1"># token (singlespec&#39;s version omits it).</span>
+                <span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="s1">&#39;normalized to peak at: &#39;</span>
+                        <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakpos</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span>
+                        <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39; in mode == </span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s1">&#39;</span>
+                        <span class="o">+</span> <span class="s1">&#39; by a factor of &#39;</span>
+                        <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakampl</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span>
+                        <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Lightweight copy of the instance and attach the new data.</span>
+                <span class="n">map_norm</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="n">map_norm</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">normalized</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">map_norm</span><span class="o">.</span><span class="n">normfactor</span> <span class="o">=</span> <span class="n">peakampl</span>
+                <span class="k">return</span> <span class="n">map_norm</span></div>
+
+
+
+<div class="viewcode-block" id="ramanmap.crr">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.crr">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">crr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ramanmap</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Tool for removing cosmic rays from a spectroscopy maps.</span>
+<span class="sd">                The CRR peaks are determined as the standard deviation of the data: `std` times the `cutoff` value, in the `window` sized vicinity of each pixel.</span>
+
+<span class="sd">                :param cutoff: multiplication factor for the data&#39;s standard deviation; defaults to 2.</span>
+<span class="sd">                :type cutoff: int, optional</span>
+<span class="sd">                :param window: size of the neighborhood to consider; defaults to 2.</span>
+<span class="sd">                :type window: int, optional</span>
+<span class="sd">                </span>
+<span class="sd">                :return: instance of the :class:`ramanmap` class with the cosmic-ray peaks removed.</span>
+<span class="sd">                :rtype: :class:`ramanmap`</span>
+
+<span class="sd">                .. note::</span>
+<span class="sd">                        If CRR is not satisfactory, keep reducing the `cutoff` value and compare to the original data.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+
+                <span class="c1"># Delegate to the shared rolling-window CRR core; the attrs</span>
+                <span class="c1"># copy that xr.where strips is handled inside _crr_xarray.</span>
+                <span class="n">cleaned</span><span class="p">,</span> <span class="n">n_spikes</span> <span class="o">=</span> <span class="n">_crr_xarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">,</span> <span class="n">window</span><span class="p">)</span>
+                <span class="n">map_crr</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="n">map_crr</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">cleaned</span>
+                <span class="c1"># Map-specific comment wording — &quot;coordinates&quot; (vs. &quot;Ramanshift</span>
+                <span class="c1"># coordinates&quot; on singlespec.crr) preserved byte-for-byte.</span>
+                <span class="n">map_crr</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="s1">&#39;replaced cosmic ray values with local mean at &#39;</span>
+                        <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">n_spikes</span><span class="si">}</span><span class="s1">&#39;</span>
+                        <span class="o">+</span> <span class="s1">&#39; coordinates.</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">map_crr</span></div>
+
+
+
+<div class="viewcode-block" id="ramanmap.peakmask">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.ramanmap.peakmask">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">peakmask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakpos</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Create a boolean mask for the map, where the mean Raman intensity of the peak at ``peakpos`` is larger than the peak mean in the selected spectrum by the ``cutoff`` value.</span>
+<span class="sd">                The method also returns the cropped :py:mod:`xarray` DataArray, with the values that are cropped replaced by NaNs.</span>
+<span class="sd">                The method needs a reference spectrum for  determining the &quot;typical&quot; mean of the peak amplitude.</span>
+<span class="sd">                This is also used to determine the cutoff value for the rest of the map as:</span>
+<span class="sd">                </span>
+<span class="sd">                .. code-block:: python</span>
+
+<span class="sd">                        &#39;selected spectrum mean value&#39; * cutoff</span>
+<span class="sd">                </span>
+<span class="sd">                The optional ``width`` and ``height`` parameters can be passed, which selects that spectrum for reference.</span>
+<span class="sd">                If these are not passed, the spectrum in the middle of the map is taken as reference.</span>
+
+<span class="sd">                :param peakpos: position in 1/cm of the peak we want to create the mask for</span>
+<span class="sd">                :type peakpos: float</span>
+<span class="sd">                :param cutoff: cutoff value, interpreted as a percentage. Values between 0 and 1. Defaults to 0.1</span>
+<span class="sd">                :type cutoff: float, optional</span>
+<span class="sd">                :param width: width parameter of the spectrum in the map we want to have as a reference, defaults to None</span>
+<span class="sd">                :type width: float, optional</span>
+<span class="sd">                :param height: height parameter of the spectrum in the map we want to have as a reference, defaults to None</span>
+<span class="sd">                :type height: float, optional</span>
+<span class="sd">                </span>
+<span class="sd">                :return:</span>
+<span class="sd">                        - ``mapmasked``: :class:`ramanmap` instance containing the cropped map</span>
+<span class="sd">                        - ``peakmask``: :py:mod:`xarray` DataArray containing the mask</span>
+<span class="sd">                :rtype: tuple: (:class:`ramanmap`, :py:mod:`xarray`)</span>
+
+<span class="sd">                .. note::</span>
+<span class="sd">                        The peak position specified by ``peakpos`` must not be exact.</span>
+<span class="sd">                        The method uses :func:`peakfit` to find the peak near ``peakpos``.</span>
+<span class="sd">                        Keyword arguments used by :func:`peakfit` can be passed to the method.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Validate parameters via the shared float-coercer. The</span>
+                <span class="c1"># 0 &lt;= cutoff &lt;= 1 range check stays inline because no</span>
+                <span class="c1"># other method carries the same range constraint.</span>
+                <span class="n">peakpos</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;peakpos&#39;</span><span class="p">,</span> <span class="n">peakpos</span><span class="p">)</span>
+                <span class="n">cutoff</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;cutoff&#39;</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">cutoff</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cutoff must be between 0 and 1, got </span><span class="si">{</span><span class="n">cutoff</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">optional</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="c1"># Determine reference coordinates using supplied values or the</span>
+                <span class="c1"># midpoint of the map when absent. The helper function above</span>
+                <span class="c1"># encapsulates midpoint math for clarity.</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+                        <span class="n">mapwidth</span> <span class="o">=</span> <span class="n">width</span>
+                        <span class="n">mapheight</span> <span class="o">=</span> <span class="n">height</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">mapwidth</span> <span class="o">=</span> <span class="n">_midpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">width</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+                        <span class="n">mapheight</span> <span class="o">=</span> <span class="n">_midpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+                <span class="c1"># first we fit a Lorentzian to the peak at peakpos to determine its width</span>
+                <span class="n">spectofit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">mapwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">mapheight</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+                <span class="n">fit</span> <span class="o">=</span> <span class="n">peakfit</span><span class="p">(</span><span class="n">spectofit</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="n">peakpos</span><span class="p">},</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="n">peakx0</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;x0&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">peakwidth</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">&#39;curvefit_coefficients&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">&#39;width&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+
+                <span class="c1"># vicinity of the peak</span>
+                <span class="c1"># this needs to be larger than the exclusion_factor used by bgsubtract()</span>
+                <span class="n">peakvicinity</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span>
+                        <span class="n">peakx0</span> <span class="o">-</span> <span class="n">PEAKMASK_VICINITY_FACTOR</span> <span class="o">*</span> <span class="n">peakwidth</span><span class="p">,</span>
+                        <span class="n">peakx0</span> <span class="o">+</span> <span class="n">PEAKMASK_VICINITY_FACTOR</span> <span class="o">*</span> <span class="n">peakwidth</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="c1"># crop the data around the peak</span>
+                <span class="n">cropped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">peakvicinity</span><span class="p">)</span>
+
+                <span class="c1"># determine the background, by using a 0th order polynomial</span>
+                <span class="n">xx</span> <span class="o">=</span> <span class="n">cropped</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">yy</span> <span class="o">=</span> <span class="n">cropped</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">mapwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">mapheight</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">yy</span><span class="p">,</span> <span class="n">polyorder</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="p">[</span><span class="n">peakx0</span><span class="p">],</span> <span class="n">exclusion_factor</span> <span class="o">=</span> <span class="mi">3</span><span class="p">)</span>
+
+                <span class="c1"># get the mean value of the peak in the region we cropped and subtract the background</span>
+                <span class="n">selected_peakmean</span> <span class="o">=</span> <span class="n">spectofit</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">peakvicinity</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span> <span class="o">=</span> <span class="s1">&#39;ramanshift&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">data</span> <span class="o">-</span> <span class="n">background</span>
+                <span class="n">peakmean</span> <span class="o">=</span> <span class="n">cropped</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span> <span class="o">=</span> <span class="s1">&#39;ramanshift&#39;</span><span class="p">)</span> <span class="o">-</span> <span class="n">background</span>
+
+                <span class="c1"># make the boolean mask where the value of the mean is more than the cutoff times the selected peak mean</span>
+                <span class="n">peakmask</span> <span class="o">=</span> <span class="n">peakmean</span> <span class="o">&gt;</span> <span class="n">cutoff</span><span class="o">*</span><span class="n">selected_peakmean</span>
+
+                <span class="c1"># crop the data with the mask</span>
+                <span class="n">mapmasked</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>  <span class="c1"># shallow copy of container</span>
+                <span class="n">mapmasked</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">peakmask</span><span class="p">)</span>
+
+                <span class="c1"># update the comment attributes if it exists</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mapmasked</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
+                        <span class="n">mapmasked</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;cropped regions, where mean Raman int. of peak: &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakx0</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; is less than &#39;</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">cutoff</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; of selected peak</span><span class="se">\n</span><span class="s1">&#39;</span>
+
+                <span class="k">return</span> <span class="n">mapmasked</span><span class="p">,</span> <span class="n">peakmask</span></div>
+
+
+        <span class="c1"># internal functions --------------------------</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">info_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Constructor for :class:`ramanmap`.</span>
+
+<span class="sd">                ``info_path`` is optional. When ``None``, metadata defaults to</span>
+<span class="sd">                sentinels and :py:meth:`_load_map` parses the data file&#39;s</span>
+<span class="sd">                ``[Header]`` block to fill in dimensional attributes.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># filename</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">map_path</span>
+                <span class="c1"># fitmask</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="c1"># normalization factor, factor by which the raman intensity values are divided during normalize</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">normfactor</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="c1"># Track whether an info file was supplied. Used by _load_map to</span>
+                <span class="c1"># decide whether to parse the data header, and by _toxarray to</span>
+                <span class="c1"># decide the comment text and coord unit label.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span> <span class="o">=</span> <span class="n">info_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="c1"># Populate metadata: either from info file or from sentinel defaults</span>
+                <span class="c1"># that the data-file header may later override in _load_map.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_load_info</span><span class="p">(</span><span class="n">info_path</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_load_defaults</span><span class="p">()</span>
+                <span class="c1"># Load the Raman map — if no info file, this also parses the data</span>
+                <span class="c1"># header to fill in pixel_x / pixel_y / size_x / size_y before</span>
+                <span class="c1"># attempting the reshape.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_load_map</span><span class="p">(</span><span class="n">map_path</span><span class="p">)</span>
+                <span class="c1"># load the data into an xarray container</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_toxarray</span><span class="p">()</span>
+
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_load_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Populate metadata attributes with placeholder values.</span>
+
+<span class="sd">                Called by :py:meth:`__init__` when no info file is supplied.</span>
+<span class="sd">                Dimensional attributes (``pixel_x``, ``pixel_y``, ``size_x``,</span>
+<span class="sd">                ``size_y``) are set to ``None`` so :py:meth:`_load_map` knows</span>
+<span class="sd">                they still need to be filled — from the data-file header if</span>
+<span class="sd">                present, or via a clear error if not. All other metadata</span>
+<span class="sd">                attributes get sentinels (``&#39;N/A&#39;`` for strings, ``NaN`` for</span>
+<span class="sd">                floats) so the rest of the pipeline — especially</span>
+<span class="sd">                :py:meth:`_toxarray` — can run unchanged.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Shared scaffolding (metadata / date / time / sample / laser /</span>
+                <span class="c1"># itime / grating / objname / objmagn / positioner_x / _y) in</span>
+                <span class="c1"># one call; map-specific extras follow below.</span>
+                <span class="n">_apply_default_common_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="c1"># Best-effort mapname derived from the data file&#39;s stem. If a</span>
+                <span class="c1"># GraphName appears in the data header, _apply_datafile_header</span>
+                <span class="c1"># will overwrite this.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="c1"># Dimensional attrs stay None until the data header is parsed</span>
+                <span class="c1"># (or an error is raised if the header doesn&#39;t supply them).</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pixel_x</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pixel_y</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_apply_datafile_header</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;Override sentinel metadata with values parsed from the data header.</span>
+
+<span class="sd">                Called by :py:meth:`_load_map` after ``self.metadata_datafile``</span>
+<span class="sd">                has been captured. Mutates attributes directly. Missing header</span>
+<span class="sd">                fields leave the corresponding attribute at its sentinel value.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Shared parse + setattr iteration. ``name_attr=&#39;mapname&#39;``</span>
+                <span class="c1"># routes the GraphName override to this class&#39;s name field;</span>
+                <span class="c1"># the other five keys get copied verbatim.</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">._witec</span><span class="w"> </span><span class="kn">import</span> <span class="n">_parse_witec_datafile_header</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="n">_parse_witec_datafile_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">)</span>
+                <span class="n">_apply_parsed_header</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="p">,</span>
+                        <span class="n">fields</span><span class="p">,</span>
+                        <span class="n">name_attr</span><span class="o">=</span><span class="s1">&#39;mapname&#39;</span><span class="p">,</span>
+                        <span class="n">copy_keys</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;pixel_x&#39;</span><span class="p">,</span> <span class="s1">&#39;pixel_y&#39;</span><span class="p">,</span> <span class="s1">&#39;size_x&#39;</span><span class="p">,</span> <span class="s1">&#39;size_y&#39;</span><span class="p">,</span>
+                                   <span class="s1">&#39;positioner_x&#39;</span><span class="p">,</span> <span class="s1">&#39;positioner_y&#39;</span><span class="p">),</span>
+                <span class="p">)</span>
+
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_load_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info_path</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                Load the file containing the metadata.</span>
+<span class="sd">                The metadata will be filled by searching the info file for various patterns, using regular expressions.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># Shared parser returns the raw text and a {attr: value} dict.</span>
+                <span class="c1"># The ``is_map=True`` flag adds pixel_x / pixel_y / size_x /</span>
+                <span class="c1"># size_y to the set of fields extracted.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span> <span class="n">fields</span> <span class="o">=</span> <span class="n">_parse_info_file</span><span class="p">(</span><span class="n">info_path</span><span class="p">,</span> <span class="n">is_map</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="c1"># First line is the mapname; everything else copies 1:1 onto self.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapname</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_load_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_path</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                Load the Raman map data into a numpy array.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="c1"># One call owns: header-window scan, toskip detection,</span>
+                <span class="c1"># metadata capture, FileName extraction, and np.loadtxt.</span>
+                <span class="n">_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="n">_load_witec_datafile</span><span class="p">(</span><span class="n">map_path</span><span class="p">)</span>
+                <span class="c1"># When no info file was supplied, the data-file header is our</span>
+                <span class="c1"># only source for pixel_x / pixel_y / size_x / size_y. Parse</span>
+                <span class="c1"># it now so the reshape below succeeds.</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_apply_datafile_header</span><span class="p">()</span>
+                <span class="c1"># Guard: without dims, reshape would fail with an opaque error.</span>
+                <span class="c1"># Raise a clear message instead pointing at the real cause.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;cannot determine pixel dimensions for &#39;</span><span class="si">{</span><span class="n">map_path</span><span class="si">}</span><span class="s2">&#39;: &quot;</span>
+                                <span class="s2">&quot;no info file was supplied and the data file&#39;s header &quot;</span>
+                                <span class="s2">&quot;does not contain SizeX / SizeY. Pass an info_path or &quot;</span>
+                                <span class="s2">&quot;export the map with Witec&#39;s table option.&quot;</span>
+                        <span class="p">)</span>
+                <span class="c1"># The raman shift is the first column in the exported table;</span>
+                <span class="c1"># the remaining columns are the map intensities reshaped to</span>
+                <span class="c1"># the pixel grid.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">m</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">m</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:],</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_x</span><span class="p">))</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_toxarray</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">                Load the raw numpy data, as well as the metadata into an xarray object.</span>
+<span class="sd">                &quot;&quot;&quot;</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pixel_x</span><span class="p">)</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pixel_y</span><span class="p">)</span>
+                <span class="c1"># We need to flip the array along the height axis, so that</span>
+                <span class="c1"># the data shows up in the same orientation as in Witec Project.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                        <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">],</span>
+                        <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                                <span class="s1">&#39;ramanshift&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">,</span>
+                                <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span>
+                                <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="n">height</span><span class="p">,</span>
+                        <span class="p">},</span>
+                <span class="p">)</span>
+                <span class="c1"># Comment text notes the load provenance so a downstream</span>
+                <span class="c1"># reader can tell whether metadata came from an info file or</span>
+                <span class="c1"># purely from the data-file header.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded (no info file; metadata from data header) </span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="c1"># Shared attribute population (wipfile / units / long_name /</span>
+                <span class="c1"># sample / laser / time / date / integration time / positioner</span>
+                <span class="c1"># X + Y / objective name / magnification / grating, plus the</span>
+                <span class="c1"># ramanshift coord metadata).</span>
+                <span class="n">_set_common_xarray_attrs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">)</span>
+                <span class="c1"># Map-specific extras: physical scan dimensions in the attrs</span>
+                <span class="c1"># dict, plus width / height coord metadata (maps only).</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;map width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; um&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;map height&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; um&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;um&#39;</span>  <span class="c1"># type: ignore</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;width&#39;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;units&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;um&#39;</span>  <span class="c1"># type: ignore</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;height&#39;</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Peter Nemes-Incze.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
