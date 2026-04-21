@@ -6,6 +6,10 @@ and the ``peakfit`` xarray curve-fit wrapper. These are all module-level
 utilities (no class state) and were grouped together in the original
 single-file layout under a ``## Tools`` section.
 """
+# Defer evaluation of annotations so we can use modern ``X | None`` syntax
+# in function signatures without depending on Python 3.10+ at runtime.
+from __future__ import annotations
+
 import numpy as np  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 from scipy.optimize import curve_fit  # type: ignore
@@ -14,6 +18,15 @@ from scipy.signal import find_peaks  # type: ignore
 # _midpoint is needed in peakfit's ``toplot`` branch to pick a central
 # spectrum for plotting when no explicit width/height is given.
 from ._helpers import _midpoint
+# Named thresholds previously spelled as magic numbers — see _constants.py
+# for the rationale behind each value.
+from ._constants import (
+        NOTCH_CUTOFF_CM,
+        NORMALIZE_CROP_REGION_CM,
+        NORMALIZE_BG_THRESHOLD,
+        CALIBRATE_FITRANGE_CM,
+        PEAKFIT_MAXFEV,
+)
 
 
 def _compute_calibshift(spec_1d, peakshift: float, calibfactor: float, **kwargs) -> float:
@@ -37,10 +50,10 @@ def _compute_calibshift(spec_1d, peakshift: float, calibfactor: float, **kwargs)
         if calibfactor != 0:
                 # Caller supplied the shift directly — no fit needed.
                 return calibfactor
-        # Crop to a generous ±100 cm⁻¹ window so the peak fit has enough
-        # baseline on either side; clip to actual data bounds so ``sel``
-        # doesn't return an empty slice at the spectrum edges.
-        fitrange = [peakshift - 100, peakshift + 100]
+        # Crop to a generous ±CALIBRATE_FITRANGE_CM window so the peak fit
+        # has enough baseline on either side; clip to actual data bounds
+        # so ``sel`` doesn't return an empty slice at the spectrum edges.
+        fitrange = [peakshift - CALIBRATE_FITRANGE_CM, peakshift + CALIBRATE_FITRANGE_CM]
         if fitrange[0] < spec_1d.ramanshift.min().data:
                 fitrange[0] = spec_1d.ramanshift.min().data
         if fitrange[1] > spec_1d.ramanshift.max().data:
@@ -86,10 +99,12 @@ def _normalize_to_peak(whole_da, peakshift: float, ref_coords=None, mode: str = 
             ``normalize`` or the selected peak is too close to the
             baseline to normalize against.
         """
-        # Crop to ±100 cm⁻¹ around the peak. The ±100 window is the same
-        # magic number the original code used; Phase 3 will factor it out.
-        cropregion = 100
-        cropped = whole_da.sel(ramanshift=slice(peakshift - cropregion, peakshift + cropregion))
+        # Crop to ±NORMALIZE_CROP_REGION_CM around the peak — wide enough
+        # to give the peakfit clean baseline on both shoulders.
+        cropped = whole_da.sel(ramanshift=slice(
+                peakshift - NORMALIZE_CROP_REGION_CM,
+                peakshift + NORMALIZE_CROP_REGION_CM,
+        ))
 
         # Determine reference coordinates. For maps we want the midpoint
         # of (width, height); for spectra there are no extra dims so the
@@ -113,11 +128,11 @@ def _normalize_to_peak(whole_da, peakshift: float, ref_coords=None, mode: str = 
         bgoffset_low = ref_cropped[0].data
         bgoffset_high = ref_cropped[-1].data
 
-        # Sanity check: if the spectrum baseline is high (>500) or the
-        # 'background subtracted' marker is absent from the processing
-        # history, refuse to normalize. Same message + thresholds as the
-        # original code so upstream error-matching tests still pass.
-        if ((bgoffset_high + bgoffset_low) / 2 > 500) or ('background subtracted' not in whole_da.attrs['comments']):
+        # Sanity check: if the spectrum baseline is high (above
+        # NORMALIZE_BG_THRESHOLD) or the 'background subtracted' marker is
+        # absent from the processing history, refuse to normalize. Same
+        # message as the original so upstream error-matching tests pass.
+        if ((bgoffset_high + bgoffset_low) / 2 > NORMALIZE_BG_THRESHOLD) or ('background subtracted' not in whole_da.attrs['comments']):
                 raise ValueError(
                         "The background was not removed, or the peak selected is not suitable "
                         "for normalization. This should be done in case of normalizing to a peak amplitude"
@@ -192,7 +207,7 @@ def _reject_double_peak(func, method_name: str) -> None:
                 )
 
 
-def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 0):
+def gaussian(x, x0: float = 1580, ampl: float = 10, width: float = 15, offset: float = 0):
         """Gaussian function. Width and amplitude parameters have the same meaning as for :func:`lorentz`.
 
         :param x: values for the x coordinate
@@ -213,7 +228,7 @@ def gaussian(x, x0 = 1580, ampl = 10, width = 15, offset = 0):
         return offset + ampl * np.exp(-4*np.log(2)*(x - x0)**2 / (width**2))
 
 
-def lorentz(x, x0 = 1580, ampl = 1, width = 14, offset = 0):
+def lorentz(x, x0: float = 1580, ampl: float = 1, width: float = 14, offset: float = 0):
         """Single Lorentz function
 
         :param x: values for the x coordinate
@@ -241,7 +256,7 @@ def lorentz(x, x0 = 1580, ampl = 1, width = 14, offset = 0):
         area = np.pi * ampl * width / 2
         return offset + (2/np.pi) * (area * width) / (4*(x - x0)**2 + width**2)
 
-def lorentz2(x, x01 = 2700, ampl1 = 1, width1 = 15, x02 = 2730, ampl2 = 1, width2 = 15, offset = 0):
+def lorentz2(x, x01: float = 2700, ampl1: float = 1, width1: float = 15, x02: float = 2730, ampl2: float = 1, width2: float = 15, offset: float = 0):
         """Double Lorentz function
 
         :return: values of a double Lorentz function
@@ -263,7 +278,7 @@ def lorentz2(x, x01 = 2700, ampl1 = 1, width1 = 15, x02 = 2730, ampl2 = 1, width
         area2 = np.pi * ampl2 * width2 / 2
         return offset + (2/np.pi) * (area1 * width1) / (4*(x - x01)**2 + width1**2) + (2/np.pi) * (area2 * width2) / (4*(x - x02)**2 + width2**2)
 
-def polynomial_fit(order, x_data, y_data):
+def polynomial_fit(order: int, x_data, y_data):
         """Polinomial fit to `x_data`, `y_data`
 
         :param order: order of the polinomial to be fit
@@ -290,7 +305,7 @@ def polynomial_fit(order, x_data, y_data):
 
         return coeff, covar
 
-def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hmin = 50, hmax = 10000, wmin = 4, wmax = 60, prom = 10, exclusion_factor = 6, peak_pos = None):
+def bgsubtract(x_data, y_data, polyorder: int = 1, toplot: bool = False, fitmask = None, hmin: float = 50, hmax: float = 10000, wmin: float = 4, wmax: float = 60, prom: float = 10, exclusion_factor: float = 6, peak_pos = None):
         """Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.
         These peaks are then used to define the areas of the background signal.
         In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: ``polyorder``.
@@ -388,8 +403,9 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
                 mask = fitmask
                 peak_indices = None
         
-        # make the mask False for the region below the notch filter cutoff (~80 cm^{-1})
-        x_data_notch = x_data[x_data < 95]
+        # make the mask False for the region below the notch filter
+        # cutoff (~80 cm^-1 physically; NOTCH_CUTOFF_CM leaves a margin).
+        x_data_notch = x_data[x_data < NOTCH_CUTOFF_CM]
         mask[:x_data_notch.shape[0]] = False
         uncovered_x_data = x_data[mask]
         uncovered_y_data = y_data[mask]
@@ -428,7 +444,7 @@ def bgsubtract(x_data, y_data, polyorder = 1, toplot = False, fitmask = None, hm
 
         return y_data_nobg, bg_values, coeff, params_used_at_run, mask, covar
 
-def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None, toplot = False, width = None, height = None, **kwargs):
+def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None, toplot: bool = False, width: float | None = None, height: float | None = None, **kwargs):
         """Fitting a function to peaks in the data contained in ``xrobj``, which can be a single spectrum, a map or a selected spectrum from a map.
 
         :param xrobj: :py:mod:`xarray` DataArray, of a single spectrum or a map.
@@ -507,7 +523,7 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
         # `nan_policy = omit` skips values with NaN. This is passed to scipy.optimize.curve_fit
         # `max_nfev` is passed to leastsq(). It determines the number of function calls, before quitting.
         if fitresult is None:
-                fit = xrobj.curvefit('ramanshift', func, p0 = stval, bounds = bounds, errors = 'ignore', kwargs = {'maxfev': 1000})
+                fit = xrobj.curvefit('ramanshift', func, p0 = stval, bounds = bounds, errors = 'ignore', kwargs = {'maxfev': PEAKFIT_MAXFEV})
         else:
                 fit = fitresult
 

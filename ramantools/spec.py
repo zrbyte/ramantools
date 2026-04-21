@@ -3,6 +3,9 @@
 Extracted from ``ramantools/ramantools.py`` during the Phase 1 refactor.
 Public API is unchanged; this file only moves the code.
 """
+# Defer annotation evaluation — same rationale as in ``map.py``.
+from __future__ import annotations
+
 import os  # Filename handling for the no-info-file fallback path
 import copy  # Object copying utilities
 import numpy as np  # type: ignore
@@ -85,13 +88,13 @@ class singlespec:
 
         """
 
-        def history(self):
+        def history(self) -> None:
                 """Display the notes accumulated in the 'comments' attribute of the :class:`singlespec.ssxr` `xarray` variable.
-                """                
+                """
                 print('Data modification history:\n')
                 print(self.ssxr.attrs['comments'])
 
-        def print_metadata(self):
+        def print_metadata(self) -> None:
                 """
                 Prints the metadata of the :class:`singlespec` instance, imported from the info file.
 
@@ -166,7 +169,7 @@ class singlespec:
 
                 return singlesp_mod, coeff, covar
 
-        def calibrate(self, peakshift, calibfactor = 0, **kwargs):
+        def calibrate(self, peakshift: float, calibfactor: float = 0, **kwargs) -> singlespec:
                 """Calibrating a single Raman spectrum.
                 It uses :func:`peakfit` to find the Raman peak closest to ``peakshift`` and returns a new :class:`singlespec` instance, with the ramanshift coordinate offset to have the position of the peak at ``peakshift``.
                 If the optional argument ``calibfactor`` is passed, ``peakshift`` is ignored and the data is shifted by the given value.
@@ -209,7 +212,7 @@ class singlespec:
                         )
                 return ss_mod
 
-        def normalize(self, peakshift, **kwargs):
+        def normalize(self, peakshift: float, **kwargs) -> singlespec:
                 """Normalize the Raman spectrum to the peak at ``peakshift``.
                 Returns a normalized :class:`singlespec` instance.
                 An exception will be raised if the background has not been removed.
@@ -260,7 +263,7 @@ class singlespec:
                 ss_norm.normfactor = peakampl
                 return ss_norm
 
-        def crr(self, cutoff = 2, window = 2, **kwargs):
+        def crr(self, cutoff: float = 2, window: int = 2, **kwargs) -> singlespec:
                 """Tool for removing cosmic rays from a single spectrum.
                 The CRR peaks are determined as the standard deviation of the data: `std` times the `cutoff` value, in the `window` sized vicinity of each pixel.
 
@@ -293,7 +296,7 @@ class singlespec:
 
         # internal functions ----------------------------------
 
-        def __init__(self, spec_path, info_path=None):
+        def __init__(self, spec_path: str, info_path: str | None = None) -> None:
                 """Constructor for :class:`singlespec`.
 
                 ``info_path`` is optional. When ``None``, metadata defaults to

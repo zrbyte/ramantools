@@ -4,6 +4,11 @@ Extracted from ``ramantools/ramantools.py`` during the Phase 1 refactor.
 The public API (class name, attributes, method signatures, return shapes)
 is unchanged; this file only moves the code, it does not modify it.
 """
+# Defer annotation evaluation so ``X | None`` and forward references (e.g.
+# ``-> ramanmap`` inside its own class body) work without runtime cost or
+# Python-version gymnastics.
+from __future__ import annotations
+
 import os  # Filename handling for the no-info-file fallback path
 import copy  # Object copying utilities
 import numpy as np  # type: ignore
@@ -27,6 +32,8 @@ from ._helpers import (
 )
 from ._witec import _parse_info_file
 from ._io import _load_witec_datafile
+# Named thresholds previously spelled as magic numbers in peakmask.
+from ._constants import PEAKMASK_VICINITY_FACTOR
 # bgsubtract + peakfit are used by remove_bg / peakmask.
 # _compute_calibshift / _normalize_to_peak are the shared algorithm
 # cores for calibrate / normalize. _reject_double_peak replaces the
@@ -95,13 +102,13 @@ class ramanmap:
 
         """
 
-        def history(self):
+        def history(self) -> None:
                 """Display the notes accumulated in the 'comments' attribute of the :class:`ramanmap.mapxr` `xarray` variable.
-                """                
+                """
                 print('Data modification history:\n')
                 print(self.mapxr.attrs['comments'])
 
-        def print_metadata(self):
+        def print_metadata(self) -> None:
                 """
                 Prints the metadata of the :class:`ramanmap` instance, imported from the info file.
 
@@ -112,7 +119,7 @@ class ramanmap:
                 print('------------------')
                 print(self.metadata)
 
-        def plotspec(self, width, height, shift):
+        def plotspec(self, width: float, height: float, shift: float) -> None:
                 """
                 Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
                 Needs width and height coordinates for the single spectrum and the Raman shift where we want to plot the Raman intensity in the map.
@@ -149,7 +156,7 @@ class ramanmap:
                 ax1.axes.title.set_size(10)
                 plt.tight_layout()  # Adjust subplot spacing for readability
 
-        def remove_bg(self, mode = 'const', fitmask = None, height = None, width = None, **kwargs):
+        def remove_bg(self, mode: str = 'const', fitmask = None, height: float | None = None, width: float | None = None, **kwargs):
                 """Remove the background of Raman maps.
                 It takes the same optional arguments as :func:`bgsubtract`.
                 Default fit function is a first order polynomial. This can be changed by the ``polyorder`` parameter.
@@ -276,7 +283,7 @@ class ramanmap:
 
                 return map_mod, coeff, covar
 
-        def calibrate(self, peakshift, calibfactor = 0, width = None, height = None, **kwargs):
+        def calibrate(self, peakshift: float, calibfactor: float = 0, width: float | None = None, height: float | None = None, **kwargs) -> ramanmap:
                 """Calibrating a Raman map.
                 It uses :func:`peakfit` to find the Raman peak closest to ``peakshift`` and returns a new :class:`ramanmap` instance, with the ramanshift coordinate offset to have the position of the peak at ``peakshift``.
                 If the optional argument ``calibfactor`` is passed, ``peakshift`` is ignored and the data is shifted by the given value.
@@ -340,7 +347,7 @@ class ramanmap:
                         )
                 return map_mod
 
-        def normalize(self, peakshift, width = None, height = None, mode = 'const', **kwargs):
+        def normalize(self, peakshift: float, width: float | None = None, height: float | None = None, mode: str = 'const', **kwargs) -> ramanmap:
                 """Normalize the Raman spectrum to the peak at ``peakshift``.
                 Returns a normalized :class:`ramanmap` instance.
                 An exception will be raised if the background has not been removed.
@@ -416,7 +423,7 @@ class ramanmap:
                 return map_norm
 
 
-        def crr(self, cutoff = 2, window = 2, **kwargs):
+        def crr(self, cutoff: float = 2, window: int = 2, **kwargs) -> ramanmap:
                 """Tool for removing cosmic rays from a spectroscopy maps.
                 The CRR peaks are determined as the standard deviation of the data: `std` times the `cutoff` value, in the `window` sized vicinity of each pixel.
 
@@ -447,7 +454,7 @@ class ramanmap:
                 return map_crr
 
 
-        def peakmask(self, peakpos, cutoff = 0.1, width = None, height = None, **kwargs):
+        def peakmask(self, peakpos: float, cutoff: float = 0.1, width: float | None = None, height: float | None = None, **kwargs):
                 """Create a boolean mask for the map, where the mean Raman intensity of the peak at ``peakpos`` is larger than the peak mean in the selected spectrum by the ``cutoff`` value.
                 The method also returns the cropped :py:mod:`xarray` DataArray, with the values that are cropped replaced by NaNs.
                 The method needs a reference spectrum for  determining the "typical" mean of the peak amplitude.
@@ -507,7 +514,10 @@ class ramanmap:
 
                 # vicinity of the peak
                 # this needs to be larger than the exclusion_factor used by bgsubtract()
-                peakvicinity = slice(peakx0 - 5*peakwidth, peakx0 + 5*peakwidth)
+                peakvicinity = slice(
+                        peakx0 - PEAKMASK_VICINITY_FACTOR * peakwidth,
+                        peakx0 + PEAKMASK_VICINITY_FACTOR * peakwidth,
+                )
 
                 # crop the data around the peak
                 cropped = self.mapxr.sel(ramanshift = peakvicinity)
@@ -536,7 +546,7 @@ class ramanmap:
 
         # internal functions --------------------------
 
-        def __init__(self, map_path, info_path=None):
+        def __init__(self, map_path: str, info_path: str | None = None) -> None:
                 """Constructor for :class:`ramanmap`.
 
                 ``info_path`` is optional. When ``None``, metadata defaults to
