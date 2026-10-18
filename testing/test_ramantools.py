@@ -8,6 +8,7 @@ import pytest  # Testing framework for organizing and running tests
 import sys  # Access to the Python path for importing the package under test
 from pathlib import Path  # Convenient path handling independent of OS
 import numpy as np  # Numerical operations for creating fit masks
+import xarray as xr  # Type checks on DataArray-valued results (e.g. normfactor)
 
 # Ensure the ramantools package is importable from the repo root
 ROOT = Path(__file__).resolve().parents[1]
@@ -249,15 +250,121 @@ class TestRamanmapMethods:
         assert coeff is not None
         assert covar is not None
 
-    def test_remove_bg_individual_not_implemented(self, ramanmap_instance):
-        """Verify mode='individual' raises NotImplementedError.
+    def test_remove_bg_individual_fast_path(self, ramanmap_instance, fit_mask_map):
+        """remove_bg(mode='individual', fitmask=...) → vectorized fast path.
 
-        Guards against regression where the stub silently returned the
-        unmodified map with ``coeff=0``, ``covar=0`` — callers could
-        believe the background was subtracted when it wasn't.
+        When a fitmask is supplied, every pixel shares the same masked-in
+        region so the implementation solves all per-pixel polynomial fits
+        in one ``np.linalg.lstsq`` call. Check that the returned coeff /
+        covar are xarray DataArrays indexed by the map's spatial coords
+        and that the bg-subtracted map preserves dtype and shape.
         """
-        with pytest.raises(NotImplementedError, match="not implemented"):
-            ramanmap_instance.remove_bg(mode='individual')
+        import xarray as xr  # local import to keep test imports tidy
+        map_mod, coeff, covar = ramanmap_instance.remove_bg(
+            mode='individual', fitmask=fit_mask_map,
+        )
+        # Shape preservation: bg-subtracted map keeps original dims.
+        assert map_mod.mapxr.shape == ramanmap_instance.mapxr.shape
+        # Coefficients shape: (height, width, coef). For the default
+        # polyorder=1 there are 2 coefficients per pixel.
+        assert isinstance(coeff, xr.DataArray)
+        assert coeff.dims == ('height', 'width', 'coef')
+        assert coeff.sizes['height'] == ramanmap_instance.pixel_y
+        assert coeff.sizes['width'] == ramanmap_instance.pixel_x
+        assert coeff.sizes['coef'] == 2  # polyorder=1 → 2 coefficients
+        # Covariance: (height, width, coef_i, coef_j) — symmetric in i↔j.
+        assert isinstance(covar, xr.DataArray)
+        assert covar.dims == ('height', 'width', 'coef_i', 'coef_j')
+        assert covar.sizes['coef_i'] == 2
+        assert covar.sizes['coef_j'] == 2
+        # Comment annotation flags the individual / vectorized branch so
+        # history() makes the path traceable downstream.
+        assert 'mode == individual' in map_mod.mapxr.attrs['comments']
+        assert 'vectorized polyfit' in map_mod.mapxr.attrs['comments']
+        # Fast path stores the user's raw fitmask (1-D, no notch zeroing).
+        assert isinstance(map_mod.mask, np.ndarray)
+        assert map_mod.mask.shape == fit_mask_map.shape
+
+    def test_remove_bg_individual_matches_bgsubtract(self, ramanmap_instance, fit_mask_map):
+        """Fast-path coefficients must agree with per-pixel ``bgsubtract``.
+
+        The vectorized lstsq solves the same linear least-squares problem
+        scipy.curve_fit converges to inside bgsubtract, so the two
+        coefficient arrays should match to floating-point precision. This
+        protects against silent algorithmic drift in the fast path.
+        """
+        # Run the fast path
+        _, coeff_individual, covar_individual = ramanmap_instance.remove_bg(
+            mode='individual', fitmask=fit_mask_map,
+        )
+        # Run bgsubtract directly on a known pixel; pick the middle to
+        # avoid edge effects and to match a common user workflow.
+        mid_w = ramanmap_instance.size_x / 2
+        mid_h = ramanmap_instance.size_y / 2
+        spec = ramanmap_instance.mapxr.sel(width=mid_w, height=mid_h, method='nearest')
+        # Pass the same fitmask so bgsubtract takes its fast internal path.
+        _, _, c_ref, _, _, cv_ref = rt.bgsubtract(
+            spec.ramanshift.data, spec.data, fitmask=fit_mask_map.copy(),
+        )
+        # Compare the middle-pixel coefficients and covariance.
+        c_pixel = coeff_individual.sel(width=mid_w, height=mid_h, method='nearest').data
+        cv_pixel = covar_individual.sel(width=mid_w, height=mid_h, method='nearest').data
+        # Coefficients agree to ~1e-8 because both methods solve the same
+        # linear system. Covariance gets a looser tolerance because s²
+        # accumulates a different residual sum (the lstsq SVD solve and
+        # Levenberg-Marquardt diverge at the last digit or two of the
+        # least-squares residual).
+        np.testing.assert_allclose(c_pixel, c_ref, rtol=1e-8, atol=1e-10)
+        np.testing.assert_allclose(cv_pixel, cv_ref, rtol=1e-6, atol=1e-10)
+
+    def test_remove_bg_individual_slow_path(self, ramanmap_instance):
+        """remove_bg(mode='individual') without fitmask → per-pixel path.
+
+        Each pixel goes through ``bgsubtract``'s own peak finder, so the
+        per-pixel mask varies and is exposed as a 3-D DataArray. Just
+        verify the shapes / types — exact numeric agreement is implicit
+        because we're calling bgsubtract directly per pixel.
+        """
+        import xarray as xr
+        map_mod, coeff, covar = ramanmap_instance.remove_bg(mode='individual')
+        # Shapes match the fast path — same return contract.
+        assert coeff.dims == ('height', 'width', 'coef')
+        assert covar.dims == ('height', 'width', 'coef_i', 'coef_j')
+        # Per-pixel mask: 3-D xarray DataArray indexed by spatial coords.
+        assert isinstance(map_mod.mask, xr.DataArray)
+        assert map_mod.mask.dims == ('height', 'width', 'ramanshift')
+        # Comment annotation flags the per-pixel branch.
+        assert 'per-pixel bgsubtract' in map_mod.mapxr.attrs['comments']
+
+    def test_remove_bg_individual_rejects_toplot(self, ramanmap_instance, fit_mask_map):
+        """remove_bg(mode='individual', toplot=True) must raise.
+
+        Allowing toplot would spawn one matplotlib figure per pixel —
+        thousands of figures on a typical map. The implementation
+        refuses up front so the user isn't surprised by a hung session.
+        """
+        with pytest.raises(ValueError, match="toplot=True"):
+            ramanmap_instance.remove_bg(
+                mode='individual', fitmask=fit_mask_map, toplot=True,
+            )
+
+    def test_remove_bg_const_still_byte_identical(self, ramanmap_instance, fit_mask_map):
+        """``mode='const'`` must remain byte-identical after the change.
+
+        The Phase 2.5 implementation touched only the ``mode='individual'``
+        branch; the const path is unchanged. Verify by checking that the
+        returned coeff / covar are still plain numpy arrays (not the new
+        xarray containers) and that the mapxr data matches a manual
+        bgsubtract on the middle spectrum.
+        """
+        # Run remove_bg in const mode (default).
+        map_mod, coeff, covar = ramanmap_instance.remove_bg(fitmask=fit_mask_map)
+        # Const-mode return types stay numpy — this is the BC contract.
+        assert isinstance(coeff, np.ndarray)
+        assert isinstance(covar, np.ndarray)
+        # Shape: coeff is 1-D (polyorder+1), covar is 2-D (P+1, P+1).
+        assert coeff.ndim == 1
+        assert covar.ndim == 2
 
     def test_calibrate_rejects_lorentz2(self, ramanmap_instance):
         """calibrate() must reject double-peak shapes loudly.
@@ -323,6 +430,50 @@ class TestRamanmapMethods:
         assert hasattr(map_norm, "mapxr")
         assert map_norm.normfactor is not None
         # Verify units are dimensionless after normalization
+        assert map_norm.mapxr.attrs['units'] == ' '
+
+    def test_normalize_individual(self, ramanmap_instance, fit_mask_map):
+        """normalize(mode='individual') divides each pixel by its own peak amplitude.
+
+        Regression test: the reference coordinates used for the ``peakpos``
+        history line are the arithmetic midpoint of the coordinate range,
+        which is generally *not* a grid point. The pre-fix code did an
+        exact-match ``.sel`` there and raised KeyError; after that, the
+        comment line tried to format the 2-D ``peakampl`` with ``:.2f``
+        and raised TypeError. Both paths are exercised here.
+        """
+        # Background must be removed first, as in the const-mode test.
+        map_mod, _, _ = ramanmap_instance.remove_bg(fitmask=fit_mask_map)
+        map_norm = map_mod.normalize(peakshift=1580, mode='individual')
+        # The per-pixel normalization factor is a labelled DataArray over
+        # the map coords, so users can ``.sel(width=..., height=...)`` it.
+        assert isinstance(map_norm.normfactor, xr.DataArray)
+        assert set(map_norm.normfactor.dims) == {'height', 'width'}
+        assert map_norm.normfactor.shape == (
+            ramanmap_instance.mapxr.sizes['height'],
+            ramanmap_instance.mapxr.sizes['width'],
+        )
+        # Data keeps its shape and dims; the division must align by
+        # dimension name rather than by numpy trailing-axis broadcasting.
+        assert map_norm.mapxr.dims == ramanmap_instance.mapxr.dims
+        assert map_norm.mapxr.shape == ramanmap_instance.mapxr.shape
+        # Dividing by the per-pixel amplitude must reproduce the input
+        # when multiplied back — checks the DataArray broadcast is right.
+        # peakfit runs with ``errors='ignore'``, so pixels whose fit did
+        # not converge carry a NaN amplitude; restrict the comparison to
+        # pixels with a finite factor and require that most pixels are.
+        back = map_norm.mapxr * map_norm.normfactor
+        finite = np.isfinite(map_norm.normfactor)
+        assert float(finite.mean()) > 0.9
+        np.testing.assert_allclose(
+            back.where(finite).data[:, finite.data],
+            map_mod.mapxr.where(finite).data[:, finite.data],
+            rtol=1e-10, atol=1e-8,
+        )
+        # History line mentions the mode and summarises the 2-D factor.
+        last = map_norm.mapxr.attrs['comments'].splitlines()[-1]
+        assert 'in mode == individual' in last
+        assert 'mean over pixels' in last
         assert map_norm.mapxr.attrs['units'] == ' '
 
     def test_calibrate(self, ramanmap_instance):

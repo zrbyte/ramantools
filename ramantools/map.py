@@ -32,8 +32,10 @@ from ._helpers import (
 )
 from ._witec import _parse_info_file
 from ._io import _load_witec_datafile
-# Named thresholds previously spelled as magic numbers in peakmask.
-from ._constants import PEAKMASK_VICINITY_FACTOR
+# Named thresholds previously spelled as magic numbers in peakmask
+# (PEAKMASK_VICINITY_FACTOR) and the notch-filter cutoff used by the
+# vectorized ``mode='individual'`` fast path in remove_bg.
+from ._constants import PEAKMASK_VICINITY_FACTOR, NOTCH_CUTOFF_CM
 # bgsubtract + peakfit are used by remove_bg / peakmask.
 # _compute_calibshift / _normalize_to_peak are the shared algorithm
 # cores for calibrate / normalize. _reject_double_peak replaces the
@@ -179,12 +181,12 @@ class ramanmap:
                 :type width: float, optional
                 
                 :return:
-                        
+
                         * ``map_mod``: new :class:`ramanmap` instance, containing the data with background removed.
                         * ``coeff``: the coefficients and
-                        * ``covar``: covariance of the polynomial fit, as supplied by :func:`polynomial_fit`.
-                
-                :rtype: tuple: (:class:`ramanmap`, :py:mod:`numpy`, :py:mod:`numpy`)
+                        * ``covar``: covariance of the polynomial fit. In ``mode='const'`` these are returned as :py:mod:`numpy` arrays (1-D coefficients, 2-D covariance), exactly as :func:`polynomial_fit` produces them. In ``mode='individual'`` they are :py:mod:`xarray` ``DataArray`` objects indexed by the map's ``height`` / ``width`` coords, with an extra ``coef`` dim (and ``coef_i`` / ``coef_j`` for the covariance) holding the polynomial coefficients in :py:func:`numpy.polyval` order.
+
+                :rtype: tuple: (:class:`ramanmap`, :py:mod:`numpy` or :py:mod:`xarray`, :py:mod:`numpy` or :py:mod:`xarray`)
 
                 .. note::
                         If the peaks and background are complicated, it is advised to test the background fit, by selecting the most difficult spectrum from the map and tweaking the fit parameters directly, using :func:`bgsubtract`.
@@ -192,8 +194,8 @@ class ramanmap:
                         Metadata is copied over to the returned :class:`ramanmap` instance, because there are no unit changes, in removing the background.
                         After running, the 'comments' attribute of the new `xarray` instance is updated with the background fit information.
 
-                .. seealso::
-                        ``mode = 'individual'`` is not implemented yet.
+                        ``mode='individual'`` has two execution paths. When a ``fitmask`` is supplied, all pixels share the same masked-in region and a single vectorized least-squares solve handles every pixel at once (fast path). Without a ``fitmask``, :func:`bgsubtract` runs once per pixel so each spectrum gets its own automatic peak search (slow path, but each pixel's mask differs and is stored as a 3-D :py:mod:`xarray` DataArray on ``map_mod.mask``).
+                        ``toplot=True`` is rejected in ``mode='individual'`` to avoid creating one plot per pixel.
 
                 :Example:
                 
@@ -236,7 +238,7 @@ class ramanmap:
                 if mode == 'const':
                         # Remove the same background for all spectra in the map
                         # Set the spectra selected for background fitting
-                        middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest')
+                        middle = self.mapxr.sel(width = self.size_x/2, height = self.size_y/2, method = 'nearest') # type: ignore
 
                         # check if width and height are specified
                         if (width is None) or (height is None):
@@ -264,22 +266,177 @@ class ramanmap:
                                 map_mod.mapxr.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
 
                 elif mode == 'individual':
-                        # TODO(future): implement per-pixel background subtraction.
-                        # Intended behavior: fit a polynomial to each (width, height)
-                        # spectrum independently — likely via xr.apply_ufunc for speed.
-                        # Raising loudly (instead of printing and returning an
-                        # unmodified map with coeff=0, covar=0) prevents silent
-                        # data-corruption bugs where callers believe the background
-                        # was removed but it wasn't.
-                        raise NotImplementedError(
-                                "remove_bg(mode='individual') is not implemented yet — "
-                                "use mode='const' or supply a pre-computed fitmask."
+                        # Per-pixel background subtraction. Two execution paths:
+                        #   * Fast: a shared ``fitmask`` is supplied → one
+                        #     vectorized ``np.linalg.lstsq`` solves all pixels
+                        #     simultaneously.
+                        #   * Slow: no fitmask → call ``bgsubtract`` per pixel
+                        #     so each spectrum runs its own peak search before
+                        #     fitting. Loop overhead is dominated by the
+                        #     per-pixel curve_fit cost.
+                        # ``coeff`` / ``covar`` are returned as xarray
+                        # DataArrays indexed by the map's (height, width)
+                        # coords so the user can ``.sel(width=..., height=...)``
+                        # to inspect a pixel's polynomial fit.
+                        polyorder = kwargs.get('polyorder', 1)
+                        n_params = polyorder + 1
+                        # toplot would produce one plot per pixel — refuse
+                        # loudly rather than spawn 4800 matplotlib figures.
+                        if kwargs.get('toplot', False):
+                                raise ValueError(
+                                        "remove_bg(mode='individual') does not support toplot=True "
+                                        "— it would create one plot per pixel."
+                                )
+
+                        # Pull underlying numpy views. ``mapxr.data`` has axis
+                        # order (ramanshift, height, width); see _toxarray.
+                        rs = self.mapxr.ramanshift.data
+                        data = self.mapxr.data
+                        n_points = rs.size
+                        ny = self.mapxr.sizes['height']
+                        nx = self.mapxr.sizes['width']
+
+                        if fitmask is not None:
+                                # ---- Fast path: vectorized polynomial fit ----
+                                # Apply the notch-filter cutoff that bgsubtract
+                                # would apply internally; copy first so we
+                                # don't mutate the caller's fitmask.
+                                mask_eff = np.asarray(fitmask, dtype=bool).copy()
+                                n_notch = int((rs < NOTCH_CUTOFF_CM).sum())
+                                mask_eff[:n_notch] = False
+
+                                # Guard: lstsq needs at least n_params+1 rows
+                                # to leave one degree of freedom for the s²
+                                # covariance estimate.
+                                if mask_eff.sum() <= n_params:
+                                        raise ValueError(
+                                                f"fitmask has only {int(mask_eff.sum())} masked-in "
+                                                f"points after the notch cutoff; polyorder={polyorder} "
+                                                f"requires at least {n_params + 1}."
+                                        )
+
+                                # Restrict to the masked-in samples. Reshape
+                                # (N, ny, nx) → (N, ny*nx) so one lstsq call
+                                # handles every pixel as a separate RHS column.
+                                x_in = rs[mask_eff]
+                                y_flat = data.reshape(n_points, ny * nx)
+                                y_in = y_flat[mask_eff]
+
+                                # Vandermonde matrix in descending-degree order
+                                # so the coefficients are np.polyval-compatible
+                                # (same convention as bgsubtract / polynomial_fit).
+                                X = np.vander(x_in, n_params, increasing=False)
+
+                                # One solve for every pixel: beta shape (P+1, ny*nx).
+                                beta, _, _, _ = np.linalg.lstsq(X, y_in, rcond=None)
+
+                                # Evaluate the per-pixel background at every
+                                # ramanshift point, then reshape back to the
+                                # map's 3-D layout for in-place subtraction.
+                                X_full = np.vander(rs, n_params, increasing=False)
+                                bg_flat = X_full @ beta
+                                bg_3d = bg_flat.reshape(data.shape)
+                                map_mod.mapxr[:] -= bg_3d
+
+                                # Per-pixel covariance matches scipy.curve_fit
+                                # with absolute_sigma=False: pcov = s² (XᵀX)⁻¹
+                                # where s² is the unbiased residual variance.
+                                XTX_inv = np.linalg.inv(X.T @ X)
+                                resid = y_in - X @ beta
+                                s_sq = (resid ** 2).sum(axis=0) / (x_in.size - n_params)
+                                # Broadcast s² across the constant (XᵀX)⁻¹ to
+                                # produce (ny*nx, P+1, P+1), then unflatten.
+                                covar_flat = s_sq[:, None, None] * XTX_inv[None, :, :]
+                                covar_arr = covar_flat.reshape(ny, nx, n_params, n_params)
+
+                                # Coefficients per pixel: (P+1, ny*nx) → (ny, nx, P+1).
+                                coeff_arr = beta.T.reshape(ny, nx, n_params)
+
+                                # Match const-mode behavior: store the raw
+                                # ``fitmask`` the user passed in (no notch).
+                                map_mod.mask = fitmask
+                                # Comment line distinguishes fast from slow
+                                # path so history() makes the choice traceable.
+                                if hasattr(map_mod.mapxr, 'comments'):
+                                        map_mod.mapxr.attrs['comments'] += (
+                                                'background subtracted - mode == individual, '
+                                                'vectorized polyfit with supplied fitmask\n'
+                                        )
+                        else:
+                                # ---- Slow path: per-pixel bgsubtract ----
+                                # Allocate output buffers up front; bgsubtract
+                                # returns consistent shapes given fixed polyorder.
+                                coeff_arr = np.empty((ny, nx, n_params))
+                                covar_arr = np.empty((ny, nx, n_params, n_params))
+                                mask_arr = np.empty((ny, nx, n_points), dtype=bool)
+                                data_out = np.empty_like(data)
+
+                                # Iterate over the spatial dims. ``data[:, j, i]``
+                                # extracts the spectrum at pixel (j, i) — the
+                                # height axis is already flipped at load time
+                                # in _toxarray so (j, i) here matches the user's
+                                # ``mapxr.isel(height=j, width=i)`` view.
+                                for j in range(ny):
+                                        for i in range(nx):
+                                                y_pix = data[:, j, i]
+                                                y_nobg, _, c, _, m, cv = bgsubtract(rs, y_pix, **kwargs)
+                                                data_out[:, j, i] = y_nobg
+                                                coeff_arr[j, i] = c
+                                                covar_arr[j, i] = cv
+                                                mask_arr[j, i] = m
+
+                                # Write the bg-subtracted data back; using the
+                                # item-assignment idiom that const-mode uses
+                                # keeps the data-write style consistent.
+                                map_mod.mapxr[:] = data_out
+                                # Store the per-pixel masks as a 3-D xarray
+                                # so the user can ``mask.sel(width=..., height=...)``
+                                # to inspect any single pixel's fitmask.
+                                map_mod.mask = xr.DataArray(
+                                        mask_arr,
+                                        dims=('height', 'width', 'ramanshift'),
+                                        coords={
+                                                'height': self.mapxr.coords['height'],
+                                                'width': self.mapxr.coords['width'],
+                                                'ramanshift': self.mapxr.coords['ramanshift'],
+                                        },
+                                )
+                                if hasattr(map_mod.mapxr, 'comments'):
+                                        map_mod.mapxr.attrs['comments'] += (
+                                                'background subtracted - mode == individual, '
+                                                'per-pixel bgsubtract with auto peak find\n'
+                                        )
+
+                        # Wrap the per-pixel coeff / covar arrays in xarray
+                        # containers aligned to the map's (height, width)
+                        # grid. ``coef`` indexes the polynomial coefficients
+                        # in np.polyval order (highest power first).
+                        coeff = xr.DataArray(
+                                coeff_arr,
+                                dims=('height', 'width', 'coef'),
+                                coords={
+                                        'height': self.mapxr.coords['height'],
+                                        'width': self.mapxr.coords['width'],
+                                        'coef': np.arange(n_params),
+                                },
+                        )
+                        covar = xr.DataArray(
+                                covar_arr,
+                                dims=('height', 'width', 'coef_i', 'coef_j'),
+                                coords={
+                                        'height': self.mapxr.coords['height'],
+                                        'width': self.mapxr.coords['width'],
+                                        'coef_i': np.arange(n_params),
+                                        'coef_j': np.arange(n_params),
+                                },
                         )
 
                 else:
+                        # _require_mode above already rejects anything that
+                        # isn't 'const' or 'individual', so this branch is
+                        # unreachable. Kept as defensive sentinel values.
                         coeff = 0
                         covar = 0
-                        pass
 
                 return map_mod, coeff, covar
 
@@ -311,8 +468,8 @@ class ramanmap:
                 # ``.sel(param='x0')`` which lorentz2 (x01/x02 names) breaks.
                 _reject_double_peak(kwargs.get('func'), 'calibrate')
                 # Validate parameters via the shared helpers.
-                peakshift = _as_float('peakshift', peakshift)
-                calibfactor = _as_float('calibfactor', calibfactor)
+                peakshift = _as_float('peakshift', peakshift) # type: ignore
+                calibfactor = _as_float('calibfactor', calibfactor) # type: ignore
                 width = _as_float('width', width, optional=True)
                 height = _as_float('height', height, optional=True)
 
@@ -320,8 +477,8 @@ class ramanmap:
                 # width and height are given, otherwise the middle of the map.
                 if (width is None) or (height is None):
                         spectofit = self.mapxr.sel(
-                                width=self.size_x / 2,
-                                height=self.size_y / 2,
+                                width=self.size_x / 2, # type: ignore
+                                height=self.size_y / 2, # type: ignore
                                 method='nearest',
                         )
                 else:
@@ -373,6 +530,8 @@ class ramanmap:
 
                         In ``mode == 'individual'``, each spectrum in the map will be normalized to the local peak amplitude. In ``mode == 'const'``, the peak at the position specified by ``width`` and ``height`` is used for normalization.
                         If ``mode == 'individual'``, the ``width`` and ``height`` parameters are ignored.
+                        The ``normfactor`` attribute of the returned instance is a scalar in ``'const'`` mode and a 2-D :py:mod:`xarray` ``DataArray`` over (``height``, ``width``) in ``'individual'`` mode, holding each pixel's fitted peak amplitude.
+                        Pixels with no discernible peak at ``peakshift`` get an unreliable (possibly negative or huge) amplitude, so the normalized spectra there are meaningless.
 
                         Only single-peak shape functions are supported (``gaussian``, ``lorentz``).
                         Passing ``func=lorentz2`` raises ``ValueError`` because the method
@@ -381,7 +540,7 @@ class ramanmap:
                 """
                 # Guard + validate via the shared helpers.
                 _reject_double_peak(kwargs.get('func'), 'normalize')
-                peakshift = _as_float('peakshift', peakshift)
+                peakshift = _as_float('peakshift', peakshift) # type: ignore
                 _require_mode(mode, ['const', 'individual'])
                 width = _as_float('width', width, optional=True)
                 height = _as_float('height', height, optional=True)
@@ -406,13 +565,24 @@ class ramanmap:
                         **kwargs,
                 )
                 # Map-specific comment line includes the ``in mode == XXX``
-                # token (singlespec's version omits it).
+                # token (singlespec's version omits it). In 'const' mode
+                # ``peakampl`` is a scalar; in 'individual' mode it is a
+                # 2-D DataArray over (height, width), which cannot be
+                # formatted with ``:.2f`` — summarise it by its mean and
+                # range instead so the history stays human-readable.
+                if mode == 'const':
+                        factor_str = f'{float(peakampl):.2f}'
+                else:
+                        factor_str = (
+                                f'{float(peakampl.mean()):.2f} (mean over pixels, '
+                                f'range {float(peakampl.min()):.2f} .. {float(peakampl.max()):.2f})'
+                        )
                 normalized.attrs['comments'] += (
                         'normalized to peak at: '
-                        + f'{peakpos:.2f}'
+                        + f'{float(peakpos):.2f}'
                         + f' in mode == {mode}'
                         + ' by a factor of '
-                        + f'{peakampl:.2f}'
+                        + factor_str
                         + '\n'
                 )
 
@@ -489,8 +659,8 @@ class ramanmap:
                 # Validate parameters via the shared float-coercer. The
                 # 0 <= cutoff <= 1 range check stays inline because no
                 # other method carries the same range constraint.
-                peakpos = _as_float('peakpos', peakpos)
-                cutoff = _as_float('cutoff', cutoff)
+                peakpos = _as_float('peakpos', peakpos) # type: ignore
+                cutoff = _as_float('cutoff', cutoff) # type: ignore
                 if not (0 <= cutoff <= 1):
                         raise ValueError(f"cutoff must be between 0 and 1, got {cutoff}")
                 width = _as_float('width', width, optional=True)

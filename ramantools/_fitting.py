@@ -161,10 +161,18 @@ def _normalize_to_peak(whole_da, peakshift: float, ref_coords=None, mode: str = 
                         stval={'x0': peakshift, 'offset': offset_start},
                         **kwargs,
                 )
-                peakampl = fit['curvefit_coefficients'].sel(param='ampl').data
-                # Note: no ``method='nearest'`` here — matches the pre-refactor
-                # behaviour which required an exact-match selection.
-                peakpos = fit['curvefit_coefficients'].sel(param='x0').sel(**ref_coords).data
+                # Keep ``peakampl`` as a DataArray (not ``.data``) so the
+                # division below aligns by dimension *name* rather than by
+                # numpy trailing-axis broadcasting, and so the caller can
+                # store a labelled per-pixel normalization factor.
+                peakampl = fit['curvefit_coefficients'].sel(param='ampl', drop=True)
+                # ``ref_coords`` holds the arithmetic midpoint of each
+                # coordinate range, which in general is *not* a grid point
+                # (e.g. 59.9999999999995 vs. 60.0). An exact-match ``.sel``
+                # therefore raised KeyError; ``method='nearest'`` picks the
+                # closest pixel, consistent with how ``ref_cropped`` is
+                # selected above.
+                peakpos = fit['curvefit_coefficients'].sel(param='x0').sel(**ref_coords, method='nearest').data
         else:
                 # _require_mode is the normal guard path in the class methods;
                 # keeping this branch defensive so direct callers also fail loudly.
