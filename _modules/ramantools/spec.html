@@ -73,11 +73,11 @@
            <div itemprop="articleBody">
              
   <h1>Source code for ramantools.spec</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;The ``singlespec`` container class.</span>
+<span></span><span class="sd">"""The ``singlespec`` container class.</span>
 
 <span class="sd">Extracted from ``ramantools/ramantools.py`` during the Phase 1 refactor.</span>
 <span class="sd">Public API is unchanged; this file only moves the code.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 <span class="c1"># Defer annotation evaluation — same rationale as in ``map.py``.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -111,9 +111,9 @@
 <div class="viewcode-block" id="singlespec">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">singlespec</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Container for Raman single spectra, imported from a text file.</span>
-<span class="sd">        The text file needs to be exported as a &quot;table&quot; from Witec Project or Witec Control</span>
+<span class="sd">        The text file needs to be exported as a "table" from Witec Project or Witec Control</span>
 <span class="sd">        Additional info also needs to be exported, containing the metadata for the measurement.</span>
 <span class="sd">        This is the text next to the map data in the Witec software.</span>
 <span class="sd">        It takes two arguments, the first is the path to the file containing the spectroscopy data, the second is the path to the metadata.</span>
@@ -121,20 +121,20 @@
 <span class="sd">        :param spec_path: Path to the text file, containing the Raman spectrum, exported from Witec</span>
 <span class="sd">        :type spec_path: str</span>
 <span class="sd">        :param info_path: Path to the info file, containing the metadata, exported from Witec.</span>
-<span class="sd">                Optional — when omitted (``None``), metadata is populated from the data file&#39;s</span>
-<span class="sd">                own ``[Header]`` block if present. Both the Witec Project v5 &quot;old table</span>
-<span class="sd">                export&quot; (``FileName`` carries the source ``.wip`` path) and the v7 &quot;new</span>
-<span class="sd">                table export&quot; (``FileName =`` empty) formats are recognized; the</span>
+<span class="sd">                Optional — when omitted (``None``), metadata is populated from the data file's</span>
+<span class="sd">                own ``[Header]`` block if present. Both the Witec Project v5 "old table</span>
+<span class="sd">                export" (``FileName`` carries the source ``.wip`` path) and the v7 "new</span>
+<span class="sd">                table export" (``FileName =`` empty) formats are recognized; the</span>
 <span class="sd">                ``PositionX`` / ``PositionY`` / ``PositionZ`` and ``GraphName`` keys used to</span>
 <span class="sd">                populate metadata are identical between the two. Fields not present in the</span>
-<span class="sd">                header fall back to ``&#39;N/A&#39;`` (strings) or ``NaN`` (numerics); a bare data</span>
-<span class="sd">                file (no header) still loads because spectra don&#39;t need dimensional metadata.</span>
+<span class="sd">                header fall back to ``'N/A'`` (strings) or ``NaN`` (numerics); a bare data</span>
+<span class="sd">                file (no header) still loads because spectra don't need dimensional metadata.</span>
 <span class="sd">        :type info_path: str, optional</span>
 
 <span class="sd">        Most important variables of the :class:`singlespec` instance:</span>
 
 <span class="sd">        :var ssxr: (type :py:mod:`xarray` DataArray) all data, coordinates and metadata</span>
-<span class="sd">        :var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It&#39;s only available if :py:meth:`singlespec.remove_bg` is called.</span>
+<span class="sd">        :var mask: (type: :py:mod:`numpy` array) A boolean array of the same length as the ``ramanshift``. It's only available if :py:meth:`singlespec.remove_bg` is called.</span>
 <span class="sd">        :var counts: (type :py:mod:`numpy` array) Raman intensity values</span>
 <span class="sd">        :var ramanshift: (type :py:mod:`numpy` array) Raman shift values for the datapoints stored in `map`</span>
 <span class="sd">        :var samplename: (type: str) name of the sample, as shown in the Witec software.</span>
@@ -151,47 +151,47 @@
 
 <span class="sd">                import ramantools as rt</span>
 
-<span class="sd">                spec_path = r&#39;data path on you machine&#39;</span>
-<span class="sd">                info_path = r&#39;metadata path on your machine&#39;</span>
-<span class="sd">                # use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+<span class="sd">                spec_path = r'data path on you machine'</span>
+<span class="sd">                info_path = r'metadata path on your machine'</span>
+<span class="sd">                # use raw strings, starting with `r'` to escape special characters, such as backslash</span>
 
 <span class="sd">                single_spectrum = rt.singlespec(spec_path, info_path)</span>
 <span class="sd">                # list of variables stored in the `singlespec` instance</span>
 <span class="sd">                print(list(single_spectrum.__dict__))</span>
 
-<span class="sd">                # Load without a metadata file — the data file&#39;s [Header]</span>
+<span class="sd">                # Load without a metadata file — the data file's [Header]</span>
 <span class="sd">                # block (if present) fills in positioner coordinates etc:</span>
 <span class="sd">                spec_noinfo = rt.singlespec(spec_path)</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
 <div class="viewcode-block" id="singlespec.history">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.history">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Display the notes accumulated in the &#39;comments&#39; attribute of the :class:`singlespec.ssxr` `xarray` variable.</span>
-<span class="sd">                &quot;&quot;&quot;</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Data modification history:</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span></div>
+<span class="w">                </span><span class="sd">"""Display the notes accumulated in the 'comments' attribute of the :class:`singlespec.ssxr` `xarray` variable.</span>
+<span class="sd">                """</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">'Data modification history:</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">])</span></div>
 
 
 <div class="viewcode-block" id="singlespec.print_metadata">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.print_metadata">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">print_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">                </span><span class="sd">"""</span>
 <span class="sd">                Prints the metadata of the :class:`singlespec` instance, imported from the info file.</span>
 
 <span class="sd">                :return: none</span>
-<span class="sd">                &quot;&quot;&quot;</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Comments of the `xarray` DataArray </span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">])</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;------------------&#39;</span><span class="p">)</span>
+<span class="sd">                """</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">'Comments of the `xarray` DataArray </span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">])</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">'------------------'</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="singlespec.remove_bg">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.remove_bg">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">remove_bg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Remove the background of Raman spectra.</span>
+<span class="w">                </span><span class="sd">"""Remove the background of Raman spectra.</span>
 <span class="sd">                The :py:mod:`xarray` variable of the :class:`singlespec` instance is updated with the new dataset, with the background removed.</span>
 <span class="sd">        </span>
 <span class="sd">                It takes the same optional arguments as :func:`bgsubtract`.</span>
@@ -208,7 +208,7 @@
 
 <span class="sd">                .. note::</span>
 <span class="sd">                        Metadata is copied over to the returned :class:`singlespec` instance, because there are no unit changes, in removing the background.</span>
-<span class="sd">                        After running, the &#39;comments&#39; attribute of the new `xarray` instance is updated with the background fit information.</span>
+<span class="sd">                        After running, the 'comments' attribute of the new `xarray` instance is updated with the background fit information.</span>
 
 <span class="sd">                :Example:</span>
 <span class="sd">                </span>
@@ -216,9 +216,9 @@
 
 <span class="sd">                        import ramantools as rt</span>
 
-<span class="sd">                        spec_path = r&#39;data path on you machine&#39;</span>
-<span class="sd">                        info_path = r&#39;metadata path on your machine&#39;</span>
-<span class="sd">                        # use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+<span class="sd">                        spec_path = r'data path on you machine'</span>
+<span class="sd">                        info_path = r'metadata path on your machine'</span>
+<span class="sd">                        # use raw strings, starting with `r'` to escape special characters, such as backslash</span>
 
 <span class="sd">                        # Loading a single spectrum from files</span>
 <span class="sd">                        single_spectrum = rt.singlespec(spec_path, info_path)</span>
@@ -237,8 +237,8 @@
 <span class="sd">                        # Replot the `xarray` DataArray, which has the background removed</span>
 <span class="sd">                        new_ss.ssxr.plot()</span>
 
-<span class="sd">                &quot;&quot;&quot;</span>                
-                <span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">fitparams</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="sd">                """</span>                
+                <span class="n">data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">fitparams</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="n">bgsubtract</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">'ramanshift'</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
                 <span class="c1"># create a lightweight copy of the instance and copy the data</span>
                 <span class="n">singlesp_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -247,8 +247,8 @@
                 <span class="c1"># remove the background from ssxr</span>
                 <span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">-=</span> <span class="n">bg_values</span>
                 <span class="c1"># adding a note to `xarray` comments attribute if it exists</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
-                        <span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">&#39;background subtracted, with parameters: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fitparams</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">'comments'</span><span class="p">):</span>
+                        <span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">'background subtracted, with parameters: '</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fitparams</span><span class="p">)</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span>
                 <span class="c1"># save the fitmask as a variable of `singlespec`</span>
                 <span class="n">singlesp_mod</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
 
@@ -258,7 +258,7 @@
 <div class="viewcode-block" id="singlespec.calibrate">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.calibrate">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">calibfactor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">singlespec</span><span class="p">:</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Calibrating a single Raman spectrum.</span>
+<span class="w">                </span><span class="sd">"""Calibrating a single Raman spectrum.</span>
 <span class="sd">                It uses :func:`peakfit` to find the Raman peak closest to ``peakshift`` and returns a new :class:`singlespec` instance, with the ramanshift coordinate offset to have the position of the peak at ``peakshift``.</span>
 <span class="sd">                If the optional argument ``calibfactor`` is passed, ``peakshift`` is ignored and the data is shifted by the given value.</span>
 <span class="sd">                All possible keyword arguments of :func:`peakfit` can be passed.</span>
@@ -274,29 +274,29 @@
 <span class="sd">                .. note::</span>
 <span class="sd">                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).</span>
 <span class="sd">                        Passing ``func=lorentz2`` raises ``ValueError``.</span>
-<span class="sd">                &quot;&quot;&quot;</span>
+<span class="sd">                """</span>
                 <span class="c1"># Guard + validate via the shared helpers.</span>
-                <span class="n">_reject_double_peak</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;func&#39;</span><span class="p">),</span> <span class="s1">&#39;calibrate&#39;</span><span class="p">)</span>
-                <span class="n">peakshift</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;peakshift&#39;</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">)</span>
-                <span class="n">calibfactor</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;calibfactor&#39;</span><span class="p">,</span> <span class="n">calibfactor</span><span class="p">)</span>
+                <span class="n">_reject_double_peak</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'func'</span><span class="p">),</span> <span class="s1">'calibrate'</span><span class="p">)</span>
+                <span class="n">peakshift</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">'peakshift'</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">)</span>
+                <span class="n">calibfactor</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">'calibfactor'</span><span class="p">,</span> <span class="n">calibfactor</span><span class="p">)</span>
 
                 <span class="c1"># Delegate: spec has no spatial coords, so the whole ssxr is</span>
-                <span class="c1"># already the 1-D &quot;reference spectrum&quot; the core expects.</span>
+                <span class="c1"># already the 1-D "reference spectrum" the core expects.</span>
                 <span class="n">calibshift</span> <span class="o">=</span> <span class="n">_compute_calibshift</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
                 <span class="c1"># Shallow copy — ramanshift is the only coord that changes.</span>
                 <span class="n">ss_mod</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
                 <span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span>
-                        <span class="n">ramanshift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">calibshift</span>
+                        <span class="n">ramanshift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">[</span><span class="s1">'ramanshift'</span><span class="p">]</span> <span class="o">+</span> <span class="n">calibshift</span>
                 <span class="p">)</span>
                 <span class="c1"># Note: no trailing space before ``\n`` on the singlespec</span>
                 <span class="c1"># comment (map carries a trailing space — keep the divergence</span>
                 <span class="c1"># byte-exact so the checksum test passes).</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">&#39;comments&#39;</span><span class="p">):</span>
-                        <span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
-                                <span class="s1">&#39;calibrated Raman shift by adding &#39;</span>
-                                <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">calibshift</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span>
-                                <span class="o">+</span> <span class="s1">&#39; cm^-1 to the raw ramanshift</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">'comments'</span><span class="p">):</span>
+                        <span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+                                <span class="s1">'calibrated Raman shift by adding '</span>
+                                <span class="o">+</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">calibshift</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span>
+                                <span class="o">+</span> <span class="s1">' cm^-1 to the raw ramanshift</span><span class="se">\n</span><span class="s1">'</span>
                         <span class="p">)</span>
                 <span class="k">return</span> <span class="n">ss_mod</span></div>
 
@@ -304,7 +304,7 @@
 <div class="viewcode-block" id="singlespec.normalize">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.normalize">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">singlespec</span><span class="p">:</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Normalize the Raman spectrum to the peak at ``peakshift``.</span>
+<span class="w">                </span><span class="sd">"""Normalize the Raman spectrum to the peak at ``peakshift``.</span>
 <span class="sd">                Returns a normalized :class:`singlespec` instance.</span>
 <span class="sd">                An exception will be raised if the background has not been removed.</span>
 <span class="sd">                It uses :func:`peakfit` to find the amplitude of the peak to be normalized. It accepts all keyword arguments accepted by :func:`peakfit`.</span>
@@ -322,30 +322,30 @@
 
 <span class="sd">                        Only single-peak shape functions are supported (``gaussian``, ``lorentz``).</span>
 <span class="sd">                        Passing ``func=lorentz2`` raises ``ValueError``.</span>
-<span class="sd">                &quot;&quot;&quot;</span>
+<span class="sd">                """</span>
                 <span class="c1"># Guard + validate.</span>
-                <span class="n">_reject_double_peak</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;func&#39;</span><span class="p">),</span> <span class="s1">&#39;normalize&#39;</span><span class="p">)</span>
-                <span class="n">peakshift</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">&#39;peakshift&#39;</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">)</span>
+                <span class="n">_reject_double_peak</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'func'</span><span class="p">),</span> <span class="s1">'normalize'</span><span class="p">)</span>
+                <span class="n">peakshift</span> <span class="o">=</span> <span class="n">_as_float</span><span class="p">(</span><span class="s1">'peakshift'</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">)</span>
 
                 <span class="c1"># Delegate the crop / bg-check / fit / divide to the shared</span>
                 <span class="c1"># core. ``ref_coords=None`` + a 1-D DataArray means the core</span>
                 <span class="c1"># computes no midpoints (no non-ramanshift dims); mode is</span>
-                <span class="c1"># always &#39;const&#39; for spectra (no per-pixel variant exists).</span>
+                <span class="c1"># always 'const' for spectra (no per-pixel variant exists).</span>
                 <span class="n">normalized</span><span class="p">,</span> <span class="n">peakampl</span><span class="p">,</span> <span class="n">peakpos</span> <span class="o">=</span> <span class="n">_normalize_to_peak</span><span class="p">(</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span>
                         <span class="n">peakshift</span><span class="p">,</span>
                         <span class="n">ref_coords</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                        <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;const&#39;</span><span class="p">,</span>
+                        <span class="n">mode</span><span class="o">=</span><span class="s1">'const'</span><span class="p">,</span>
                         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="c1"># Spec comment omits the ``in mode == XXX`` token that map&#39;s</span>
+                <span class="c1"># Spec comment omits the ``in mode == XXX`` token that map's</span>
                 <span class="c1"># version carries. Preserved byte-for-byte for the checksum.</span>
-                <span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
-                        <span class="s1">&#39;normalized to peak at: &#39;</span>
-                        <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakpos</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span>
-                        <span class="o">+</span> <span class="s1">&#39; by a factor of &#39;</span>
-                        <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">peakampl</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">&#39;</span>
-                        <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="n">normalized</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="s1">'normalized to peak at: '</span>
+                        <span class="o">+</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">peakpos</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span>
+                        <span class="o">+</span> <span class="s1">' by a factor of '</span>
+                        <span class="o">+</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">peakampl</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span>
+                        <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span>
                 <span class="p">)</span>
 
                 <span class="c1"># Lightweight copy and attach normalized data.</span>
@@ -358,10 +358,10 @@
 <div class="viewcode-block" id="singlespec.crr">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.crr">[docs]</a>
         <span class="k">def</span><span class="w"> </span><span class="nf">crr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">singlespec</span><span class="p">:</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Tool for removing cosmic rays from a single spectrum.</span>
+<span class="w">                </span><span class="sd">"""Tool for removing cosmic rays from a single spectrum.</span>
 <span class="sd">                The CRR peaks are determined as the standard deviation of the data: `std` times the `cutoff` value, in the `window` sized vicinity of each pixel.</span>
 
-<span class="sd">                :param cutoff: multiplication factor for the data&#39;s standard deviation; defaults to 2.</span>
+<span class="sd">                :param cutoff: multiplication factor for the data's standard deviation; defaults to 2.</span>
 <span class="sd">                :type cutoff: int, optional</span>
 <span class="sd">                :param window: size of the neighborhood to consider; defaults to 2.</span>
 <span class="sd">                :type window: int, optional</span>
@@ -371,19 +371,19 @@
 
 <span class="sd">                .. note::</span>
 <span class="sd">                        If CRR is not satisfactory, keep reducing the `cutoff` value and compare to the original data.</span>
-<span class="sd">                &quot;&quot;&quot;</span>
+<span class="sd">                """</span>
 
                 <span class="c1"># Delegate to the shared rolling-window CRR core.</span>
                 <span class="n">cleaned</span><span class="p">,</span> <span class="n">n_spikes</span> <span class="o">=</span> <span class="n">_crr_xarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">,</span> <span class="n">window</span><span class="p">)</span>
                 <span class="n">ss_crr</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
                 <span class="n">ss_crr</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="n">cleaned</span>
-                <span class="c1"># Spec comment wording differs from map — &quot;Ramanshift</span>
-                <span class="c1"># coordinates&quot; here vs. just &quot;coordinates&quot; on the map side.</span>
+                <span class="c1"># Spec comment wording differs from map — "Ramanshift</span>
+                <span class="c1"># coordinates" here vs. just "coordinates" on the map side.</span>
                 <span class="c1"># Preserved byte-for-byte to keep the pipeline checksum happy.</span>
-                <span class="n">ss_crr</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
-                        <span class="s1">&#39;replaced cosmic ray values with local mean at &#39;</span>
-                        <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">n_spikes</span><span class="si">}</span><span class="s1">&#39;</span>
-                        <span class="o">+</span> <span class="s1">&#39; Ramanshift coordinates.</span><span class="se">\n</span><span class="s1">&#39;</span>
+                <span class="n">ss_crr</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span>
+                        <span class="s1">'replaced cosmic ray values with local mean at '</span>
+                        <span class="o">+</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">n_spikes</span><span class="si">}</span><span class="s1">'</span>
+                        <span class="o">+</span> <span class="s1">' Ramanshift coordinates.</span><span class="se">\n</span><span class="s1">'</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="n">ss_crr</span></div>
 
@@ -392,13 +392,13 @@
         <span class="c1"># internal functions ----------------------------------</span>
 
         <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">info_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Constructor for :class:`singlespec`.</span>
+<span class="w">                </span><span class="sd">"""Constructor for :class:`singlespec`.</span>
 
 <span class="sd">                ``info_path`` is optional. When ``None``, metadata defaults to</span>
-<span class="sd">                sentinels and :py:meth:`_load_singlespec` parses the data file&#39;s</span>
+<span class="sd">                sentinels and :py:meth:`_load_singlespec` parses the data file's</span>
 <span class="sd">                ``[Header]`` block if present to fill in positioner coordinates</span>
 <span class="sd">                etc.</span>
-<span class="sd">                &quot;&quot;&quot;</span>
+<span class="sd">                """</span>
                 <span class="c1"># filename</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">spec_path</span>
                 <span class="c1"># fit mask</span>
@@ -425,18 +425,18 @@
 
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_load_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Populate metadata attributes with placeholder values.</span>
+<span class="w">                </span><span class="sd">"""Populate metadata attributes with placeholder values.</span>
 
 <span class="sd">                Mirror of :py:meth:`ramanmap._load_defaults` for single spectra.</span>
 <span class="sd">                Unlike the map variant, there are no dimensional attributes to</span>
 <span class="sd">                defer — a 1-D spectrum is fully described by the two columns</span>
 <span class="sd">                in the data file.</span>
-<span class="sd">                &quot;&quot;&quot;</span>
+<span class="sd">                """</span>
                 <span class="c1"># Shared scaffolding (metadata / date / time / sample / laser /</span>
                 <span class="c1"># itime / grating / objname / objmagn / positioner_x / _y).</span>
                 <span class="n">_apply_default_common_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-                <span class="c1"># Spectrum name derived from the data file&#39;s stem; the data</span>
-                <span class="c1"># header&#39;s GraphName, if present, will overwrite this via</span>
+                <span class="c1"># Spectrum name derived from the data file's stem; the data</span>
+                <span class="c1"># header's GraphName, if present, will overwrite this via</span>
                 <span class="c1"># _apply_datafile_header.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">specname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
                 <span class="c1"># Spec-only extra: the Z positioner coordinate that maps lack.</span>
@@ -444,15 +444,15 @@
 
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_apply_datafile_header</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;Override sentinel metadata with values parsed from the data header.</span>
+<span class="w">                </span><span class="sd">"""Override sentinel metadata with values parsed from the data header.</span>
 
 <span class="sd">                Called by :py:meth:`_load_singlespec` after</span>
 <span class="sd">                ``self.metadata_datafile`` has been captured. Overrides are</span>
 <span class="sd">                limited to keys the parser actually finds; missing fields</span>
 <span class="sd">                leave sentinels in place.</span>
-<span class="sd">                &quot;&quot;&quot;</span>
-                <span class="c1"># Shared parse + setattr iteration. ``name_attr=&#39;specname&#39;``</span>
-                <span class="c1"># routes the GraphName override to this class&#39;s name field.</span>
+<span class="sd">                """</span>
+                <span class="c1"># Shared parse + setattr iteration. ``name_attr='specname'``</span>
+                <span class="c1"># routes the GraphName override to this class's name field.</span>
                 <span class="c1"># ``copy_keys`` deliberately excludes pixel_x / pixel_y / size_x</span>
                 <span class="c1"># / size_y: spectra ignore those keys even if ``SizeX = SizeY</span>
                 <span class="c1"># = 1`` appears in the header.</span>
@@ -461,29 +461,29 @@
                 <span class="n">_apply_parsed_header</span><span class="p">(</span>
                         <span class="bp">self</span><span class="p">,</span>
                         <span class="n">fields</span><span class="p">,</span>
-                        <span class="n">name_attr</span><span class="o">=</span><span class="s1">&#39;specname&#39;</span><span class="p">,</span>
-                        <span class="n">copy_keys</span><span class="o">=</span><span class="p">(</span><span class="s1">&#39;positioner_x&#39;</span><span class="p">,</span> <span class="s1">&#39;positioner_y&#39;</span><span class="p">,</span> <span class="s1">&#39;positioner_z&#39;</span><span class="p">),</span>
+                        <span class="n">name_attr</span><span class="o">=</span><span class="s1">'specname'</span><span class="p">,</span>
+                        <span class="n">copy_keys</span><span class="o">=</span><span class="p">(</span><span class="s1">'positioner_x'</span><span class="p">,</span> <span class="s1">'positioner_y'</span><span class="p">,</span> <span class="s1">'positioner_z'</span><span class="p">),</span>
                 <span class="p">)</span>
 
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_load_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info_path</span><span class="p">):</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">                </span><span class="sd">"""</span>
 <span class="sd">                Load the file containing the metadata.</span>
 <span class="sd">                The metadata will be filled by searching the info file for various patterns, using regular expressions.</span>
-<span class="sd">                &quot;&quot;&quot;</span>
+<span class="sd">                """</span>
                 <span class="c1"># Shared parser returns raw text + a {attr: value} dict.</span>
                 <span class="c1"># ``is_map=False`` swaps the four map-only pixel / scan keys</span>
                 <span class="c1"># for the single spec-only ``positioner_z`` key.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span> <span class="n">fields</span> <span class="o">=</span> <span class="n">_parse_info_file</span><span class="p">(</span><span class="n">info_path</span><span class="p">,</span> <span class="n">is_map</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">specname</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">specname</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'name'</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                         <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_load_singlespec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec_path</span><span class="p">):</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">                </span><span class="sd">"""</span>
 <span class="sd">                Load the Raman map data into a numpy array.</span>
-<span class="sd">                &quot;&quot;&quot;</span>
+<span class="sd">                """</span>
                 <span class="c1"># One call owns header detection, metadata capture, FileName</span>
                 <span class="c1"># extraction, and np.loadtxt — same shared loader map.py uses.</span>
                 <span class="n">_</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span><span class="p">,</span> <span class="n">ss</span> <span class="o">=</span> <span class="n">_load_witec_datafile</span><span class="p">(</span><span class="n">spec_path</span><span class="p">)</span>
@@ -500,26 +500,26 @@
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">_toxarray</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">                </span><span class="sd">"""</span>
 <span class="sd">                Load the raw numpy data, as well as the metadata into an xarray object</span>
-<span class="sd">                &quot;&quot;&quot;</span>
+<span class="sd">                """</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span>
-                        <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">],</span>
-                        <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ramanshift&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">},</span>
+                        <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s1">'ramanshift'</span><span class="p">],</span>
+                        <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s1">'ramanshift'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">},</span>
                 <span class="p">)</span>
                 <span class="c1"># Comment text flags whether metadata came from an info file</span>
                 <span class="c1"># or from the data-file header / defaults.</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded </span><span class="se">\n</span><span class="s1">&#39;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'raw data loaded </span><span class="se">\n</span><span class="s1">'</span>
                 <span class="k">else</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;comments&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;raw data loaded (no info file; metadata from data header) </span><span class="se">\n</span><span class="s1">&#39;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'raw data loaded (no info file; metadata from data header) </span><span class="se">\n</span><span class="s1">'</span>
                 <span class="c1"># Shared attribute population — same block map.py uses. The</span>
                 <span class="c1"># helper includes ramanshift coord units / long_name so they</span>
-                <span class="c1"># don&#39;t need to be set twice.</span>
+                <span class="c1"># don't need to be set twice.</span>
                 <span class="n">_set_common_xarray_attrs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">)</span>
-                <span class="c1"># Spec-only extra: Z positioner coordinate (maps don&#39;t carry it).</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;sample positioner Z&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positioner_z</span></div>
+                <span class="c1"># Spec-only extra: Z positioner coordinate (maps don't carry it).</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'sample positioner Z'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positioner_z</span></div>
 
 </pre></div>
 

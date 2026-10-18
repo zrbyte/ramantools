@@ -291,18 +291,18 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 </dl>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ramantools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rt</span>
 
-<span class="n">map_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
-<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
-<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+<span class="n">map_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'data path on you machine'</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'metadata path on your machine'</span>
+<span class="c1"># use raw strings, starting with `r'` to escape special characters, such as backslash</span>
 
 <span class="c1"># Load a map</span>
 <span class="nb">map</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
 
 <span class="c1"># Creating the dictionary for the starting values and the bounds</span>
 <span class="c1"># The default function is `lorentz`, with parameters:</span>
-<span class="n">p</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="mi">2724</span><span class="p">,</span> <span class="s1">&#39;ampl&#39;</span><span class="p">:</span> <span class="mi">313</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mi">49</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+<span class="n">p</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'x0'</span><span class="p">:</span> <span class="mi">2724</span><span class="p">,</span> <span class="s1">'ampl'</span><span class="p">:</span> <span class="mi">313</span><span class="p">,</span> <span class="s1">'width'</span><span class="p">:</span> <span class="mi">49</span><span class="p">,</span> <span class="s1">'offset'</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
 <span class="c1"># passing the starting values contained in `p` and bounds: `b` to the `peakfit()` method.</span>
-<span class="n">b</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;x0&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">2500</span><span class="p">,</span> <span class="mi">2900</span><span class="p">],</span> <span class="s1">&#39;ampl&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">900</span><span class="p">],</span> <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span> <span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">]}</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'x0'</span><span class="p">:</span> <span class="p">[</span><span class="mi">2500</span><span class="p">,</span> <span class="mi">2900</span><span class="p">],</span> <span class="s1">'ampl'</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">900</span><span class="p">],</span> <span class="s1">'width'</span><span class="p">:</span> <span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span> <span class="s1">'offset'</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">]}</span>
 <span class="n">mapfit</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">peakfit</span><span class="p">(</span><span class="n">m_nobg</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="n">p</span><span class="p">,</span> <span class="n">bounds</span> <span class="o">=</span> <span class="n">b</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -394,15 +394,15 @@ cannot be inferred.</p></li>
 </dl>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ramantools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rt</span>
 
-<span class="n">map_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
-<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
-<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+<span class="n">map_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'data path on you machine'</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'metadata path on your machine'</span>
+<span class="c1"># use raw strings, starting with `r'` to escape special characters, such as backslash</span>
 
 <span class="nb">map</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">(</span><span class="n">map_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
 <span class="c1"># list of the variables stored in the `ramanmap` instance</span>
 <span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">))</span>
 
-<span class="c1"># Load without a metadata file — the data file&#39;s [Header]</span>
+<span class="c1"># Load without a metadata file — the data file's [Header]</span>
 <span class="c1"># block supplies pixel_x / pixel_y / size_x / size_y:</span>
 <span class="n">map_noinfo</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">(</span><span class="n">map_path</span><span class="p">)</span>
 </pre></div>
@@ -503,7 +503,9 @@ It uses <a class="reference internal" href="#ramantools.ramantools.peakfit" titl
 <p class="admonition-title">Note</p>
 <p>Attributes of <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code> are updated to reflect the fact that the normalized peak intensities are dimensionless, with a new <cite>long_name</cite>.</p>
 <p>In <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'individual'</span></code>, each spectrum in the map will be normalized to the local peak amplitude. In <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'const'</span></code>, the peak at the position specified by <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> is used for normalization.
-If <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'individual'</span></code>, the <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> parameters are ignored.</p>
+If <code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">==</span> <span class="pre">'individual'</span></code>, the <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> parameters are ignored.
+The <code class="docutils literal notranslate"><span class="pre">normfactor</span></code> attribute of the returned instance is a scalar in <code class="docutils literal notranslate"><span class="pre">'const'</span></code> mode and a 2-D <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> over (<code class="docutils literal notranslate"><span class="pre">height</span></code>, <code class="docutils literal notranslate"><span class="pre">width</span></code>) in <code class="docutils literal notranslate"><span class="pre">'individual'</span></code> mode, holding each pixel’s fitted peak amplitude.
+Pixels with no discernible peak at <code class="docutils literal notranslate"><span class="pre">peakshift</span></code> get an unreliable (possibly negative or huge) amplitude, so the normalized spectra there are meaningless.</p>
 <p>Only single-peak shape functions are supported (<code class="docutils literal notranslate"><span class="pre">gaussian</span></code>, <code class="docutils literal notranslate"><span class="pre">lorentz</span></code>).
 Passing <code class="docutils literal notranslate"><span class="pre">func=lorentz2</span></code> raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> because the method
 hardcodes <code class="docutils literal notranslate"><span class="pre">.sel(param='x0')</span></code> and <code class="docutils literal notranslate"><span class="pre">.sel(param='ampl')</span></code> on the fit
@@ -518,7 +520,7 @@ result.</p>
 The method also returns the cropped <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray, with the values that are cropped replaced by NaNs.
 The method needs a reference spectrum for  determining the “typical” mean of the peak amplitude.
 This is also used to determine the cutoff value for the rest of the map as:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;selected spectrum mean value&#39;</span> <span class="o">*</span> <span class="n">cutoff</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="s1">'selected spectrum mean value'</span> <span class="o">*</span> <span class="n">cutoff</span>
 </pre></div>
 </div>
 <p>The optional <code class="docutils literal notranslate"><span class="pre">width</span></code> and <code class="docutils literal notranslate"><span class="pre">height</span></code> parameters can be passed, which selects that spectrum for reference.
@@ -612,12 +614,12 @@ Default fit function is a first order polynomial. This can be changed by the <co
 <dd class="field-even"><p><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">map_mod</span></code>: new <a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance, containing the data with background removed.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">coeff</span></code>: the coefficients and</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">covar</span></code>: covariance of the polynomial fit, as supplied by <a class="reference internal" href="#ramantools.ramantools.polynomial_fit" title="ramantools.ramantools.polynomial_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">covar</span></code>: covariance of the polynomial fit. In <code class="docutils literal notranslate"><span class="pre">mode='const'</span></code> these are returned as <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> arrays (1-D coefficients, 2-D covariance), exactly as <a class="reference internal" href="#ramantools.ramantools.polynomial_fit" title="ramantools.ramantools.polynomial_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">polynomial_fit()</span></code></a> produces them. In <code class="docutils literal notranslate"><span class="pre">mode='individual'</span></code> they are <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> objects indexed by the map’s <code class="docutils literal notranslate"><span class="pre">height</span></code> / <code class="docutils literal notranslate"><span class="pre">width</span></code> coords, with an extra <code class="docutils literal notranslate"><span class="pre">coef</span></code> dim (and <code class="docutils literal notranslate"><span class="pre">coef_i</span></code> / <code class="docutils literal notranslate"><span class="pre">coef_j</span></code> for the covariance) holding the polynomial coefficients in <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.polyval()</span></code> order.</p></li>
 </ul>
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>tuple: (<a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code>)</p>
+<dd class="field-odd"><p>tuple: (<a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> or <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> or <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code>)</p>
 </dd>
 </dl>
 <div class="admonition note">
@@ -625,10 +627,8 @@ Default fit function is a first order polynomial. This can be changed by the <co
 <p>If the peaks and background are complicated, it is advised to test the background fit, by selecting the most difficult spectrum from the map and tweaking the fit parameters directly, using <a class="reference internal" href="#ramantools.ramantools.bgsubtract" title="ramantools.ramantools.bgsubtract"><code class="xref py py-func docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a>.</p>
 <p>Metadata is copied over to the returned <a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance, because there are no unit changes, in removing the background.
 After running, the ‘comments’ attribute of the new <cite>xarray</cite> instance is updated with the background fit information.</p>
-</div>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<p><code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">'individual'</span></code> is not implemented yet.</p>
+<p><code class="docutils literal notranslate"><span class="pre">mode='individual'</span></code> has two execution paths. When a <code class="docutils literal notranslate"><span class="pre">fitmask</span></code> is supplied, all pixels share the same masked-in region and a single vectorized least-squares solve handles every pixel at once (fast path). Without a <code class="docutils literal notranslate"><span class="pre">fitmask</span></code>, <a class="reference internal" href="#ramantools.ramantools.bgsubtract" title="ramantools.ramantools.bgsubtract"><code class="xref py py-func docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a> runs once per pixel so each spectrum gets its own automatic peak search (slow path, but each pixel’s mask differs and is stored as a 3-D <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> DataArray on <code class="docutils literal notranslate"><span class="pre">map_mod.mask</span></code>).
+<code class="docutils literal notranslate"><span class="pre">toplot=True</span></code> is rejected in <code class="docutils literal notranslate"><span class="pre">mode='individual'</span></code> to avoid creating one plot per pixel.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Example<span class="colon">:</span></dt>
@@ -636,9 +636,9 @@ After running, the ‘comments’ attribute of the new <cite>xarray</cite> insta
 </dl>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ramantools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rt</span>
 
-<span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
-<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
-<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+<span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'data path on you machine'</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'metadata path on your machine'</span>
+<span class="c1"># use raw strings, starting with `r'` to escape special characters, such as backslash</span>
 
 <span class="c1"># Loading a single spectrum from files</span>
 <span class="n">m</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
@@ -646,7 +646,7 @@ After running, the ‘comments’ attribute of the new <cite>xarray</cite> insta
 <span class="c1"># create a new `ramanmap` instance `new_m`, with the background removed</span>
 <span class="n">new_m</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">covar</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">(</span><span class="n">fitmask</span> <span class="o">=</span> <span class="n">mask</span><span class="p">,</span> <span class="n">toplot</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
 <span class="c1"># plot the spectrum in the middle of the map</span>
-<span class="n">new_m</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;nearest&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">new_m</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">'nearest'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -704,15 +704,15 @@ file (no header) still loads because spectra don’t need dimensional metadata.<
 </dl>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ramantools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rt</span>
 
-<span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
-<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
-<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+<span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'data path on you machine'</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'metadata path on your machine'</span>
+<span class="c1"># use raw strings, starting with `r'` to escape special characters, such as backslash</span>
 
 <span class="n">single_spectrum</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">singlespec</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
 <span class="c1"># list of variables stored in the `singlespec` instance</span>
 <span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">single_spectrum</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">))</span>
 
-<span class="c1"># Load without a metadata file — the data file&#39;s [Header]</span>
+<span class="c1"># Load without a metadata file — the data file's [Header]</span>
 <span class="c1"># block (if present) fills in positioner coordinates etc:</span>
 <span class="n">spec_noinfo</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">singlespec</span><span class="p">(</span><span class="n">spec_path</span><span class="p">)</span>
 </pre></div>
@@ -848,9 +848,9 @@ After running, the ‘comments’ attribute of the new <cite>xarray</cite> insta
 </dl>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ramantools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rt</span>
 
-<span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;data path on you machine&#39;</span>
-<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;metadata path on your machine&#39;</span>
-<span class="c1"># use raw strings, starting with `r&#39;` to escape special characters, such as backslash</span>
+<span class="n">spec_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'data path on you machine'</span>
+<span class="n">info_path</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'metadata path on your machine'</span>
+<span class="c1"># use raw strings, starting with `r'` to escape special characters, such as backslash</span>
 
 <span class="c1"># Loading a single spectrum from files</span>
 <span class="n">single_spectrum</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">singlespec</span><span class="p">(</span><span class="n">spec_path</span><span class="p">,</span> <span class="n">info_path</span><span class="p">)</span>
