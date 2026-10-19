@@ -20,7 +20,17 @@ from ._helpers import (
         _apply_default_common_metadata,
         _apply_parsed_header,
         _set_common_xarray_attrs,
+        # 0.6.0: structured history + repr/summary builders (see map.py).
+        _record_step,
+        _history_steps,
+        _comments_as_steps,
+        _container_summary,
+        _format_summary,
 )
+# Package logger for ``debug`` traces of each pipeline step.
+from ._log import logger
+# netCDF round-trip (``save`` / ``load``).
+from ._serialize import _save_container, _load_container
 from ._witec import _parse_info_file
 from ._io import _load_witec_datafile
 # bgsubtract is used by remove_bg; _compute_calibshift / _normalize_to_peak
@@ -88,9 +98,19 @@ class singlespec:
 
         """
 
-        def history(self) -> None:
+        def history(self, as_list: bool = False):
                 """Display the notes accumulated in the 'comments' attribute of the :class:`singlespec.ssxr` `xarray` variable.
+
+                :param as_list: when ``True``, nothing is printed and the
+                        structured history is returned: a list of
+                        ``{'step': name, 'params': {...}}`` dicts, one per
+                        pipeline step. See :py:meth:`ramanmap.history`.
+                :type as_list: bool, optional
+                :return: ``None`` (default) or the list of step records.
                 """
+                if as_list:
+                        steps = _history_steps(self.ssxr)
+                        return steps if steps else _comments_as_steps(self.ssxr)
                 print('Data modification history:\n')
                 print(self.ssxr.attrs['comments'])
 
@@ -104,6 +124,42 @@ class singlespec:
                 print(self.ssxr.attrs['comments'])
                 print('------------------')
                 print(self.metadata)
+
+        def summary(self) -> dict:
+                """Key facts about the spectrum as a plain, JSON-serialisable dict.
+
+                Mirror of :py:meth:`ramanmap.summary`: name, sample, source,
+                stage position, ramanshift range and step, instrument
+                settings, value units and the processing steps so far.
+                """
+                return _container_summary(self, self.ssxr)
+
+        def __repr__(self) -> str:
+                # Multi-line summary (see ramanmap.__repr__).
+                return _format_summary(self.summary())
+
+        def save(self, path, include_raw: bool = True) -> None:
+                """Write the spectrum to a netCDF file that :py:meth:`load` restores completely.
+
+                Stores ``ssxr`` with its history, the fit ``mask``, the
+                ``normfactor``, the raw ``counts`` / ``ramanshift`` arrays and
+                the metadata attributes. See :py:meth:`ramanmap.save`.
+
+                :param path: output path (``.nc`` by convention).
+                :param include_raw: also store the unprocessed ``counts``.
+                :type include_raw: bool, optional
+                """
+                _save_container(self, self.ssxr, path, kind='singlespec', include_raw=include_raw)
+
+        @classmethod
+        def load(cls, path) -> singlespec:
+                """Read a spectrum written by :py:meth:`save`.
+
+                :param path: path of the ``.nc`` file.
+                :return: the restored :class:`singlespec` instance.
+                :raises TypeError: if the file holds a :class:`ramanmap`.
+                """
+                return _load_container(path, expect='singlespec')
 
         def remove_bg(self, **kwargs):
                 """Remove the background of Raman spectra.
@@ -164,6 +220,14 @@ class singlespec:
                 # adding a note to `xarray` comments attribute if it exists
                 if hasattr(singlesp_mod.ssxr, 'comments'):
                         singlesp_mod.ssxr.attrs['comments'] += 'background subtracted, with parameters: ' + str(fitparams) + '\n'
+                # Structured record of the same step: bgsubtract's effective
+                # parameters plus the fitted polynomial coefficients.
+                _record_step(
+                        singlesp_mod.ssxr, 'remove_bg',
+                        fitmask_supplied=kwargs.get('fitmask') is not None,
+                        coeff=coeff, **fitparams,
+                )
+                logger.debug('remove_bg: params=%s coeff=%s', fitparams, np.asarray(coeff).tolist())
                 # save the fitmask as a variable of `singlespec`
                 singlesp_mod.mask = mask
 
@@ -210,6 +274,12 @@ class singlespec:
                                 + f'{calibshift:.2f}'
                                 + ' cm^-1 to the raw ramanshift\n'
                         )
+                _record_step(
+                        ss_mod.ssxr, 'calibrate',
+                        peakshift=peakshift, calibfactor=calibfactor, shift_applied=calibshift,
+                        func=kwargs.get('func', 'lorentz'),
+                )
+                logger.debug('calibrate: peakshift=%s calibfactor=%s shift_applied=%s', peakshift, calibfactor, float(calibshift))
                 return ss_mod
 
         def normalize(self, peakshift: float, **kwargs) -> singlespec:
@@ -257,6 +327,13 @@ class singlespec:
                         + '\n'
                 )
 
+                _record_step(
+                        normalized, 'normalize',
+                        mode='const', peakshift=peakshift, peak_position=peakpos,
+                        normfactor=peakampl, func=kwargs.get('func', 'lorentz'),
+                )
+                logger.debug('normalize: peakshift=%s peak_position=%s normfactor=%s', peakshift, float(peakpos), float(peakampl))
+
                 # Lightweight copy and attach normalized data.
                 ss_norm = copy.copy(self)
                 ss_norm.ssxr = normalized.copy()
@@ -291,6 +368,8 @@ class singlespec:
                         + f'{n_spikes}'
                         + ' Ramanshift coordinates.\n'
                 )
+                _record_step(ss_crr.ssxr, 'crr', cutoff=cutoff, window=window, n_replaced=n_spikes)
+                logger.debug('crr: cutoff=%s window=%s n_replaced=%d', cutoff, window, n_spikes)
                 return ss_crr
 
 
@@ -479,3 +558,10 @@ class singlespec:
                 _set_common_xarray_attrs(self.ssxr, self, self._info_loaded)
                 # Spec-only extra: Z positioner coordinate (maps don't carry it).
                 self.ssxr.attrs['sample positioner Z'] = self.positioner_z
+                # First structured history entry: provenance of the data.
+                _record_step(
+                        self.ssxr, 'load',
+                        source=str(self.filename), info_loaded=bool(self._info_loaded),
+                        n_points=int(len(self.ramanshift)),
+                )
+                logger.debug('load: singlespec %s (%d points)', self.filename, len(self.ramanshift))

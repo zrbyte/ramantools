@@ -52,8 +52,22 @@ Below is a simple example for loading a Raman map and doing some basic analysis.
 	# plot the width of the peak on a density plot
 	fit['curvefit_coefficients'].sel(param = 'width').plot(vmin = 40, vmax = 80)
 
-	# export the fit results and the map without the background to NetCDF format for easy loading later
-	m_nobg.mapxr.to_netcdf(data_path + 'map.nc')
+	# save the map without the background, together with its history, mask and metadata,
+	# and the fit results, for easy loading later
+	m_nobg.save(data_path + 'map.nc')
 	fit.to_netcdf(data_path + 'map_Lorentz fit.nc')
+
+	# in a later session: restore the object and continue
+	m_nobg = rt.load(data_path + 'map.nc')
+	m_nobg.history()
+
+Working without a notebook
+==========================
+
+Typing an object name shows a summary (``repr(m)``; ``m.summary()`` returns it as a dict),
+``m.history(as_list=True)`` returns the processing steps with their parameters,
+every plotting option accepts ``savepath=`` to write an image instead of displaying it,
+and the ``ramantools`` command-line tool inspects, exports and plots files directly.
+The ``AGENTS.md`` file in the repository collects all of this for scripts and AI agents.
 
 

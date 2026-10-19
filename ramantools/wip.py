@@ -57,7 +57,7 @@ import xarray as xr  # type: ignore
 from WITecSDK import Project, TDGraph, TDImage, TDBitmap, TDText  # type: ignore
 
 from ._witec import _parse_info_text, _graphname_to_name
-from ._helpers import _NO_INFO_NUM
+from ._helpers import _NO_INFO_NUM, _record_step
 from .map import ramanmap
 from .spec import singlespec
 
@@ -204,16 +204,39 @@ class wipfile:
                 """``(ID, caption)`` of every text object (Information blocks, notes)."""
                 return self._of_kind('text')
 
-        def list(self, kinds=None) -> None:
+        @property
+        def entries(self) -> list:
+                """The full inventory as a list of plain dicts.
+
+                Each dict has the keys ``id`` (int), ``kind`` (``'map'``,
+                ``'spectrum'``, ``'graph'``, ``'image'``, ``'mask'``,
+                ``'bitmap'``, ``'text'`` or ``'other'``), ``caption`` (str)
+                and ``shape`` (str, e.g. ``'(1600, 80, 60)'``). The raw SDK
+                object is deliberately left out so the list is JSON-
+                serialisable; fetch it through :py:attr:`project` if needed.
+                """
+                return [
+                        {'id': e['id'], 'kind': e['kind'], 'caption': e['caption'], 'shape': e['shape']}
+                        for e in self._entries
+                ]
+
+        def list(self, kinds=None, as_list: bool = False):
                 """Print an inventory of the project: ID, kind, shape and caption.
 
                 :param kinds: optional iterable of kinds to show, e.g.
                         ``('map', 'spectrum')``. Defaults to everything except
                         the SDK-internal ``'other'`` objects (transformations,
                         interpretations, colour profiles).
+                :param as_list: when ``True``, print nothing and return the
+                        matching inventory records as a list of dicts (same
+                        layout as :py:attr:`entries`).
+                :type as_list: bool, optional
+                :return: ``None`` (default) or the list of records.
                 """
                 if kinds is None:
                         kinds = ('map', 'spectrum', 'graph', 'image', 'mask', 'bitmap', 'text')
+                if as_list:
+                        return [e for e in self.entries if e['kind'] in kinds]
                 print(f"{'ID':>5}  {'kind':<9} {'shape':<20} caption")
                 for e in self._entries:
                         if e['kind'] in kinds:
@@ -341,7 +364,7 @@ class wipfile:
                                                 lines.append(f"{cpad}{'└── ' if last_d else '├── '}{label(d, strip=raw['caption'])}")
                 return lines
 
-        def tree(self, show_all: bool = False) -> None:
+        def tree(self, show_all: bool = False, as_string: bool = False):
                 """Print the project as an ASCII tree, grouped per scan like Witec Project's own tree.
 
                 Each top-level node is a scan (or video image); beneath it come
@@ -359,8 +382,15 @@ class wipfile:
 
                 :param show_all: also list the SDK-internal objects, with
                         their class name in place of the kind.
+                :param as_string: return the tree as one string instead of
+                        printing it (for logging, saving, or feeding to a tool).
+                :type as_string: bool, optional
+                :return: ``None`` (default) or the tree text.
                 """
-                print('\n'.join(self._tree_lines(show_all=show_all)))
+                text = '\n'.join(self._tree_lines(show_all=show_all))
+                if as_string:
+                        return text
+                print(text)
 
         def __repr__(self) -> str:
                 return (
@@ -572,8 +602,10 @@ class wipfile:
                         filename=self.filename, fields=fields,
                         metadata=text, info_loaded=has_info,
                 )
-                # Record provenance in the processing history.
+                # Record provenance in the processing history (free text and
+                # structured record alike).
                 m.mapxr.attrs['comments'] += f'source: WITec project object ID {obj.ID}: "{obj.Caption}" \n'
+                _record_step(m.mapxr, 'wip_extract', wipfile=self.filename, object_id=int(obj.ID), caption=obj.Caption)
                 return m
 
         def singlespec(self, key) -> singlespec:
@@ -598,6 +630,7 @@ class wipfile:
                         metadata=text, info_loaded=has_info,
                 )
                 s.ssxr.attrs['comments'] += f'source: WITec project object ID {obj.ID}: "{obj.Caption}" \n'
+                _record_step(s.ssxr, 'wip_extract', wipfile=self.filename, object_id=int(obj.ID), caption=obj.Caption)
                 return s
 
         def _image_dataarray(self, obj, dtype=None) -> xr.DataArray:

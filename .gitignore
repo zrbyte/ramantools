@@ -7,3 +7,5 @@ __pycache__/
 .DS_Store
 .vscode/*
 CLAUDE.md
+# setuptools metadata from `pip install -e .`
+*.egg-info/
