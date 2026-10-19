@@ -24,8 +24,7 @@ from ._fitting import (
 )
 from .map import ramanmap
 from .spec import singlespec
-# wipfile only imports WITecSDK when instantiated, so re-exporting it here
-# costs nothing for users of the text-export path.
+# WITecSDK is a regular dependency, so wipfile is always importable.
 from .wip import wipfile
 
 # Module-level internals preserved for compatibility — legacy notebooks

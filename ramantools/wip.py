@@ -19,9 +19,8 @@ Typical usage::
 
 Design notes
 ------------
-* ``WITecSDK`` is an *optional* dependency, imported lazily inside
-  :class:`wipfile` so that users of the text-export path never need it.
-  Install with ``pip install ramantools[wip]`` or ``pip install WITecSDK``.
+* ``WITecSDK`` is a regular dependency of ramantools (listed in
+  ``install_requires``), so it is always available here.
 * Spectral data are decoded straight from the SDK's byte buffer with
   :func:`numpy.frombuffer`. The SDK's own ``TDGraph.Graph`` property goes
   through nested Python tuples, which is slower and loses the dtype.
@@ -53,6 +52,10 @@ import re  # Caption-prefix matching for Information text lookup
 import numpy as np  # type: ignore
 import xarray as xr  # type: ignore
 
+# The WITec SDK reads the project file; only its (pure-Python) project
+# reader is used, the instrument-control half is never imported.
+from WITecSDK import Project, TDGraph, TDImage, TDBitmap, TDText  # type: ignore
+
 from ._witec import _parse_info_text, _graphname_to_name
 from ._helpers import _NO_INFO_NUM
 from .map import ramanmap
@@ -66,22 +69,6 @@ _SDK_DTYPE = {
         5: '<u4', 6: '<u2', 7: '<u1', 8: '?',
         9: '<f4', 10: '<f8',
 }
-
-
-def _require_witecsdk():
-        """Import and return the SDK's ``Project`` class, or raise a clear error.
-
-        Kept in a function so the import cost (and the hard dependency) is
-        only paid when a :class:`wipfile` is actually constructed.
-        """
-        try:
-                from WITecSDK import Project  # type: ignore
-        except ImportError as exc:  # pragma: no cover - depends on environment
-                raise ImportError(
-                        "ramantools.wipfile needs the optional 'WITecSDK' package. "
-                        "Install it with: pip install WITecSDK  (or pip install ramantools[wip])"
-                ) from exc
-        return Project
 
 
 def _buffer_to_array(dataclass) -> np.ndarray:
@@ -117,8 +104,6 @@ class wipfile:
         :param path: path to the ``.wip`` / ``.wid`` file.
         :type path: str
 
-        :raises ImportError: if the optional ``WITecSDK`` package is not installed.
-
         .. note::
                 Objects are addressed by their integer **ID** (first column of
                 :py:meth:`list`) or by their exact caption string. IDs are stable
@@ -137,7 +122,6 @@ class wipfile:
         """
 
         def __init__(self, path: str) -> None:
-                Project = _require_witecsdk()
                 # Keep the path under the same attribute name the other
                 # classes use, so print_metadata-style introspection is uniform.
                 self.filename = path
@@ -160,7 +144,6 @@ class wipfile:
                 ``'image'``, ``'bitmap'``, ``'text'``, ``'other'``. Hidden and
                 intermediate objects are included so IDs match Witec Project.
                 """
-                from WITecSDK import TDGraph, TDImage, TDBitmap, TDText  # type: ignore
                 entries = []
                 for obj in self.project.Data:
                         rec = {'id': obj.ID, 'caption': obj.Caption, 'obj': obj, 'shape': ''}

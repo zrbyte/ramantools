@@ -6,8 +6,7 @@ Documentation can be found here: [zrbyte.github.io/ramantools](https://zrbyte.gi
 Installation:
 `pip install ramantools`
 
-To open WITec project files (`.wip` / `.wid`) directly with `rt.wipfile()`, also install the optional [WITecSDK](https://pypi.org/project/WITecSDK/) package:
-`pip install ramantools[wip]` (or `pip install WITecSDK`)
+WITec project files (`.wip` / `.wid`) are read directly with `rt.wipfile()` through the [WITecSDK](https://pypi.org/project/WITecSDK/) package, which is installed as a dependency.
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/zrbyte/ramantools/HEAD?labpath=ramantools%20demo.ipynb)
 
@@ -34,7 +33,7 @@ Container for individual Raman spectra. Important variables:
 - `samplename` and `specname`: metadata fields
 
 ### `wipfile`
-Container for a WITec project file (`.wip` / `.wid`), opened with the optional WITecSDK package. Lists the project's contents and extracts them:
+Container for a WITec project file (`.wip` / `.wid`), opened with the WITecSDK package. Lists the project's contents and extracts them:
 - `list()`, `tree()`, `maps`, `spectra`, `images`, `masks`, `texts`: inventory by object ID and caption (`tree()` draws the project as an ASCII tree, grouped per scan like Witec Project)
 - `ramanmap(id)` and `singlespec(id)`: extract a map or spectrum as the containers above, with metadata
 - `mask(id)` and `image(id)`: masks drawn in Witec Project and fit-result images as 2-D `xarray.DataArray` objects aligned with the map

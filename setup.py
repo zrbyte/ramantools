@@ -10,12 +10,10 @@ setup(
         "numpy",
         "pandas",
         "scipy",
-        "xarray>=2023.7.0"
+        "xarray>=2023.7.0",
+        # Reads WITec project files (.wip / .wid) for rt.wipfile.
+        "WITecSDK>=2.0.3"
     ],
-    # Optional: reading WITec project files (.wip / .wid) directly via rt.wipfile.
-    extras_require = {
-        "wip": ["WITecSDK>=2.0.3"],
-    },
     description = "Tools for analyzing Raman spectroscopy data, measured by a Witec confocal Raman microscope.",
     long_description = open('README.md', 'r').read(),
     long_description_content_type = "text/markdown",

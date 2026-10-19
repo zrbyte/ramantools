@@ -1,13 +1,9 @@
 """Tests for ``ramantools.wipfile`` — loading WITec project files via the WITec SDK.
 
-These tests need two things that are not part of the repository:
-
-* the optional ``WITecSDK`` package (``pip install WITecSDK``), and
-* the sample project ``test-data/FLG42_532.wip`` (~260 MB, not pushed to
-  the remote, same policy as ``specmap.txt``).
-
-Both are checked at import time and the whole module is skipped if either
-is missing, so the core test suite stays green on a bare checkout.
+These tests need the sample project ``test-data/FLG42_532.wip`` (~260 MB,
+not pushed to the remote, same policy as ``specmap.txt``). The whole module
+is skipped if it is missing, so the test suite stays green on a bare
+checkout. ``WITecSDK`` itself is a regular dependency of ramantools.
 
 The sample file is a real measurement session, so expectations below are
 pinned to its contents (object IDs, pixel counts, a few metadata values).
@@ -29,8 +25,7 @@ sys.path.insert(0, str(ROOT))
 
 import ramantools as rt  # noqa: E402  (import after sys.path tweak)
 
-# Skip the whole module when the SDK or the sample project is unavailable.
-WITECSDK = pytest.importorskip("WITecSDK", reason="optional WITecSDK package not installed")
+# Skip the whole module when the sample project is unavailable.
 WIP_PATH = ROOT / "test-data" / "FLG42_532.wip"
 pytestmark = pytest.mark.skipif(
     not WIP_PATH.exists(),
@@ -347,7 +342,7 @@ class TestWipfileImagesAndMasks:
 
 
 class TestFromArraysConstructors:
-    """The private array constructors behave sanely on their own (no SDK needed)."""
+    """The private array constructors behave sanely on their own."""
 
     def test_ramanmap_from_arrays_shape_check(self):
         """Mismatched array shape raises a clear ValueError, missing dims too."""
