@@ -87,6 +87,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.wipfile.singlespec"><code class="docutils literal notranslate"><span class="pre">wipfile.singlespec()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.wipfile.spectra"><code class="docutils literal notranslate"><span class="pre">wipfile.spectra</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.wipfile.texts"><code class="docutils literal notranslate"><span class="pre">wipfile.texts</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.wipfile.tree"><code class="docutils literal notranslate"><span class="pre">wipfile.tree()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -105,6 +106,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.wip.wipfile.singlespec"><code class="docutils literal notranslate"><span class="pre">wipfile.singlespec()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.wip.wipfile.spectra"><code class="docutils literal notranslate"><span class="pre">wipfile.spectra</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.wip.wipfile.texts"><code class="docutils literal notranslate"><span class="pre">wipfile.texts</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.wip.wipfile.tree"><code class="docutils literal notranslate"><span class="pre">wipfile.tree()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -1074,6 +1076,29 @@ own space transformation.</p>
 <dd><p><code class="docutils literal notranslate"><span class="pre">(ID,</span> <span class="pre">caption)</span></code> of every text object (Information blocks, notes).</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramantools.wipfile.tree">
+<span class="sig-name descname"><span class="pre">tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">show_all</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.wipfile.tree" title="Link to this definition"></a></dt>
+<dd><p>Print the project as an ASCII tree, grouped per scan like Witec Project’s own tree.</p>
+<p>Each top-level node is a scan (or video image); beneath it come
+the raw spectral data object, with everything derived from it
+(extracted spectra, background-subtracted copies, fit results,
+band-sum images, masks) nested one level deeper, followed by
+the scan’s Information text. Objects that Witec Project
+does not display (coordinate transformations, interpretations,
+colour profiles) are hidden unless <code class="docutils literal notranslate"><span class="pre">show_all=True</span></code>.</p>
+<p>Each row reads <code class="docutils literal notranslate"><span class="pre">[kind]</span>&#160; <span class="pre">ID</span>&#160; <span class="pre">caption</span>&#160; <span class="pre">shape</span></code>; the ID is what
+<a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ramanmap()</span></code></a>, <a class="reference internal" href="#ramantools.ramantools.singlespec" title="ramantools.ramantools.singlespec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">singlespec()</span></code></a>, <a class="reference internal" href="#ramantools.ramantools.wipfile.mask" title="ramantools.ramantools.wipfile.mask"><code class="xref py py-meth docutils literal notranslate"><span class="pre">mask()</span></code></a>
+and <a class="reference internal" href="#ramantools.ramantools.wipfile.image" title="ramantools.ramantools.wipfile.image"><code class="xref py py-meth docutils literal notranslate"><span class="pre">image()</span></code></a> take. Captions are shortened to what
+they add beyond their parent node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>show_all</strong> – also list the SDK-internal objects, with
+their class name in place of the kind.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -1287,6 +1312,29 @@ own space transformation.</p>
 <dt class="sig sig-object py" id="ramantools.wip.wipfile.texts">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">texts</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></span><a class="headerlink" href="#ramantools.wip.wipfile.texts" title="Link to this definition"></a></dt>
 <dd><p><code class="docutils literal notranslate"><span class="pre">(ID,</span> <span class="pre">caption)</span></code> of every text object (Information blocks, notes).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.wip.wipfile.tree">
+<span class="sig-name descname"><span class="pre">tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">show_all</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.wip.wipfile.tree" title="Link to this definition"></a></dt>
+<dd><p>Print the project as an ASCII tree, grouped per scan like Witec Project’s own tree.</p>
+<p>Each top-level node is a scan (or video image); beneath it come
+the raw spectral data object, with everything derived from it
+(extracted spectra, background-subtracted copies, fit results,
+band-sum images, masks) nested one level deeper, followed by
+the scan’s Information text. Objects that Witec Project
+does not display (coordinate transformations, interpretations,
+colour profiles) are hidden unless <code class="docutils literal notranslate"><span class="pre">show_all=True</span></code>.</p>
+<p>Each row reads <code class="docutils literal notranslate"><span class="pre">[kind]</span>&#160; <span class="pre">ID</span>&#160; <span class="pre">caption</span>&#160; <span class="pre">shape</span></code>; the ID is what
+<a class="reference internal" href="#ramantools.wip.wipfile.ramanmap" title="ramantools.wip.wipfile.ramanmap"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ramanmap()</span></code></a>, <a class="reference internal" href="#ramantools.wip.wipfile.singlespec" title="ramantools.wip.wipfile.singlespec"><code class="xref py py-meth docutils literal notranslate"><span class="pre">singlespec()</span></code></a>, <a class="reference internal" href="#ramantools.wip.wipfile.mask" title="ramantools.wip.wipfile.mask"><code class="xref py py-meth docutils literal notranslate"><span class="pre">mask()</span></code></a>
+and <a class="reference internal" href="#ramantools.wip.wipfile.image" title="ramantools.wip.wipfile.image"><code class="xref py py-meth docutils literal notranslate"><span class="pre">image()</span></code></a> take. Captions are shortened to what
+they add beyond their parent node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>show_all</strong> – also list the SDK-internal objects, with
+their class name in place of the kind.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
