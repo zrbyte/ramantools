@@ -329,6 +329,60 @@ class singlespec:
                 self._toxarray()
 
 
+        @classmethod
+        def _from_arrays(cls, ramanshift: np.ndarray, counts: np.ndarray, *, filename: str, fields: dict, metadata: str = '', info_loaded: bool = True) -> singlespec:
+                """Build a :class:`singlespec` from in-memory arrays instead of files.
+
+                Private alternate constructor, mirror of
+                :py:meth:`ramanmap._from_arrays`, used by
+                :class:`ramantools.wip.wipfile` to hand over a spectrum read
+                straight out of a WITec project file. The public
+                ``__init__(spec_path, info_path)`` signature is unchanged.
+
+                :param ramanshift: 1-D Raman shift axis (1/cm).
+                :param counts: 1-D intensities, same length as ``ramanshift``.
+                :param filename: path recorded in ``self.filename`` /
+                        ``self.wipfilename`` (the ``.wip`` file here).
+                :param fields: metadata dict in the ``{attr: value}`` form
+                        :func:`ramantools._witec._parse_info_text` returns (keys
+                        like ``laser``, ``itime``, ``positioner_x/y/z``, plus
+                        ``name``). Missing keys keep their ``N/A`` / ``NaN``
+                        sentinels.
+                :param metadata: raw text stored in ``self.metadata``.
+                :param info_loaded: provenance flag, see
+                        :py:meth:`ramanmap._from_arrays`.
+                """
+                # Allocate without running the file-reading __init__.
+                self = cls.__new__(cls)
+                self.filename = filename
+                self.mask = None
+                self.normfactor = None
+                self._info_loaded = info_loaded
+                # Sentinel scaffolding first (incl. the spec-only positioner_z),
+                # then overwrite with the supplied fields.
+                _apply_default_common_metadata(self)
+                self.positioner_z = _NO_INFO_NUM
+                self.metadata = metadata
+                self.specname = fields.get('name', os.path.splitext(os.path.basename(filename))[0])
+                for attr, value in fields.items():
+                        if attr != 'name':
+                                setattr(self, attr, value)
+                self.metadata_datafile = ''
+                self.wipfilename = filename
+                ramanshift = np.asarray(ramanshift)
+                counts = np.asarray(counts)
+                if counts.shape != ramanshift.shape:
+                        raise ValueError(
+                                f"_from_arrays: counts shape {counts.shape} does not match "
+                                f"ramanshift shape {ramanshift.shape}"
+                        )
+                self.ramanshift = ramanshift
+                self.counts = counts
+                # Same xarray construction as the file path.
+                self._toxarray()
+                return self
+
+
         def _load_defaults(self):
                 """Populate metadata attributes with placeholder values.
 

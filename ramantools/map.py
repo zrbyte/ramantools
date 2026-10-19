@@ -747,6 +747,80 @@ class ramanmap:
                 self._toxarray()
 
 
+        @classmethod
+        def _from_arrays(cls, ramanshift: np.ndarray, map_data: np.ndarray, *, filename: str, fields: dict, metadata: str = '', info_loaded: bool = True) -> ramanmap:
+                """Build a :class:`ramanmap` from in-memory arrays instead of files.
+
+                Private alternate constructor used by :class:`ramantools.wip.wipfile`
+                to hand over a map read straight out of a WITec project file.
+                The public ``__init__(map_path, info_path)`` signature is left
+                untouched for backward compatibility; this bypasses the file
+                readers and jumps straight to the attribute population that
+                :py:meth:`_toxarray` expects.
+
+                :param ramanshift: 1-D Raman shift axis (1/cm), length ``N``.
+                :param map_data: raw intensities shaped ``(N, pixel_y, pixel_x)``
+                        in the same row-major pixel order the Witec table export
+                        uses (first pixel row is the *top* of the scan in Witec
+                        Project; :py:meth:`_toxarray` applies the usual height flip).
+                :param filename: path recorded in ``self.filename`` /
+                        ``self.wipfilename`` (the ``.wip`` file here).
+                :param fields: metadata dict in the same ``{attr: value}`` form
+                        :func:`ramantools._witec._parse_info_text` returns, i.e.
+                        keys like ``laser``, ``itime``, ``pixel_x``, ``size_x``,
+                        ``positioner_x`` plus ``name`` for the map name. Keys that
+                        are missing fall back to the ``N/A`` / ``NaN`` sentinels
+                        used by the no-info-file load path. ``pixel_x`` /
+                        ``pixel_y`` / ``size_x`` / ``size_y`` are required.
+                :param metadata: raw text stored in ``self.metadata`` and shown
+                        by :py:meth:`print_metadata`.
+                :param info_loaded: controls the ``comments`` provenance line and
+                        the ``'x'`` suffix on the objective magnification attr,
+                        exactly as the ``info_path is not None`` flag does in
+                        :py:meth:`__init__`.
+                """
+                # ``__new__`` allocates the instance without running __init__
+                # (which would try to open files).
+                self = cls.__new__(cls)
+                self.filename = filename
+                self.mask = None
+                self.normfactor = None
+                self._info_loaded = info_loaded
+                # Start from the sentinel scaffolding so every attribute that
+                # _toxarray / print_metadata reads exists, then overwrite
+                # with whatever ``fields`` supplies.
+                _apply_default_common_metadata(self)
+                self.metadata = metadata
+                self.mapname = fields.get('name', os.path.splitext(os.path.basename(filename))[0])
+                for attr, value in fields.items():
+                        if attr != 'name':
+                                setattr(self, attr, value)
+                # Dimensional attrs are mandatory for the coordinate build.
+                for attr in ('pixel_x', 'pixel_y', 'size_x', 'size_y'):
+                        if getattr(self, attr, None) is None:
+                                raise ValueError(f"_from_arrays: required field '{attr}' is missing")
+                # No separate data-file header in this path; the wip itself is
+                # both the data and the metadata source.
+                self.metadata_datafile = ''
+                self.wipfilename = filename
+                # Sanity-check the array shape against the declared pixel grid
+                # before handing over to _toxarray (whose reshape-free path
+                # would otherwise produce a confusing xarray error).
+                map_data = np.asarray(map_data)
+                expected = (np.asarray(ramanshift).size, self.pixel_y, self.pixel_x)
+                if map_data.shape != expected:
+                        raise ValueError(
+                                f"_from_arrays: map_data shape {map_data.shape} does not match "
+                                f"(ramanshift, pixel_y, pixel_x) = {expected}"
+                        )
+                self.ramanshift = np.asarray(ramanshift)
+                self.map = map_data
+                # Same xarray construction as the file path, so wip-loaded and
+                # text-loaded maps are indistinguishable downstream.
+                self._toxarray()
+                return self
+
+
         def _load_defaults(self):
                 """Populate metadata attributes with placeholder values.
 

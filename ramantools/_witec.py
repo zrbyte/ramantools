@@ -151,6 +151,53 @@ _INFO_FILE_SPEC_ONLY = [
 ]
 
 
+def _parse_info_text(text: str, *, is_map: bool, strict: bool = True):
+        """Parse the *contents* of a Witec info (metadata) block.
+
+        Shared core of :func:`_parse_info_file` (which reads the text from
+        a file exported next to the data) and the ``.wip`` loader in
+        :mod:`ramantools.wip` (which gets the same text from the project's
+        embedded "Information" object via the WITec SDK, so there is no
+        file to read).
+
+        Returns ``fields``, a dict keyed by the attribute the class will
+        assign to — e.g. ``'laser'``, ``'pixel_x'``, ``'positioner_z'`` —
+        plus a special ``'name'`` key holding the first line of the text
+        (the map / spec name).
+
+        :param text: full text of the info block.
+        :param is_map: ``True`` to include the pixel / scan-dimension
+                fields; ``False`` swaps in ``positioner_z`` instead.
+        :param strict: when ``True`` (the file-loader default) a missing
+                field raises ``IndexError`` — the loud legacy failure mode
+                that the pipeline-checksum tests rely on. When ``False``
+                a missing field is simply left out of the returned dict so
+                the caller can fall back to the ``N/A`` / ``NaN`` sentinels;
+                this is what the ``.wip`` path wants, because the embedded
+                Information text of derived objects may lack some keys.
+        """
+        # First line is always the instance name (mapname / specname).
+        # ``re.findall(r'.*', ...)[0]`` matches the original behaviour,
+        # including the fact that it stops at the first newline.
+        fields = {'name': re.findall(r'.*', text)[0]}
+        table = _INFO_FILE_COMMON + (_INFO_FILE_MAP_ONLY if is_map else _INFO_FILE_SPEC_ONLY)
+        for attr, pattern, cast in table:
+                matches = re.findall(pattern, text)
+                if not matches:
+                        if strict:
+                                # ``[0]`` on an empty list preserves the legacy
+                                # "IndexError if the key is missing" failure
+                                # behaviour — no silent fallback to a sentinel
+                                # when the info file is present but malformed.
+                                raise IndexError(
+                                        f"info text is missing the field for '{attr}' (pattern {pattern!r})"
+                                )
+                        # Lenient mode: skip the key, caller keeps its sentinel.
+                        continue
+                fields[attr] = cast(matches[0])
+        return fields
+
+
 def _parse_info_file(info_path: str, *, is_map: bool):
         """Load and parse a Witec info (metadata) file.
 
@@ -166,20 +213,12 @@ def _parse_info_file(info_path: str, *, is_map: bool):
 
         Missing required fields still raise ``IndexError`` — the same loud
         failure mode the original inline ``re.findall(...)[0]`` produced.
+        The actual regex work lives in :func:`_parse_info_text` so the
+        ``.wip`` loader can reuse it on in-memory text.
         """
         # latin1 encoding handles the µm symbol that appears in the
         # "Position X [µm]" / "Scan Width [µm]" header lines.
         with open(info_path, mode='r', encoding='latin1') as infofile:
                 text = infofile.read()
-
-        # First line is always the instance name (mapname / specname).
-        # ``re.findall(r'.*', ...)[0]`` matches the original behaviour,
-        # including the fact that it stops at the first newline.
-        fields = {'name': re.findall(r'.*', text)[0]}
-        table = _INFO_FILE_COMMON + (_INFO_FILE_MAP_ONLY if is_map else _INFO_FILE_SPEC_ONLY)
-        for attr, pattern, cast in table:
-                # ``[0]`` preserves the legacy "IndexError if the key is
-                # missing" failure behaviour — no silent fallback to a
-                # sentinel when the info file is present but malformed.
-                fields[attr] = cast(re.findall(pattern, text)[0])
-        return text, fields
+        # strict=True keeps the legacy IndexError-on-missing-field behaviour.
+        return text, _parse_info_text(text, is_map=is_map, strict=True)

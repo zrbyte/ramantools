@@ -8,6 +8,7 @@ from .ramantools import (
         polynomial_fit,
         bgsubtract,
         peakfit,
+        wipfile,
 )
 
 # Explicitly define the public interface for clarity
@@ -21,4 +22,5 @@ __all__ = [
         "polynomial_fit",
         "bgsubtract",
         "peakfit",
+        "wipfile",
 ]

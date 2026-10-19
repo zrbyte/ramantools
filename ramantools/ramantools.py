@@ -2,7 +2,8 @@
 
 The original ``ramantools.ramantools`` module was a single ~1955-line
 file holding every class and utility. Phase 1 split it into focused
-submodules (``_helpers``, ``_witec``, ``_fitting``, ``map``, ``spec``).
+submodules (``_helpers``, ``_witec``, ``_fitting``, ``map``, ``spec``,
+and later ``wip``).
 This shim preserves the legacy ``from ramantools.ramantools import X``
 import path by re-exporting every public (and previously module-level
 private) name the old file exposed.
@@ -23,6 +24,9 @@ from ._fitting import (
 )
 from .map import ramanmap
 from .spec import singlespec
+# wipfile only imports WITecSDK when instantiated, so re-exporting it here
+# costs nothing for users of the text-export path.
+from .wip import wipfile
 
 # Module-level internals preserved for compatibility — legacy notebooks
 # occasionally poked at these (e.g. ``_midpoint`` in custom extensions).
@@ -39,4 +43,5 @@ __all__ = [
         "polynomial_fit",
         "bgsubtract",
         "peakfit",
+        "wipfile",
 ]

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "ramantools",
-    version = "0.4.0",
+    version = "0.5.0",
     packages = find_packages(),
     # python_requires='>=3.10',
     install_requires = [
@@ -12,6 +12,10 @@ setup(
         "scipy",
         "xarray>=2023.7.0"
     ],
+    # Optional: reading WITec project files (.wip / .wid) directly via rt.wipfile.
+    extras_require = {
+        "wip": ["WITecSDK>=2.0.3"],
+    },
     description = "Tools for analyzing Raman spectroscopy data, measured by a Witec confocal Raman microscope.",
     long_description = open('README.md', 'r').read(),
     long_description_content_type = "text/markdown",
