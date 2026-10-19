@@ -236,6 +236,149 @@ class wipfile:
                         if e['kind'] in kinds:
                                 print(f"{e['id']:>5}  {e['kind']:<9} {e['shape']:<20} {e['caption']}")
 
+        # ------------------------------------------------------------------
+        # ASCII tree view
+        # ------------------------------------------------------------------
+
+        def _tree_groups(self, show_all: bool = False) -> list:
+                """Group inventory entries the way Witec Project's tree does.
+
+                Returns a list of ``(group_name, raw_entry_or_None, members)``
+                tuples ordered by first appearance (lowest ID). ``group_name``
+                is the scan caption prefix (``'FLG_42--Scan Piezo--010'``);
+                ``raw_entry`` is the un-derived data object of that scan
+                (caption exactly ``'<prefix>--Spec.Data N'``) if there is one;
+                ``members`` are all other entries of the group in ID order.
+
+                Membership is decided by caption prefix first; objects whose
+                caption carries no scan prefix (user-named masks, images) are
+                attached to the scan that shares their space-transformation
+                ID. Anything still unassigned lands in a ``'(unlinked)'``
+                group. ``show_all=False`` hides the SDK-internal ``'other'``
+                objects (transformations, interpretations, colour profiles).
+                """
+                # Prefix → group; a prefix counts as a scan name only if some
+                # object in the project actually uses it as a "--Spec.Data",
+                # "--Information" or "--Transformation" stem, or it is a
+                # bitmap/video image; otherwise the caption is a free name.
+                known_prefixes = set()
+                for e in self._entries:
+                        cap = e['caption']
+                        for token in ('--Spec.Data', '--Information', '--Transformation'):
+                                if token in cap:
+                                        known_prefixes.add(cap.split(token)[0].strip())
+                        if e['kind'] == 'bitmap':
+                                known_prefixes.add(cap.strip())
+
+                # Map each space-transformation ID to the scan prefix of a
+                # graph that uses it, so prefix-less objects can be attached.
+                st_to_prefix = {}
+                for e in self._entries:
+                        if e['kind'] in ('map', 'spectrum', 'graph'):
+                                st_id = self._space_transform_id(e['obj'])
+                                prefix = self._caption_prefix(e['caption'])
+                                if st_id and prefix in known_prefixes:
+                                        st_to_prefix.setdefault(st_id, prefix)
+
+                groups: dict = {}
+                order: list = []
+                for e in self._entries:
+                        if e['kind'] == 'other' and not show_all:
+                                continue
+                        cap = e['caption']
+                        prefix = None
+                        # Longest known prefix that the caption starts with wins
+                        # (handles names like 'FLG_42--Scan Piezo--010--Spec.Data 1').
+                        candidates = [k for k in known_prefixes if cap == k or cap.startswith(k + '--') or cap.startswith(k + ' ')]
+                        if candidates:
+                                prefix = max(candidates, key=len)
+                        else:
+                                st_id = self._space_transform_id(e['obj'])
+                                prefix = st_to_prefix.get(st_id, '(unlinked)')
+                        if prefix not in groups:
+                                groups[prefix] = {'raw': None, 'members': []}
+                                order.append(prefix)
+                        # The raw data object is captioned '<prefix>--Spec.Data N',
+                        # optionally with a bare suffix such as '-anal0' but
+                        # without the ' (...)' / ': ...' decorations Witec adds
+                        # to derived objects.
+                        if e['kind'] in ('map', 'spectrum', 'graph') and re.fullmatch(re.escape(prefix) + r'--Spec\.Data\s*\d+[^ (:]*', cap):
+                                if groups[prefix]['raw'] is None:
+                                        groups[prefix]['raw'] = e
+                                        continue
+                        groups[prefix]['members'].append(e)
+                # '(unlinked)' goes last regardless of ID.
+                if '(unlinked)' in order:
+                        order.remove('(unlinked)'); order.append('(unlinked)')
+                return [(name, groups[name]['raw'], groups[name]['members']) for name in order]
+
+        def _tree_lines(self, show_all: bool = False) -> list:
+                """Build the ASCII tree as a list of lines (see :py:meth:`tree`)."""
+                groups = self._tree_groups(show_all=show_all)
+                lines = [f"{self.filename}  (WITec project v{self.project.Version}, {len(self.project.Data)} objects)"]
+
+                def kind_of(e) -> str:
+                        # SDK-internal objects show their class name instead of a kind.
+                        return type(e['obj']).__name__ if e['kind'] == 'other' else e['kind']
+
+                # Pad the kind column to the longest label shown so IDs line up.
+                shown = [raw for _, raw, _ in groups if raw is not None] + [m for _, _, ms in groups for m in ms]
+                kind_width = max((len(kind_of(e)) for e in shown), default=4) + 2
+
+                def label(e, strip: str = '') -> str:
+                        """One tree row: ``[kind]  ID  caption  shape``."""
+                        cap = e['caption']
+                        if strip and cap.startswith(strip):
+                                # Show only what the caption adds beyond its parent.
+                                cap = cap[len(strip):].lstrip('-').strip() or cap
+                        shape = f"  {e['shape']}" if e['shape'] else ''
+                        return f"{('[' + kind_of(e) + ']').ljust(kind_width)} {e['id']:>4}  {cap}{shape}"
+
+                for gi, (name, raw, members) in enumerate(groups):
+                        last_group = gi == len(groups) - 1
+                        lines.append(f"{'└── ' if last_group else '├── '}{name}")
+                        gpad = '    ' if last_group else '│   '
+                        # Children of the group: the raw object (if any) comes
+                        # first and carries the derived objects beneath it.
+                        if raw is not None:
+                                raw_cap = raw['caption']
+                                derived = [m for m in members if m['caption'].startswith(raw_cap) or m['kind'] in ('mask', 'image')]
+                                plain = [m for m in members if m not in derived]
+                                children = [('raw', raw)] + [('plain', m) for m in plain]
+                        else:
+                                derived, plain = [], members
+                                children = [('plain', m) for m in plain]
+                        for ci, (role, e) in enumerate(children):
+                                last_child = ci == len(children) - 1
+                                lines.append(f"{gpad}{'└── ' if last_child else '├── '}{label(e, strip=name)}")
+                                if role == 'raw' and derived:
+                                        cpad = gpad + ('    ' if last_child else '│   ')
+                                        for di, d in enumerate(derived):
+                                                last_d = di == len(derived) - 1
+                                                lines.append(f"{cpad}{'└── ' if last_d else '├── '}{label(d, strip=raw['caption'])}")
+                return lines
+
+        def tree(self, show_all: bool = False) -> None:
+                """Print the project as an ASCII tree, grouped per scan like Witec Project's own tree.
+
+                Each top-level node is a scan (or video image); beneath it come
+                the raw spectral data object, with everything derived from it
+                (extracted spectra, background-subtracted copies, fit results,
+                band-sum images, masks) nested one level deeper, followed by
+                the scan's Information text. Objects that Witec Project
+                does not display (coordinate transformations, interpretations,
+                colour profiles) are hidden unless ``show_all=True``.
+
+                Each row reads ``[kind]  ID  caption  shape``; the ID is what
+                :py:meth:`ramanmap`, :py:meth:`singlespec`, :py:meth:`mask`
+                and :py:meth:`image` take. Captions are shortened to what
+                they add beyond their parent node.
+
+                :param show_all: also list the SDK-internal objects, with
+                        their class name in place of the kind.
+                """
+                print('\n'.join(self._tree_lines(show_all=show_all)))
+
         def __repr__(self) -> str:
                 return (
                         f"wipfile('{self.filename}': {len(self.maps)} maps, "

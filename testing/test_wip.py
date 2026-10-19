@@ -121,6 +121,47 @@ class TestWipfileInventory:
         with pytest.raises(KeyError, match="ambiguous"):
             wip.ramanmap("FLG_42--Scan Piezo--010--Spec.Data 1 (Fit Lorentz: Curves)")
 
+    def test_tree(self, wip, capsys):
+        """tree() prints a per-scan ASCII tree with derived objects nested under the raw map.
+
+        Checks the structure rather than the exact text: group headers are
+        scan names, the raw map of the FLG_42 scan is a direct child, and
+        objects derived from it (the extracted spectrum, the user-drawn
+        mask, which has no caption prefix) sit one level deeper.
+        """
+        lines = wip._tree_lines()
+        assert lines[0].startswith(str(WIP_PATH))
+        # Top-level groups are drawn with the tree glyphs at column 0.
+        groups = [l[4:] for l in lines if l.startswith(("├── ", "└── "))]
+        assert "FLG_42--Scan Piezo--010" in groups
+        assert groups[-1] == "(unlinked)"
+        # Locate the FLG_42 group and its children.
+        start = lines.index("├── FLG_42--Scan Piezo--010")
+        block = []
+        for l in lines[start + 1:]:
+            if l.startswith(("├── ", "└── ")):
+                break
+            block.append(l)
+        # Raw map is a direct child (depth 1); spectrum 200 and mask 254 are
+        # nested beneath it (depth 2); the Information text is depth 1.
+        depth1 = [l for l in block if l[4:8] in ("├── ", "└── ")]
+        depth2 = [l for l in block if l[8:12] in ("├── ", "└── ")]
+        assert any(f"[map]" in l and f" {FLG42_MAP_ID}  " in l for l in depth1)
+        assert any("[text]" in l and "Information" in l for l in depth1)
+        assert any("[spectrum]" in l and f" {FLG42_SPEC_ID}  " in l for l in depth2)
+        assert any("[mask]" in l and f" {FLG42_MASK_ID}  " in l for l in depth2)
+        # A raw caption with a bare suffix ("Spec.Data 1-anal0") still acts as
+        # the raw node, so its "(Sub min)" copy nests under it.
+        start = lines.index("├── Scan Piezo--004")
+        sub = next(l for l in lines[start + 1:] if f" {FLG42_SMALL_MAP_ID}  " in l)
+        assert sub[8:12] in ("├── ", "└── ")
+        # SDK-internal objects only appear with show_all=True.
+        assert not any("TDSpaceTransformation" in l for l in lines)
+        assert any("TDSpaceTransformation" in l for l in wip._tree_lines(show_all=True))
+        # tree() prints the same thing.
+        wip.tree()
+        assert capsys.readouterr().out.strip().splitlines() == lines
+
     def test_info_text(self, wip):
         """Information text is found for a map, for an extracted spectrum, and for a mask.
 

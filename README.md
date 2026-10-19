@@ -35,7 +35,7 @@ Container for individual Raman spectra. Important variables:
 
 ### `wipfile`
 Container for a WITec project file (`.wip` / `.wid`), opened with the optional WITecSDK package. Lists the project's contents and extracts them:
-- `list()`, `maps`, `spectra`, `images`, `masks`, `texts`: inventory by object ID and caption
+- `list()`, `tree()`, `maps`, `spectra`, `images`, `masks`, `texts`: inventory by object ID and caption (`tree()` draws the project as an ASCII tree, grouped per scan like Witec Project)
 - `ramanmap(id)` and `singlespec(id)`: extract a map or spectrum as the containers above, with metadata
 - `mask(id)` and `image(id)`: masks drawn in Witec Project and fit-result images as 2-D `xarray.DataArray` objects aligned with the map
 - `info(id)`: the Witec "Information" text of the scan
