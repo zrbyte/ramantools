@@ -926,9 +926,6 @@ file is instant; data buffers are only decoded when an object is extracted.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – path to the <code class="docutils literal notranslate"><span class="pre">.wip</span></code> / <code class="docutils literal notranslate"><span class="pre">.wid</span></code> file.</p>
 </dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ImportError</strong> – if the optional <code class="docutils literal notranslate"><span class="pre">WITecSDK</span></code> package is not installed.</p>
-</dd>
 </dl>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1124,9 +1121,8 @@ instances (or as plain <code class="xref py py-mod docutils literal notranslate"
 <section id="design-notes">
 <h3>Design notes<a class="headerlink" href="#design-notes" title="Link to this heading"></a></h3>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">WITecSDK</span></code> is an <em>optional</em> dependency, imported lazily inside
-<a class="reference internal" href="#ramantools.wip.wipfile" title="ramantools.wip.wipfile"><code class="xref py py-class docutils literal notranslate"><span class="pre">wipfile</span></code></a> so that users of the text-export path never need it.
-Install with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">ramantools[wip]</span></code> or <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">WITecSDK</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">WITecSDK</span></code> is a regular dependency of ramantools (listed in
+<code class="docutils literal notranslate"><span class="pre">install_requires</span></code>), so it is always available here.</p></li>
 <li><p>Spectral data are decoded straight from the SDK’s byte buffer with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.frombuffer()</span></code>. The SDK’s own <code class="docutils literal notranslate"><span class="pre">TDGraph.Graph</span></code> property goes
 through nested Python tuples, which is slower and loses the dtype.</p></li>
@@ -1163,9 +1159,6 @@ file is instant; data buffers are only decoded when an object is extracted.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – path to the <code class="docutils literal notranslate"><span class="pre">.wip</span></code> / <code class="docutils literal notranslate"><span class="pre">.wid</span></code> file.</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ImportError</strong> – if the optional <code class="docutils literal notranslate"><span class="pre">WITecSDK</span></code> package is not installed.</p>
 </dd>
 </dl>
 <div class="admonition note">

@@ -94,9 +94,8 @@
 
 <span class="sd">Design notes</span>
 <span class="sd">------------</span>
-<span class="sd">* ``WITecSDK`` is an *optional* dependency, imported lazily inside</span>
-<span class="sd">  :class:`wipfile` so that users of the text-export path never need it.</span>
-<span class="sd">  Install with ``pip install ramantools[wip]`` or ``pip install WITecSDK``.</span>
+<span class="sd">* ``WITecSDK`` is a regular dependency of ramantools (listed in</span>
+<span class="sd">  ``install_requires``), so it is always available here.</span>
 <span class="sd">* Spectral data are decoded straight from the SDK's byte buffer with</span>
 <span class="sd">  :func:`numpy.frombuffer`. The SDK's own ``TDGraph.Graph`` property goes</span>
 <span class="sd">  through nested Python tuples, which is slower and loses the dtype.</span>
@@ -128,6 +127,10 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>  <span class="c1"># type: ignore</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>  <span class="c1"># type: ignore</span>
 
+<span class="c1"># The WITec SDK reads the project file; only its (pure-Python) project</span>
+<span class="c1"># reader is used, the instrument-control half is never imported.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">WITecSDK</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">TDGraph</span><span class="p">,</span> <span class="n">TDImage</span><span class="p">,</span> <span class="n">TDBitmap</span><span class="p">,</span> <span class="n">TDText</span>  <span class="c1"># type: ignore</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">._witec</span><span class="w"> </span><span class="kn">import</span> <span class="n">_parse_info_text</span><span class="p">,</span> <span class="n">_graphname_to_name</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">_NO_INFO_NUM</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.map</span><span class="w"> </span><span class="kn">import</span> <span class="n">ramanmap</span>
@@ -141,22 +144,6 @@
         <span class="mi">5</span><span class="p">:</span> <span class="s1">'&lt;u4'</span><span class="p">,</span> <span class="mi">6</span><span class="p">:</span> <span class="s1">'&lt;u2'</span><span class="p">,</span> <span class="mi">7</span><span class="p">:</span> <span class="s1">'&lt;u1'</span><span class="p">,</span> <span class="mi">8</span><span class="p">:</span> <span class="s1">'?'</span><span class="p">,</span>
         <span class="mi">9</span><span class="p">:</span> <span class="s1">'&lt;f4'</span><span class="p">,</span> <span class="mi">10</span><span class="p">:</span> <span class="s1">'&lt;f8'</span><span class="p">,</span>
 <span class="p">}</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_require_witecsdk</span><span class="p">():</span>
-<span class="w">        </span><span class="sd">"""Import and return the SDK's ``Project`` class, or raise a clear error.</span>
-
-<span class="sd">        Kept in a function so the import cost (and the hard dependency) is</span>
-<span class="sd">        only paid when a :class:`wipfile` is actually constructed.</span>
-<span class="sd">        """</span>
-        <span class="k">try</span><span class="p">:</span>
-                <span class="kn">from</span><span class="w"> </span><span class="nn">WITecSDK</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span>  <span class="c1"># type: ignore</span>
-        <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover - depends on environment</span>
-                <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-                        <span class="s2">"ramantools.wipfile needs the optional 'WITecSDK' package. "</span>
-                        <span class="s2">"Install it with: pip install WITecSDK  (or pip install ramantools[wip])"</span>
-                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
-        <span class="k">return</span> <span class="n">Project</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_buffer_to_array</span><span class="p">(</span><span class="n">dataclass</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
@@ -194,8 +181,6 @@
 <span class="sd">        :param path: path to the ``.wip`` / ``.wid`` file.</span>
 <span class="sd">        :type path: str</span>
 
-<span class="sd">        :raises ImportError: if the optional ``WITecSDK`` package is not installed.</span>
-
 <span class="sd">        .. note::</span>
 <span class="sd">                Objects are addressed by their integer **ID** (first column of</span>
 <span class="sd">                :py:meth:`list`) or by their exact caption string. IDs are stable</span>
@@ -214,7 +199,6 @@
 <span class="sd">        """</span>
 
         <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">Project</span> <span class="o">=</span> <span class="n">_require_witecsdk</span><span class="p">()</span>
                 <span class="c1"># Keep the path under the same attribute name the other</span>
                 <span class="c1"># classes use, so print_metadata-style introspection is uniform.</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">path</span>
@@ -237,7 +221,6 @@
 <span class="sd">                ``'image'``, ``'bitmap'``, ``'text'``, ``'other'``. Hidden and</span>
 <span class="sd">                intermediate objects are included so IDs match Witec Project.</span>
 <span class="sd">                """</span>
-                <span class="kn">from</span><span class="w"> </span><span class="nn">WITecSDK</span><span class="w"> </span><span class="kn">import</span> <span class="n">TDGraph</span><span class="p">,</span> <span class="n">TDImage</span><span class="p">,</span> <span class="n">TDBitmap</span><span class="p">,</span> <span class="n">TDText</span>  <span class="c1"># type: ignore</span>
                 <span class="n">entries</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">project</span><span class="o">.</span><span class="n">Data</span><span class="p">:</span>
                         <span class="n">rec</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="p">,</span> <span class="s1">'caption'</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="p">,</span> <span class="s1">'obj'</span><span class="p">:</span> <span class="n">obj</span><span class="p">,</span> <span class="s1">'shape'</span><span class="p">:</span> <span class="s1">''</span><span class="p">}</span>
