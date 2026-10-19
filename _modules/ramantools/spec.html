@@ -424,6 +424,60 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_toxarray</span><span class="p">()</span>
 
 
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_from_arrays</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ramanshift</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">counts</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fields</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span><span class="p">,</span> <span class="n">info_loaded</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">singlespec</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Build a :class:`singlespec` from in-memory arrays instead of files.</span>
+
+<span class="sd">                Private alternate constructor, mirror of</span>
+<span class="sd">                :py:meth:`ramanmap._from_arrays`, used by</span>
+<span class="sd">                :class:`ramantools.wip.wipfile` to hand over a spectrum read</span>
+<span class="sd">                straight out of a WITec project file. The public</span>
+<span class="sd">                ``__init__(spec_path, info_path)`` signature is unchanged.</span>
+
+<span class="sd">                :param ramanshift: 1-D Raman shift axis (1/cm).</span>
+<span class="sd">                :param counts: 1-D intensities, same length as ``ramanshift``.</span>
+<span class="sd">                :param filename: path recorded in ``self.filename`` /</span>
+<span class="sd">                        ``self.wipfilename`` (the ``.wip`` file here).</span>
+<span class="sd">                :param fields: metadata dict in the ``{attr: value}`` form</span>
+<span class="sd">                        :func:`ramantools._witec._parse_info_text` returns (keys</span>
+<span class="sd">                        like ``laser``, ``itime``, ``positioner_x/y/z``, plus</span>
+<span class="sd">                        ``name``). Missing keys keep their ``N/A`` / ``NaN``</span>
+<span class="sd">                        sentinels.</span>
+<span class="sd">                :param metadata: raw text stored in ``self.metadata``.</span>
+<span class="sd">                :param info_loaded: provenance flag, see</span>
+<span class="sd">                        :py:meth:`ramanmap._from_arrays`.</span>
+<span class="sd">                """</span>
+                <span class="c1"># Allocate without running the file-reading __init__.</span>
+                <span class="bp">self</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">normfactor</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span> <span class="o">=</span> <span class="n">info_loaded</span>
+                <span class="c1"># Sentinel scaffolding first (incl. the spec-only positioner_z),</span>
+                <span class="c1"># then overwrite with the supplied fields.</span>
+                <span class="n">_apply_default_common_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">positioner_z</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">specname</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'name'</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">))[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">attr</span> <span class="o">!=</span> <span class="s1">'name'</span><span class="p">:</span>
+                                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span> <span class="o">=</span> <span class="s1">''</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">filename</span>
+                <span class="n">ramanshift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ramanshift</span><span class="p">)</span>
+                <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">counts</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">ramanshift</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">"_from_arrays: counts shape </span><span class="si">{</span><span class="n">counts</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> does not match "</span>
+                                <span class="sa">f</span><span class="s2">"ramanshift shape </span><span class="si">{</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span>
+                        <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">ramanshift</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">counts</span>
+                <span class="c1"># Same xarray construction as the file path.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_toxarray</span><span class="p">()</span>
+                <span class="k">return</span> <span class="bp">self</span>
+
+
         <span class="k">def</span><span class="w"> </span><span class="nf">_load_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">                </span><span class="sd">"""Populate metadata attributes with placeholder values.</span>
 

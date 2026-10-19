@@ -1,0 +1,677 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ramantools.wip &mdash; Ramantools 2023 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=a4664895"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ramantools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#examples">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ramantools.html">ramantools package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">ramantools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ramantools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ramantools.wip</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ramantools.wip</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Loader for WITec project files (``.wip`` / ``.wid``) built on the WITec SDK.</span>
+
+<span class="sd">The text-export path (:class:`ramantools.ramanmap` / :class:`ramantools.singlespec`</span>
+<span class="sd">constructed from a tab-delimited table plus an info file) stays exactly as it</span>
+<span class="sd">was. This module adds a *second* way in: open the project file itself with</span>
+<span class="sd">`WITecSDK &lt;https://pypi.org/project/WITecSDK/&gt;`_, list what it contains, and</span>
+<span class="sd">extract individual objects as the familiar ``ramanmap`` / ``singlespec``</span>
+<span class="sd">instances (or as plain :mod:`xarray` DataArrays for images and masks).</span>
+
+<span class="sd">Typical usage::</span>
+
+<span class="sd">        import ramantools as rt</span>
+<span class="sd">        wip = rt.wipfile('FLG42_532.wip')</span>
+<span class="sd">        wip.list()                      # what's inside</span>
+<span class="sd">        m = wip.ramanmap(188)           # a map, by object ID (or by caption)</span>
+<span class="sd">        s = wip.singlespec(200)         # a single spectrum</span>
+<span class="sd">        mask = wip.mask(254)            # boolean DataArray matching m.mapxr's coords</span>
+<span class="sd">        m.mapxr.where(mask)             # apply it</span>
+
+<span class="sd">Design notes</span>
+<span class="sd">------------</span>
+<span class="sd">* ``WITecSDK`` is an *optional* dependency, imported lazily inside</span>
+<span class="sd">  :class:`wipfile` so that users of the text-export path never need it.</span>
+<span class="sd">  Install with ``pip install ramantools[wip]`` or ``pip install WITecSDK``.</span>
+<span class="sd">* Spectral data are decoded straight from the SDK's byte buffer with</span>
+<span class="sd">  :func:`numpy.frombuffer`. The SDK's own ``TDGraph.Graph`` property goes</span>
+<span class="sd">  through nested Python tuples, which is slower and loses the dtype.</span>
+<span class="sd">* The buffer layout is ``[y][x][ramanshift]`` when the graph's</span>
+<span class="sd">  ``DataFieldInverted`` flag is set (every graph in the files seen so far)</span>
+<span class="sd">  and ``[x][y][ramanshift]`` otherwise, mirroring the SDK's</span>
+<span class="sd">  ``reshape_graph``. Either way the result is handed to</span>
+<span class="sd">  :py:meth:`ramanmap._from_arrays` as ``(ramanshift, pixel_y, pixel_x)``, the</span>
+<span class="sd">  same order the text exporter writes, so the usual height flip in</span>
+<span class="sd">  ``_toxarray`` produces the Witec Project orientation. Verified against the</span>
+<span class="sd">  project's own derived "G-Sum" image (correlation 0.997 in the</span>
+<span class="sd">  ``[y][x]`` orientation, ~0 in the alternatives).</span>
+<span class="sd">* Physical sizes and stage positions come from the object's</span>
+<span class="sd">  ``TDSpaceTransformation`` (pixel count times scale; affine world origin),</span>
+<span class="sd">  not from regexes on the Information text. The SDK's ``Position`` property</span>
+<span class="sd">  is broken in SDK 2.0.9 (``Mat3n * Mat3n`` is not defined), so the affine</span>
+<span class="sd">  transform is evaluated here with numpy.</span>
+<span class="sd">* Instrument metadata (laser, integration time, grating, date, objective,</span>
+<span class="sd">  …) comes from the project's embedded "Information" text object, which has</span>
+<span class="sd">  the same layout as the info file the text-export path parses. It is</span>
+<span class="sd">  matched to a graph by caption prefix (``"&lt;scan&gt;--Information"``), and for</span>
+<span class="sd">  objects without a caption prefix (e.g. user-named masks) by the shared</span>
+<span class="sd">  space-transformation ID. The text is parsed with the same regex table as</span>
+<span class="sd">  the info file (:func:`ramantools._witec._parse_info_text`) in lenient mode.</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>  <span class="c1"># Caption-prefix matching for Information text lookup</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>  <span class="c1"># type: ignore</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>  <span class="c1"># type: ignore</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">._witec</span><span class="w"> </span><span class="kn">import</span> <span class="n">_parse_info_text</span><span class="p">,</span> <span class="n">_graphname_to_name</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">_NO_INFO_NUM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.map</span><span class="w"> </span><span class="kn">import</span> <span class="n">ramanmap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">singlespec</span>
+
+<span class="c1"># SDK ``DataClass.DataType`` code → numpy dtype. Mirrors the SDK's own</span>
+<span class="c1"># ``_DataTypeToFormat`` struct table (q/l/h/b/I/H/B/?/f/d); WITec files are</span>
+<span class="c1"># written on x86 Windows, hence explicit little-endian.</span>
+<span class="n">_SDK_DTYPE</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="mi">1</span><span class="p">:</span> <span class="s1">'&lt;i8'</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">'&lt;i4'</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s1">'&lt;i2'</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s1">'&lt;i1'</span><span class="p">,</span>
+        <span class="mi">5</span><span class="p">:</span> <span class="s1">'&lt;u4'</span><span class="p">,</span> <span class="mi">6</span><span class="p">:</span> <span class="s1">'&lt;u2'</span><span class="p">,</span> <span class="mi">7</span><span class="p">:</span> <span class="s1">'&lt;u1'</span><span class="p">,</span> <span class="mi">8</span><span class="p">:</span> <span class="s1">'?'</span><span class="p">,</span>
+        <span class="mi">9</span><span class="p">:</span> <span class="s1">'&lt;f4'</span><span class="p">,</span> <span class="mi">10</span><span class="p">:</span> <span class="s1">'&lt;f8'</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_require_witecsdk</span><span class="p">():</span>
+<span class="w">        </span><span class="sd">"""Import and return the SDK's ``Project`` class, or raise a clear error.</span>
+
+<span class="sd">        Kept in a function so the import cost (and the hard dependency) is</span>
+<span class="sd">        only paid when a :class:`wipfile` is actually constructed.</span>
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">WITecSDK</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span>  <span class="c1"># type: ignore</span>
+        <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover - depends on environment</span>
+                <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+                        <span class="s2">"ramantools.wipfile needs the optional 'WITecSDK' package. "</span>
+                        <span class="s2">"Install it with: pip install WITecSDK  (or pip install ramantools[wip])"</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+        <span class="k">return</span> <span class="n">Project</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_buffer_to_array</span><span class="p">(</span><span class="n">dataclass</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Decode an SDK ``DataClass`` byte buffer into a flat numpy array."""</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">_SDK_DTYPE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dataclass</span><span class="o">.</span><span class="n">DataType</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"WITec data type code </span><span class="si">{</span><span class="n">dataclass</span><span class="o">.</span><span class="n">DataType</span><span class="si">}</span><span class="s2"> is not supported"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">dataclass</span><span class="o">.</span><span class="n">Data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_affine_position</span><span class="p">(</span><span class="n">transform</span><span class="p">,</span> <span class="n">model_point</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Evaluate ``Rotation @ Scale @ (p - ModelOrigin) + WorldOrigin``.</span>
+
+<span class="sd">        The SDK stores the 3x3 ``Scale`` / ``Rotation`` matrices as flat</span>
+<span class="sd">        9-tuples; interpreting them as **column-major** (``reshape(3, 3).T``)</span>
+<span class="sd">        reproduces the stage positions stored for spectra extracted from a</span>
+<span class="sd">        map to ~1e-9 µm, the row-major reading does not.</span>
+<span class="sd">        """</span>
+        <span class="n">vp</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">ViewPort3D</span>
+        <span class="n">rot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vp</span><span class="o">.</span><span class="n">Rotation</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vp</span><span class="o">.</span><span class="n">Scale</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">model_point</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vp</span><span class="o">.</span><span class="n">ModelOrigin</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rot</span> <span class="o">@</span> <span class="n">scale</span> <span class="o">@</span> <span class="n">p</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">vp</span><span class="o">.</span><span class="n">WorldOrigin</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="wipfile">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.wipfile">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">wipfile</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Container for a WITec project file (``.wip`` or ``.wid``), opened with the WITec SDK.</span>
+
+<span class="sd">        The project is parsed lazily by the SDK, so opening even a multi-hundred-MB</span>
+<span class="sd">        file is instant; data buffers are only decoded when an object is extracted.</span>
+
+<span class="sd">        :param path: path to the ``.wip`` / ``.wid`` file.</span>
+<span class="sd">        :type path: str</span>
+
+<span class="sd">        :raises ImportError: if the optional ``WITecSDK`` package is not installed.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">                Objects are addressed by their integer **ID** (first column of</span>
+<span class="sd">                :py:meth:`list`) or by their exact caption string. IDs are stable</span>
+<span class="sd">                within a file; captions are what Witec Project shows in its tree.</span>
+
+<span class="sd">        :Example:</span>
+
+<span class="sd">        ::</span>
+
+<span class="sd">                import ramantools as rt</span>
+<span class="sd">                wip = rt.wipfile('FLG42_532.wip')</span>
+<span class="sd">                wip.list()</span>
+<span class="sd">                m = wip.ramanmap(188)</span>
+<span class="sd">                s = wip.singlespec(200)</span>
+<span class="sd">                mask = wip.mask(254)</span>
+<span class="sd">        """</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">Project</span> <span class="o">=</span> <span class="n">_require_witecsdk</span><span class="p">()</span>
+                <span class="c1"># Keep the path under the same attribute name the other</span>
+                <span class="c1"># classes use, so print_metadata-style introspection is uniform.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">path</span>
+                <span class="c1"># The raw SDK project — exposed for anything this wrapper</span>
+                <span class="c1"># does not cover (bitmaps, transformations, …).</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">project</span> <span class="o">=</span> <span class="n">Project</span><span class="o">.</span><span class="n">OpenFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                <span class="c1"># Build the inventory once; everything else looks objects up here.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_inventory</span><span class="p">()</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Inventory</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_build_inventory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Classify every data object in the project into a plain record.</span>
+
+<span class="sd">                Each record is ``{'id', 'kind', 'caption', 'shape', 'obj'}``.</span>
+<span class="sd">                ``kind`` is one of ``'map'``, ``'spectrum'``, ``'graph'`` (other</span>
+<span class="sd">                TDGraph types such as line scans / series), ``'mask'``,</span>
+<span class="sd">                ``'image'``, ``'bitmap'``, ``'text'``, ``'other'``. Hidden and</span>
+<span class="sd">                intermediate objects are included so IDs match Witec Project.</span>
+<span class="sd">                """</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">WITecSDK</span><span class="w"> </span><span class="kn">import</span> <span class="n">TDGraph</span><span class="p">,</span> <span class="n">TDImage</span><span class="p">,</span> <span class="n">TDBitmap</span><span class="p">,</span> <span class="n">TDText</span>  <span class="c1"># type: ignore</span>
+                <span class="n">entries</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">project</span><span class="o">.</span><span class="n">Data</span><span class="p">:</span>
+                        <span class="n">rec</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="p">,</span> <span class="s1">'caption'</span><span class="p">:</span> <span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="p">,</span> <span class="s1">'obj'</span><span class="p">:</span> <span class="n">obj</span><span class="p">,</span> <span class="s1">'shape'</span><span class="p">:</span> <span class="s1">''</span><span class="p">}</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">TDGraph</span><span class="p">):</span>
+                                <span class="c1"># A graph with a single spatial pixel is a spectrum;</span>
+                                <span class="c1"># a 2-D grid of spectra is a map. Anything else</span>
+                                <span class="c1"># (line scans, time series, histograms) is 'graph'.</span>
+                                <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">SizeX</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">obj</span><span class="o">.</span><span class="n">SizeY</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                                        <span class="n">rec</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'spectrum'</span>
+                                        <span class="n">rec</span><span class="p">[</span><span class="s1">'shape'</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeGraph</span><span class="si">}</span><span class="s1">,)'</span>
+                                <span class="k">elif</span> <span class="n">obj</span><span class="o">.</span><span class="n">DataType</span> <span class="o">==</span> <span class="s1">'2DImage'</span><span class="p">:</span>
+                                        <span class="n">rec</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'map'</span>
+                                        <span class="n">rec</span><span class="p">[</span><span class="s1">'shape'</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeGraph</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeY</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeX</span><span class="si">}</span><span class="s1">)'</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                        <span class="n">rec</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'graph'</span>
+                                        <span class="n">rec</span><span class="p">[</span><span class="s1">'shape'</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeGraph</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeY</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeX</span><span class="si">}</span><span class="s1">)'</span>
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">TDImage</span><span class="p">):</span>
+                                <span class="c1"># The SDK flags boolean "Mask" images via the</span>
+                                <span class="c1"># DataCategories metadata; everything else is a</span>
+                                <span class="c1"># numeric image (fit results, band sums, …).</span>
+                                <span class="n">rec</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'mask'</span> <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">DataType</span> <span class="o">==</span> <span class="s1">'Mask'</span> <span class="k">else</span> <span class="s1">'image'</span>
+                                <span class="n">rec</span><span class="p">[</span><span class="s1">'shape'</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'(</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeY</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeX</span><span class="si">}</span><span class="s1">)'</span>
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">TDBitmap</span><span class="p">):</span>
+                                <span class="n">rec</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'bitmap'</span>
+                        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">TDText</span><span class="p">):</span>
+                                <span class="n">rec</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'text'</span>
+                        <span class="k">else</span><span class="p">:</span>
+                                <span class="n">rec</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'other'</span>
+                        <span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">entries</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_of_kind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">kinds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""``(ID, caption)`` pairs of the inventory entries of the given kinds."""</span>
+                <span class="k">return</span> <span class="p">[(</span><span class="n">e</span><span class="p">[</span><span class="s1">'id'</span><span class="p">],</span> <span class="n">e</span><span class="p">[</span><span class="s1">'caption'</span><span class="p">])</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="ow">in</span> <span class="n">kinds</span><span class="p">]</span>
+
+        <span class="nd">@property</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">maps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""``(ID, caption)`` of every 2-D spectral map in the project."""</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_of_kind</span><span class="p">(</span><span class="s1">'map'</span><span class="p">)</span>
+
+        <span class="nd">@property</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">spectra</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""``(ID, caption)`` of every single spectrum in the project."""</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_of_kind</span><span class="p">(</span><span class="s1">'spectrum'</span><span class="p">)</span>
+
+        <span class="nd">@property</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">images</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""``(ID, caption)`` of every numeric image (fit results, band sums, …)."""</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_of_kind</span><span class="p">(</span><span class="s1">'image'</span><span class="p">)</span>
+
+        <span class="nd">@property</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">masks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""``(ID, caption)`` of every boolean mask image."""</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_of_kind</span><span class="p">(</span><span class="s1">'mask'</span><span class="p">)</span>
+
+        <span class="nd">@property</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">texts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""``(ID, caption)`` of every text object (Information blocks, notes)."""</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_of_kind</span><span class="p">(</span><span class="s1">'text'</span><span class="p">)</span>
+
+<div class="viewcode-block" id="wipfile.list">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.wipfile.list">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kinds</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Print an inventory of the project: ID, kind, shape and caption.</span>
+
+<span class="sd">                :param kinds: optional iterable of kinds to show, e.g.</span>
+<span class="sd">                        ``('map', 'spectrum')``. Defaults to everything except</span>
+<span class="sd">                        the SDK-internal ``'other'`` objects (transformations,</span>
+<span class="sd">                        interpretations, colour profiles).</span>
+<span class="sd">                """</span>
+                <span class="k">if</span> <span class="n">kinds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">kinds</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'map'</span><span class="p">,</span> <span class="s1">'spectrum'</span><span class="p">,</span> <span class="s1">'graph'</span><span class="p">,</span> <span class="s1">'image'</span><span class="p">,</span> <span class="s1">'mask'</span><span class="p">,</span> <span class="s1">'bitmap'</span><span class="p">,</span> <span class="s1">'text'</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'ID'</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="s1">'kind'</span><span class="si">:</span><span class="s2">&lt;9</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'shape'</span><span class="si">:</span><span class="s2">&lt;20</span><span class="si">}</span><span class="s2"> caption"</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="ow">in</span> <span class="n">kinds</span><span class="p">:</span>
+                                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;9</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">'shape'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;20</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">'caption'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></div>
+
+
+        <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"wipfile('</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">maps</span><span class="p">)</span><span class="si">}</span><span class="s2"> maps, "</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectra</span><span class="p">)</span><span class="si">}</span><span class="s2"> spectra, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">images</span><span class="p">)</span><span class="si">}</span><span class="s2"> images, "</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">masks</span><span class="p">)</span><span class="si">}</span><span class="s2"> masks)"</span>
+                <span class="p">)</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Lookup helpers</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Resolve an ID (int) or exact caption (str) to an inventory record."""</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
+                        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span> <span class="o">==</span> <span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+                                        <span class="k">return</span> <span class="n">e</span>
+                        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no object with ID </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="n">matches</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s1">'caption'</span><span class="p">]</span> <span class="o">==</span> <span class="n">key</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">matches</span><span class="p">:</span>
+                                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no object with caption </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                                <span class="n">ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">]</span>
+                                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"caption </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> is ambiguous (IDs </span><span class="si">{</span><span class="n">ids</span><span class="si">}</span><span class="s2">); use the ID instead"</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="n">matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"key must be an integer object ID or a caption string"</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_entry_of_kind</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">kinds</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Like :py:meth:`_entry` but also checks the object's kind."""</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kinds</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">"object </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">'caption'</span><span class="p">]</span><span class="si">!r}</span><span class="s2">) is a </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span><span class="si">}</span><span class="s2">, "</span>
+                                <span class="sa">f</span><span class="s2">"expected one of </span><span class="si">{</span><span class="n">kinds</span><span class="si">}</span><span class="s2">"</span>
+                        <span class="p">)</span>
+                <span class="k">return</span> <span class="n">e</span>
+
+        <span class="nd">@staticmethod</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_caption_prefix</span><span class="p">(</span><span class="n">caption</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""``'FLG_42--Scan Piezo--010--Spec.Data 1 (Sub min)'`` → ``'FLG_42--Scan Piezo--010'``.</span>
+
+<span class="sd">                Witec names every object derived from a scan with the scan's</span>
+<span class="sd">                name followed by ``--Spec.Data N``; the scan's Information</span>
+<span class="sd">                text is captioned ``'&lt;scan&gt;--Information'``.</span>
+<span class="sd">                """</span>
+                <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s1">'--Spec\.Data'</span><span class="p">,</span> <span class="n">caption</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="nd">@staticmethod</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_space_transform_id</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""The space-transformation ID an object is positioned with (0 if none)."""</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">'_TDGraph'</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">_TDGraph</span><span class="o">.</span><span class="n">SpaceTransformationID</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">'_TDImage'</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">_TDImage</span><span class="o">.</span><span class="n">PositionTransformationID</span>
+                <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_info_entry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">"""Find the Information text object belonging to ``obj``, or ``None``.</span>
+
+<span class="sd">                Strategy: (1) caption prefix → ``'&lt;prefix&gt;--Information'``;</span>
+<span class="sd">                (2) otherwise borrow the prefix of a map / spectrum that shares</span>
+<span class="sd">                the same space-transformation ID (covers user-named masks and</span>
+<span class="sd">                fit-result images, which keep the scan's transformation).</span>
+<span class="sd">                """</span>
+                <span class="n">texts</span> <span class="o">=</span> <span class="p">{</span><span class="n">e</span><span class="p">[</span><span class="s1">'caption'</span><span class="p">]:</span> <span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'text'</span><span class="p">}</span>
+                <span class="n">prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_caption_prefix</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">prefix</span> <span class="o">+</span> <span class="s1">'--Information'</span> <span class="ow">in</span> <span class="n">texts</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">texts</span><span class="p">[</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">'--Information'</span><span class="p">]</span>
+                <span class="n">st_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_space_transform_id</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">st_id</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'map'</span><span class="p">,</span> <span class="s1">'spectrum'</span><span class="p">,</span> <span class="s1">'graph'</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_space_transform_id</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="s1">'obj'</span><span class="p">])</span> <span class="o">==</span> <span class="n">st_id</span><span class="p">:</span>
+                                        <span class="n">prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_caption_prefix</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="s1">'caption'</span><span class="p">])</span>
+                                        <span class="k">if</span> <span class="n">prefix</span> <span class="o">+</span> <span class="s1">'--Information'</span> <span class="ow">in</span> <span class="n">texts</span><span class="p">:</span>
+                                                <span class="k">return</span> <span class="n">texts</span><span class="p">[</span><span class="n">prefix</span> <span class="o">+</span> <span class="s1">'--Information'</span><span class="p">]</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="wipfile.info">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.wipfile.info">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Return the Witec "Information" text for an object (map, spectrum, image, mask).</span>
+
+<span class="sd">                This is the same text the Witec software exports as the info</span>
+<span class="sd">                file next to a table export. Returns ``None`` if the project</span>
+<span class="sd">                holds no Information block for that object.</span>
+
+<span class="sd">                :param key: object ID or caption.</span>
+<span class="sd">                """</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_entry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entry</span><span class="p">(</span><span class="n">key</span><span class="p">)[</span><span class="s1">'obj'</span><span class="p">])</span>
+                <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">e</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">e</span><span class="p">[</span><span class="s1">'obj'</span><span class="p">]</span><span class="o">.</span><span class="n">PlainText</span></div>
+
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Geometry / metadata assembly</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Pixel counts, physical size (µm) and stage position of an object.</span>
+
+<span class="sd">                Returns ``pixel_x``, ``pixel_y``, ``size_x``, ``size_y`` and</span>
+<span class="sd">                ``positioner_x/y/z``. Sizes are ``pixels × |scale|`` from the</span>
+<span class="sd">                space transformation. The positioner values are the stage</span>
+<span class="sd">                coordinates (µm) of the transformation's model origin, i.e.</span>
+<span class="sd">                the scan centre for maps and the measurement point for single</span>
+<span class="sd">                spectra. Falls back to pixel units / NaN when the object has</span>
+<span class="sd">                no space transformation.</span>
+<span class="sd">                """</span>
+                <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">SizeX</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">SizeY</span>
+                <span class="n">geo</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'pixel_x'</span><span class="p">:</span> <span class="n">nx</span><span class="p">,</span> <span class="s1">'pixel_y'</span><span class="p">:</span> <span class="n">ny</span><span class="p">}</span>
+                <span class="n">st_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_space_transform_id</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">st_id</span><span class="p">:</span>
+                        <span class="n">transform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">project</span><span class="o">.</span><span class="n">GetDataClassByID</span><span class="p">(</span><span class="n">st_id</span><span class="p">)</span>
+                        <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">transform</span><span class="o">.</span><span class="n">ViewPort3D</span><span class="o">.</span><span class="n">Scale</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+                        <span class="n">geo</span><span class="p">[</span><span class="s1">'size_x'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">nx</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">scale</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))</span>
+                        <span class="n">geo</span><span class="p">[</span><span class="s1">'size_y'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ny</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">scale</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span>
+                        <span class="n">pos</span> <span class="o">=</span> <span class="n">_affine_position</span><span class="p">(</span><span class="n">transform</span><span class="p">,</span> <span class="n">transform</span><span class="o">.</span><span class="n">ViewPort3D</span><span class="o">.</span><span class="n">ModelOrigin</span><span class="p">)</span>
+                        <span class="n">geo</span><span class="p">[</span><span class="s1">'positioner_x'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                        <span class="n">geo</span><span class="p">[</span><span class="s1">'positioner_y'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                        <span class="n">geo</span><span class="p">[</span><span class="s1">'positioner_z'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">geo</span><span class="p">[</span><span class="s1">'size_x'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">nx</span><span class="p">)</span>
+                        <span class="n">geo</span><span class="p">[</span><span class="s1">'size_y'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ny</span><span class="p">)</span>
+                        <span class="n">geo</span><span class="p">[</span><span class="s1">'positioner_x'</span><span class="p">]</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                        <span class="n">geo</span><span class="p">[</span><span class="s1">'positioner_y'</span><span class="p">]</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                        <span class="n">geo</span><span class="p">[</span><span class="s1">'positioner_z'</span><span class="p">]</span> <span class="o">=</span> <span class="n">_NO_INFO_NUM</span>
+                <span class="k">return</span> <span class="n">geo</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_fields_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">is_map</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">"""Assemble ``(fields, metadata_text)`` for ``_from_arrays``.</span>
+
+<span class="sd">                Instrument metadata comes from the Information text (lenient</span>
+<span class="sd">                regex parse, missing keys keep sentinels); geometry from the</span>
+<span class="sd">                SDK overrides whatever the text said so derived objects</span>
+<span class="sd">                (crops, extracted spectra) get *their own* dimensions.</span>
+<span class="sd">                """</span>
+                <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_entry</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">info</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">text</span> <span class="o">=</span> <span class="s1">''</span>
+                        <span class="n">fields</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">text</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">'obj'</span><span class="p">]</span><span class="o">.</span><span class="n">PlainText</span>
+                        <span class="n">fields</span> <span class="o">=</span> <span class="n">_parse_info_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">is_map</span><span class="o">=</span><span class="n">is_map</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="c1"># Name follows the text-export convention: caption minus the</span>
+                <span class="c1"># trailing "--Spec.Data N" (derived objects keep their suffix).</span>
+                <span class="n">fields</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span> <span class="o">=</span> <span class="n">_graphname_to_name</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="p">)</span>
+                <span class="n">geo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_geometry</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_map</span><span class="p">:</span>
+                        <span class="c1"># singlespec has no pixel / size attributes.</span>
+                        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'pixel_x'</span><span class="p">,</span> <span class="s1">'pixel_y'</span><span class="p">,</span> <span class="s1">'size_x'</span><span class="p">,</span> <span class="s1">'size_y'</span><span class="p">):</span>
+                                <span class="n">geo</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">geo</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'positioner_z'</span><span class="p">)</span>
+                <span class="n">fields</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">geo</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">fields</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+        <span class="nd">@staticmethod</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_graph_arrays</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">"""``(ramanshift, data)`` for a TDGraph, ``data`` shaped ``(N, SizeY, SizeX)``.</span>
+
+<span class="sd">                Casts to float64 so the result behaves exactly like a map</span>
+<span class="sd">                loaded with :func:`numpy.loadtxt` from a text export (raw</span>
+<span class="sd">                WITec maps are uint16, which would silently truncate in</span>
+<span class="sd">                background subtraction).</span>
+<span class="sd">                """</span>
+                <span class="n">n</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">ny</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">SizeGraph</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">SizeX</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">SizeY</span>
+                <span class="n">flat</span> <span class="o">=</span> <span class="n">_buffer_to_array</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">_TDGraph</span><span class="o">.</span><span class="n">GraphData</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">flat</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">n</span> <span class="o">*</span> <span class="n">nx</span> <span class="o">*</span> <span class="n">ny</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">"object </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="si">}</span><span class="s2">: buffer holds </span><span class="si">{</span><span class="n">flat</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> values, "</span>
+                                <span class="sa">f</span><span class="s2">"expected </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">*</span><span class="si">{</span><span class="n">nx</span><span class="si">}</span><span class="s2">*</span><span class="si">{</span><span class="n">ny</span><span class="si">}</span><span class="s2">"</span>
+                        <span class="p">)</span>
+                <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">_TDGraph</span><span class="o">.</span><span class="n">DataFieldInverted</span><span class="p">:</span>
+                        <span class="c1"># [y][x][k]  →  (k, y, x)</span>
+                        <span class="n">data</span> <span class="o">=</span> <span class="n">flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ny</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># [x][y][k]  →  (k, y, x)</span>
+                        <span class="n">data</span> <span class="o">=</span> <span class="n">flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nx</span><span class="p">,</span> <span class="n">ny</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">xaxis</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">GraphXAxis</span>
+                <span class="n">ramanshift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">xaxis</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">ramanshift</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ascontiguousarray</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_xy_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geo</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">"""Width / height coordinate vectors with the same convention as ``ramanmap._toxarray``."""</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">geo</span><span class="p">[</span><span class="s1">'size_x'</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="n">geo</span><span class="p">[</span><span class="s1">'pixel_x'</span><span class="p">])</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">geo</span><span class="p">[</span><span class="s1">'size_y'</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="n">geo</span><span class="p">[</span><span class="s1">'pixel_y'</span><span class="p">])</span>
+                <span class="k">return</span> <span class="n">width</span><span class="p">,</span> <span class="n">height</span>
+
+        <span class="c1"># ------------------------------------------------------------------</span>
+        <span class="c1"># Extraction</span>
+        <span class="c1"># ------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="wipfile.ramanmap">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.wipfile.ramanmap">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">ramanmap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ramanmap</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Extract a 2-D spectral map as a :class:`ramantools.ramanmap` instance.</span>
+
+<span class="sd">                The returned object is indistinguishable from one loaded from</span>
+<span class="sd">                a text export plus info file: same attributes, same</span>
+<span class="sd">                ``mapxr`` layout, coordinates and attrs, so the whole</span>
+<span class="sd">                processing pipeline (``remove_bg`` → ``calibrate`` →</span>
+<span class="sd">                ``normalize`` → ``crr``) applies unchanged.</span>
+
+<span class="sd">                :param key: object ID (int) or exact caption (str) of a map.</span>
+<span class="sd">                :raises TypeError: if the object is not a 2-D map.</span>
+<span class="sd">                """</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry_of_kind</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s1">'map'</span><span class="p">)</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="s1">'obj'</span><span class="p">]</span>
+                <span class="n">ramanshift</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph_arrays</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="n">fields</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">has_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fields_for</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">is_map</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">ramanmap</span><span class="o">.</span><span class="n">_from_arrays</span><span class="p">(</span>
+                        <span class="n">ramanshift</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span>
+                        <span class="n">filename</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">,</span>
+                        <span class="n">metadata</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">info_loaded</span><span class="o">=</span><span class="n">has_info</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="c1"># Record provenance in the processing history.</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'source: WITec project object ID </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="si">}</span><span class="s1">: "</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="si">}</span><span class="s1">" </span><span class="se">\n</span><span class="s1">'</span>
+                <span class="k">return</span> <span class="n">m</span></div>
+
+
+<div class="viewcode-block" id="wipfile.singlespec">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.wipfile.singlespec">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">singlespec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">singlespec</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Extract a single spectrum as a :class:`ramantools.singlespec` instance.</span>
+
+<span class="sd">                Spectra extracted inside Witec Project from a map (captions</span>
+<span class="sd">                like ``"... (31/33)"``) carry no Information text of their</span>
+<span class="sd">                own; the parent scan's text is used for the instrument</span>
+<span class="sd">                metadata, while the stage position comes from the spectrum's</span>
+<span class="sd">                own space transformation.</span>
+
+<span class="sd">                :param key: object ID (int) or exact caption (str) of a spectrum.</span>
+<span class="sd">                :raises TypeError: if the object is not a single spectrum.</span>
+<span class="sd">                """</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry_of_kind</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s1">'spectrum'</span><span class="p">)</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="s1">'obj'</span><span class="p">]</span>
+                <span class="n">ramanshift</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graph_arrays</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="n">fields</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">has_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fields_for</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">is_map</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">singlespec</span><span class="o">.</span><span class="n">_from_arrays</span><span class="p">(</span>
+                        <span class="n">ramanshift</span><span class="p">,</span> <span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                        <span class="n">filename</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">,</span>
+                        <span class="n">metadata</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">info_loaded</span><span class="o">=</span><span class="n">has_info</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'source: WITec project object ID </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="si">}</span><span class="s1">: "</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="si">}</span><span class="s1">" </span><span class="se">\n</span><span class="s1">'</span>
+                <span class="k">return</span> <span class="n">s</span></div>
+
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_image_dataarray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Shared body of :py:meth:`image` / :py:meth:`mask`.</span>
+
+<span class="sd">                The buffer is row-major ``[y][x]`` (as the SDK's</span>
+<span class="sd">                ``reshape_image`` assumes); the height axis is flipped exactly</span>
+<span class="sd">                like ``ramanmap._toxarray`` does, so the result overlays the</span>
+<span class="sd">                map extracted from the same scan.</span>
+<span class="sd">                """</span>
+                <span class="n">flat</span> <span class="o">=</span> <span class="n">_buffer_to_array</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">_TDImage</span><span class="o">.</span><span class="n">ImageData</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">flat</span><span class="o">.</span><span class="n">size</span> <span class="o">!=</span> <span class="n">obj</span><span class="o">.</span><span class="n">SizeX</span> <span class="o">*</span> <span class="n">obj</span><span class="o">.</span><span class="n">SizeY</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">"object </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="si">}</span><span class="s2">: buffer holds </span><span class="si">{</span><span class="n">flat</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> values, "</span>
+                                <span class="sa">f</span><span class="s2">"expected </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeX</span><span class="si">}</span><span class="s2">*</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeY</span><span class="si">}</span><span class="s2">"</span>
+                        <span class="p">)</span>
+                <span class="n">img</span> <span class="o">=</span> <span class="n">flat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">SizeY</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">SizeX</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+                <span class="n">geo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_geometry</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+                <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xy_coords</span><span class="p">(</span><span class="n">geo</span><span class="p">)</span>
+                <span class="n">da</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+                        <span class="n">dims</span><span class="o">=</span><span class="p">[</span><span class="s1">'height'</span><span class="p">,</span> <span class="s1">'width'</span><span class="p">],</span>
+                        <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s1">'width'</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span> <span class="s1">'height'</span><span class="p">:</span> <span class="n">height</span><span class="p">},</span>
+                        <span class="n">name</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'long_name'</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">Caption</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'wipfile name'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'source'</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'WITec project object ID </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="si">}</span><span class="s1">'</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'map width'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">geo</span><span class="p">[</span><span class="s1">'size_x'</span><span class="p">])</span> <span class="o">+</span> <span class="s1">' um'</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'map height'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">geo</span><span class="p">[</span><span class="s1">'size_y'</span><span class="p">])</span> <span class="o">+</span> <span class="s1">' um'</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">'width'</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'units'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'um'</span>  <span class="c1"># type: ignore</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">'width'</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'long_name'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'width'</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">'height'</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'units'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'um'</span>  <span class="c1"># type: ignore</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">'height'</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'long_name'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'height'</span>
+                <span class="k">return</span> <span class="n">da</span>
+
+<div class="viewcode-block" id="wipfile.image">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.wipfile.image">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Extract a numeric image (fit result, band sum, …) as a 2-D :class:`xarray.DataArray`.</span>
+
+<span class="sd">                Dims are ``('height', 'width')`` with the same coordinates a</span>
+<span class="sd">                :py:meth:`ramanmap` of the same scan gets, so the image can be</span>
+<span class="sd">                plotted or combined with the map directly. ``attrs['units']``</span>
+<span class="sd">                carries the Witec unit string (e.g. ``'rel. 1/cm'``).</span>
+
+<span class="sd">                :param key: object ID (int) or exact caption (str) of an image</span>
+<span class="sd">                        (a mask is accepted too and returned as bool).</span>
+<span class="sd">                """</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry_of_kind</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s1">'image'</span><span class="p">,</span> <span class="s1">'mask'</span><span class="p">)</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="s1">'obj'</span><span class="p">]</span>
+                <span class="n">da</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_dataarray</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'mask'</span> <span class="k">else</span> <span class="nb">float</span><span class="p">)</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'units'</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">ImageZUnit</span>
+                <span class="k">return</span> <span class="n">da</span></div>
+
+
+<div class="viewcode-block" id="wipfile.mask">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.wipfile.mask">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Extract a Witec mask as a boolean 2-D :class:`xarray.DataArray`.</span>
+
+<span class="sd">                ``True`` marks pixels *inside* the mask, as drawn in Witec</span>
+<span class="sd">                Project. Coordinates match :py:meth:`ramanmap` of the scan</span>
+<span class="sd">                the mask belongs to, so ``m.mapxr.where(wip.mask(id))``</span>
+<span class="sd">                blanks everything outside it. Any numeric image is accepted</span>
+<span class="sd">                as well and thresholded at ``!= 0``.</span>
+
+<span class="sd">                :param key: object ID (int) or exact caption (str).</span>
+<span class="sd">                """</span>
+                <span class="n">e</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entry_of_kind</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="s1">'mask'</span><span class="p">,</span> <span class="s1">'image'</span><span class="p">)</span>
+                <span class="n">da</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_image_dataarray</span><span class="p">(</span><span class="n">e</span><span class="p">[</span><span class="s1">'obj'</span><span class="p">])</span>
+                <span class="n">da</span> <span class="o">=</span> <span class="n">da</span> <span class="o">!=</span> <span class="mi">0</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="s1">'caption'</span><span class="p">]</span>
+                <span class="n">da</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s1">'long_name'</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="s1">'caption'</span><span class="p">],</span>
+                        <span class="s1">'units'</span><span class="p">:</span> <span class="s1">'bool'</span><span class="p">,</span>
+                        <span class="s1">'wipfile name'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span>
+                        <span class="s1">'source'</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"WITec project object ID </span><span class="si">{</span><span class="n">e</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="p">}</span>
+                <span class="k">return</span> <span class="n">da</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Peter Nemes-Incze.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

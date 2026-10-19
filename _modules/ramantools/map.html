@@ -848,6 +848,80 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_toxarray</span><span class="p">()</span>
 
 
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_from_arrays</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ramanshift</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">map_data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fields</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">''</span><span class="p">,</span> <span class="n">info_loaded</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ramanmap</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Build a :class:`ramanmap` from in-memory arrays instead of files.</span>
+
+<span class="sd">                Private alternate constructor used by :class:`ramantools.wip.wipfile`</span>
+<span class="sd">                to hand over a map read straight out of a WITec project file.</span>
+<span class="sd">                The public ``__init__(map_path, info_path)`` signature is left</span>
+<span class="sd">                untouched for backward compatibility; this bypasses the file</span>
+<span class="sd">                readers and jumps straight to the attribute population that</span>
+<span class="sd">                :py:meth:`_toxarray` expects.</span>
+
+<span class="sd">                :param ramanshift: 1-D Raman shift axis (1/cm), length ``N``.</span>
+<span class="sd">                :param map_data: raw intensities shaped ``(N, pixel_y, pixel_x)``</span>
+<span class="sd">                        in the same row-major pixel order the Witec table export</span>
+<span class="sd">                        uses (first pixel row is the *top* of the scan in Witec</span>
+<span class="sd">                        Project; :py:meth:`_toxarray` applies the usual height flip).</span>
+<span class="sd">                :param filename: path recorded in ``self.filename`` /</span>
+<span class="sd">                        ``self.wipfilename`` (the ``.wip`` file here).</span>
+<span class="sd">                :param fields: metadata dict in the same ``{attr: value}`` form</span>
+<span class="sd">                        :func:`ramantools._witec._parse_info_text` returns, i.e.</span>
+<span class="sd">                        keys like ``laser``, ``itime``, ``pixel_x``, ``size_x``,</span>
+<span class="sd">                        ``positioner_x`` plus ``name`` for the map name. Keys that</span>
+<span class="sd">                        are missing fall back to the ``N/A`` / ``NaN`` sentinels</span>
+<span class="sd">                        used by the no-info-file load path. ``pixel_x`` /</span>
+<span class="sd">                        ``pixel_y`` / ``size_x`` / ``size_y`` are required.</span>
+<span class="sd">                :param metadata: raw text stored in ``self.metadata`` and shown</span>
+<span class="sd">                        by :py:meth:`print_metadata`.</span>
+<span class="sd">                :param info_loaded: controls the ``comments`` provenance line and</span>
+<span class="sd">                        the ``'x'`` suffix on the objective magnification attr,</span>
+<span class="sd">                        exactly as the ``info_path is not None`` flag does in</span>
+<span class="sd">                        :py:meth:`__init__`.</span>
+<span class="sd">                """</span>
+                <span class="c1"># ``__new__`` allocates the instance without running __init__</span>
+                <span class="c1"># (which would try to open files).</span>
+                <span class="bp">self</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">normfactor</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span> <span class="o">=</span> <span class="n">info_loaded</span>
+                <span class="c1"># Start from the sentinel scaffolding so every attribute that</span>
+                <span class="c1"># _toxarray / print_metadata reads exists, then overwrite</span>
+                <span class="c1"># with whatever ``fields`` supplies.</span>
+                <span class="n">_apply_default_common_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">metadata</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mapname</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'name'</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">))[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">attr</span> <span class="o">!=</span> <span class="s1">'name'</span><span class="p">:</span>
+                                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="c1"># Dimensional attrs are mandatory for the coordinate build.</span>
+                <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'pixel_x'</span><span class="p">,</span> <span class="s1">'pixel_y'</span><span class="p">,</span> <span class="s1">'size_x'</span><span class="p">,</span> <span class="s1">'size_y'</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"_from_arrays: required field '</span><span class="si">{</span><span class="n">attr</span><span class="si">}</span><span class="s2">' is missing"</span><span class="p">)</span>
+                <span class="c1"># No separate data-file header in this path; the wip itself is</span>
+                <span class="c1"># both the data and the metadata source.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metadata_datafile</span> <span class="o">=</span> <span class="s1">''</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">wipfilename</span> <span class="o">=</span> <span class="n">filename</span>
+                <span class="c1"># Sanity-check the array shape against the declared pixel grid</span>
+                <span class="c1"># before handing over to _toxarray (whose reshape-free path</span>
+                <span class="c1"># would otherwise produce a confusing xarray error).</span>
+                <span class="n">map_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">map_data</span><span class="p">)</span>
+                <span class="n">expected</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ramanshift</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pixel_x</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">map_data</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">"_from_arrays: map_data shape </span><span class="si">{</span><span class="n">map_data</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> does not match "</span>
+                                <span class="sa">f</span><span class="s2">"(ramanshift, pixel_y, pixel_x) = </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">"</span>
+                        <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ramanshift</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="n">map_data</span>
+                <span class="c1"># Same xarray construction as the file path, so wip-loaded and</span>
+                <span class="c1"># text-loaded maps are indistinguishable downstream.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_toxarray</span><span class="p">()</span>
+                <span class="k">return</span> <span class="bp">self</span>
+
+
         <span class="k">def</span><span class="w"> </span><span class="nf">_load_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">                </span><span class="sd">"""Populate metadata attributes with placeholder values.</span>
 
