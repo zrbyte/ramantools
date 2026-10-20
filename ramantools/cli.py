@@ -101,10 +101,15 @@ def _emit(obj, as_json: bool) -> None:
 # ---------------------------------------------------------------------------
 
 def cmd_inspect(args) -> int:
-        """``inspect FILE``: tree / inventory of a project, or a container summary."""
+        """``inspect FILE``: tree / inventory of a project, or a container summary.
+
+        A project without ``--id`` is listed as a whole; with ``--id`` the
+        selected object is loaded and summarised exactly like a text
+        export or a ``.nc`` file.
+        """
         import ramantools as rt
         kind = _kind_of_path(args.path)
-        if kind == 'wip':
+        if kind == 'wip' and not args.id:
                 wip = rt.wipfile(args.path)
                 if args.json:
                         _emit(wip.list(as_list=True) if not args.all else wip.entries, True)
@@ -112,7 +117,7 @@ def cmd_inspect(args) -> int:
                         print(repr(wip))
                         print(wip.tree(show_all=args.all, as_string=True))
                 return 0
-        obj = _load_any(args.path, args.info, None, args.map if args.map else None)
+        obj = _load_any(args.path, args.info, _parse_key(args.id) if args.id else None, args.map if args.map else None)
         if args.json:
                 _emit(obj.summary(), True)
         else:
@@ -212,8 +217,8 @@ def build_parser() -> argparse.ArgumentParser:
                 p.add_argument('--map', action='store_true', help='treat a text export as a map (default: guess from the columns)')
                 p.add_argument('--json', action='store_true', help='machine-readable JSON output')
 
-        p = sub.add_parser('inspect', help='tree / inventory of a project, or summary of a map / spectrum')
-        add_input_args(p, with_id=False)
+        p = sub.add_parser('inspect', help='tree / inventory of a project (or, with --id, one object), or summary of a map / spectrum')
+        add_input_args(p)
         p.add_argument('--all', action='store_true', help='include SDK-internal objects of a project')
         p.set_defaults(func=cmd_inspect)
 
@@ -254,8 +259,10 @@ def main(argv=None) -> int:
                         print(f"ramantools: {exc.code}", file=sys.stderr)
                         return 2
                 raise
-        except (KeyError, TypeError, ValueError, FileNotFoundError) as exc:
-                # Library errors carry a readable message already.
+        except (KeyError, TypeError, ValueError, IndexError, FileNotFoundError) as exc:
+                # Library errors carry a readable message already. IndexError
+                # is what the info-file parser raises when a required field
+                # is missing (e.g. a spectrum info file passed for a map).
                 print(f"ramantools: {type(exc).__name__}: {exc}", file=sys.stderr)
                 return 1
 

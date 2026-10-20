@@ -9,7 +9,7 @@ Python package for Witec confocal Raman data. Two containers, `ramanmap` (3-D xa
 
 ## Workflow
 
-1. Find out what you have. For a project file run `ramantools inspect project.wip` (object tree with IDs) or `wip = rt.wipfile(path); wip.entries`. For a text export or a saved `.nc` run `ramantools inspect FILE --json` or `repr(obj)` / `obj.summary()`.
+1. Find out what you have. For a project file run `ramantools inspect project.wip` (object tree with IDs; add `--id N` for one object's summary) or `wip = rt.wipfile(path); wip.entries`. For a text export or a saved `.nc` run `ramantools inspect FILE --json` or `repr(obj)` / `obj.summary()`.
 2. Load. `rt.ramanmap(map_txt, info_txt)`, `rt.singlespec(spec_txt, info_txt)`, `wip.ramanmap(ID)`, `wip.singlespec(ID)`, or `rt.load('x.nc')`.
 3. Process in this order, each call returns a new object: `remove_bg` (returns a 3-tuple), `calibrate`, `normalize` (needs remove_bg first), `crr`, optionally `peakmask` (2-tuple). Check `obj.history(as_list=True)` to see what ran and with which parameters.
 4. Fit with `rt.peakfit(obj.mapxr.sel(ramanshift=slice(lo, hi)), stval={'x0': ...})`; crop to the peak first. Units of every parameter are in `fit.attrs['param_units']`.

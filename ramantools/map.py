@@ -396,8 +396,8 @@ class ramanmap:
                         # plot as well, so they are rejected for the same reason.
                         if kwargs.get('toplot', False) or kwargs.get('savepath') is not None or kwargs.get('ax') is not None:
                                 raise ValueError(
-                                        "remove_bg(mode='individual') does not support toplot=True "
-                                        "— it would create one plot per pixel."
+                                        "remove_bg(mode='individual') does not support plotting "
+                                        "(toplot=True, savepath=, ax=): it would create one plot per pixel."
                                 )
 
                         # Pull underlying numpy views. ``mapxr.data`` has axis

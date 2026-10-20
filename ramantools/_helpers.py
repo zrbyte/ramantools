@@ -446,6 +446,12 @@ def _container_summary(obj, da: xr.DataArray) -> dict:
         return out
 
 
+def _fmt_qty(value, unit: str, sep: str = ' ') -> str:
+        """``_fmt_num`` plus a unit, except that an unknown value stays a bare ``N/A``."""
+        text = _fmt_num(value)
+        return text if text == 'N/A' else f'{text}{sep}{unit}'
+
+
 def _format_summary(s: dict) -> str:
         """Render a :func:`_container_summary` dict as the multi-line repr.
 
@@ -462,10 +468,13 @@ def _format_summary(s: dict) -> str:
                         f"{_fmt_num(s['size_x_um'])} x {_fmt_num(s['size_y_um'])} um"
                 )
         else:
-                lines.append(
-                        f"  position:    X {_fmt_num(s['positioner_x'])}, Y {_fmt_num(s['positioner_y'])}, "
-                        f"Z {_fmt_num(s['positioner_z'])} um"
-                )
+                coords = [_fmt_num(s[k]) for k in ('positioner_x', 'positioner_y', 'positioner_z')]
+                # Header-only spectra have no positioner data at all: say so
+                # once instead of printing three N/A values with a unit.
+                if all(c == 'N/A' for c in coords):
+                        lines.append("  position:    N/A")
+                else:
+                        lines.append(f"  position:    X {coords[0]}, Y {coords[1]}, Z {coords[2]} um")
         if s['n_ramanshift']:
                 lines.append(
                         f"  ramanshift:  {s['n_ramanshift']} points, "
@@ -474,8 +483,8 @@ def _format_summary(s: dict) -> str:
                         f"  ramanshift:  {s['n_ramanshift']} points"
                 )
         lines.append(
-                f"  instrument:  laser {_fmt_num(s['laser_nm'])} nm, integration {_fmt_num(s['integration_time_s'])} s, "
-                f"grating {s['grating']}, objective {s['magnification']}x"
+                f"  instrument:  laser {_fmt_qty(s['laser_nm'], 'nm')}, integration {_fmt_qty(s['integration_time_s'], 's')}, "
+                f"grating {s['grating']}, objective {_fmt_qty(s['magnification'], 'x', sep='')}"
         )
         lines.append(f"  values:      {s['long_name']} [{s['units']}]")
         steps = ' -> '.join(s['steps']) if s['steps'] else '(no structured history)'

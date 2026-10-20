@@ -127,6 +127,7 @@ The same chores without Python, via `ramantools ...` or `python -m ramantools ..
 ```bash
 ramantools inspect project.wip                  # repr + object tree
 ramantools inspect project.wip --json           # inventory as JSON
+ramantools inspect project.wip --id 28 [--json]  # summary of one object
 ramantools info project.wip --id 28             # Witec Information text
 ramantools export project.wip --id 28 --out map.nc
 ramantools export map.txt --info map_info.txt --out map.nc

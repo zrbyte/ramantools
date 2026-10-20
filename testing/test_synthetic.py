@@ -119,6 +119,20 @@ class TestIntrospection:
         r = repr(spec)
         assert r.startswith("<ramantools.singlespec") and 'position:' in r
 
+    def test_repr_without_info_has_no_dangling_units(self, files):
+        """Header-only loading leaves instrument fields unknown; the repr must
+        print a bare ``N/A`` for them, not ``N/A nm`` / ``N/Ax``."""
+        r = repr(rt.ramanmap(files['map']['map_path']))
+        assert 'objective N/A' in r and 'laser N/A' in r
+        assert 'N/Ax' not in r and 'N/A nm' not in r and 'N/A s' not in r
+        # The Witec text header carries the stage position, so a header-only
+        # spectrum still knows it; exercise the all-unknown branch of the
+        # formatter directly instead.
+        from ramantools._helpers import _format_summary
+        summ = rt.singlespec(files['spectrum']['spec_path']).summary()
+        summ.update(positioner_x=float('nan'), positioner_y=float('nan'), positioner_z=float('nan'))
+        assert 'position:    N/A' in _format_summary(summ)
+
     def test_summary_is_json_serialisable(self, rmap, spec):
         """summary() is a plain dict that json.dumps accepts without a default."""
         for obj in (rmap, spec):
@@ -408,6 +422,25 @@ class TestCLI:
         from ramantools.cli import main
         assert main(['inspect', str(tmp_path / 'missing.txt')]) == 1
         assert 'ramantools:' in capsys.readouterr().err
+
+    def test_mismatched_info_file_is_reported(self, files, tmp_path, capsys):
+        """A spectrum info file given for a map makes the Witec parser raise
+        IndexError (missing 'Points per Line'); the CLI must report it on
+        stderr with status 1 instead of dumping a traceback."""
+        from ramantools.cli import main
+        m, s = files['map'], files['spectrum']
+        status = main(['export', str(m['map_path']), '--info', str(s['info_path']), '--out', str(tmp_path / 'x.nc')])
+        assert status == 1
+        err = capsys.readouterr().err
+        assert err.startswith('ramantools: IndexError') and 'Points per Line' in err
+        assert not (tmp_path / 'x.nc').exists()
+
+    def test_inspect_accepts_id(self):
+        """``inspect project.wip --id N`` must parse; it was the only command
+        without --id, so the documented workflow failed with a usage error."""
+        from ramantools.cli import build_parser
+        args = build_parser().parse_args(['inspect', 'project.wip', '--id', '28', '--json'])
+        assert args.id == '28' and args.json
 
     def test_module_entry_point(self, files):
         """python -m ramantools --version works end to end."""

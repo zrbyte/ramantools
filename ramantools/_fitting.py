@@ -19,7 +19,7 @@ from scipy.signal import find_peaks  # type: ignore
 # spectrum for plotting when no explicit width/height is given.
 # _plot_target / _finish_plot implement the 0.6.0 ``ax`` / ``savepath``
 # keywords; _record_step / _step_names are the structured history.
-from ._helpers import _midpoint, _plot_target, _finish_plot, _record_step, _step_names
+from ._helpers import _midpoint, _plot_target, _finish_plot, _record_step, _step_names, _jsonable
 # ``_say`` replaces bare print() for status text: it prints unless the
 # caller configured logging, in which case it only logs.
 from ._log import logger, _say
@@ -634,7 +634,9 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
                 name: shift_unit if name.startswith(('x0', 'width')) else value_unit
                 for name in param_names[1:]
         }
-        logger.debug('peakfit: func=%s stval=%s dims=%s', func.__name__, stval, dict(xrobj.sizes))
+        # _jsonable turns numpy scalars inside stval into plain Python numbers
+        # so the log line reads ``'offset': 11.3`` rather than ``np.float64(11.3)``.
+        logger.debug('peakfit: func=%s stval=%s dims=%s', func.__name__, _jsonable(stval), dict(xrobj.sizes))
 
         return fit
 
