@@ -28,4 +28,4 @@ Python package for Witec confocal Raman data. Two containers, `ramanmap` (3-D xa
 
 ## Testing changes to the package
 
-`pytest testing/test_synthetic.py` runs anywhere. The other modules need the private fixtures in `test-data/` and skip without them. Use the `datadigger` conda environment on the maintainer's machine.
+`pytest testing/test_synthetic.py` runs anywhere. `pytest testing/test_notebook_outputs.py` runs the generated notebook `testing/notebook_output_checks.ipynb` and checks every cell for duplicated or missing Jupyter output; after touching repr, plotting or `_say`, run it. The other modules need the private fixtures in `test-data/` and skip without them. Use the `datadigger` conda environment on the maintainer's machine.

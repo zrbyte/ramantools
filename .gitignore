@@ -1,4 +1,6 @@
 *.ipynb
+# generated test notebook (source: testing/make_notebook_output_checks.py)
+!testing/notebook_output_checks.ipynb
 /test-data/*
 # Python bytecode caches — ignore wherever they appear (not just ramantools/).
 __pycache__/
