@@ -22,7 +22,6 @@ Python package for Witec confocal Raman data. Two containers, `ramanmap` (3-D xa
 - Use physical coordinates with `.sel(method='nearest')`; width/height are micrometres, ramanshift is 1/cm.
 - Default `crr(cutoff=2, window=2)` misses isolated one-sample spikes; try `window=3`.
 - `calibrate` / `normalize` take single-peak shape functions only (`lorentz`, `gaussian`).
-- Fitted `width` can be negative; report `abs()`.
 - For a reproducible example without measurement files, generate data with `python testing/synthetic.py OUTDIR` (known peaks, flake mask, cosmic rays, 2.5 1/cm miscalibration).
 - To trace a run, `logging.basicConfig(level=logging.DEBUG)` before calling the pipeline; each step logs its parameters under the `ramantools` logger.
 

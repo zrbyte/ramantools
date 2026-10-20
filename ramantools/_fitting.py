@@ -474,6 +474,50 @@ def bgsubtract(x_data, y_data, polyorder: int = 1, toplot: bool = False, fitmask
 
         return y_data_nobg, bg_values, coeff, params_used_at_run, mask, covar
 
+def _positive_widths(fit):
+        """Report every ``width*`` parameter of a fit as a positive number.
+
+        :func:`gaussian`, :func:`lorentz` and :func:`lorentz2` depend on
+        ``width`` only through ``width**2`` (the Lorentz numerator is
+        ``area * width`` with ``area`` itself proportional to ``width``),
+        so ``+w`` and ``-w`` describe the same curve and ``curve_fit`` is
+        free to converge to either sign. The negative solution is not a
+        bad fit, only an awkward parametrisation, and it used to leak into
+        plots, printouts and downstream code (``peakmask`` had to take
+        ``abs``). This maps it onto the positive one exactly:
+
+        * the coefficient is multiplied by ``-1``;
+        * the covariance row and column of that parameter are multiplied
+          by ``-1`` as well, which is the covariance of the reparametrised
+          problem (the diagonal element is multiplied twice and therefore
+          unchanged).
+
+        Positive widths and NaNs (failed pixels) are multiplied by ``1.0``
+        and stay bit-identical, so fits that were already fine are not
+        altered in any way. Works for a single spectrum (0-d parameters)
+        and for maps (parameters over ``height`` / ``width``) alike.
+        Modifies ``fit`` in place and returns it.
+        """
+        coeff = fit['curvefit_coefficients']
+        # ``curvefit_covariance`` is always produced by xarray's curvefit,
+        # but a Dataset assembled by hand may lack it; cope with both.
+        cov = fit['curvefit_covariance'] if 'curvefit_covariance' in fit else None
+        for name in (str(n) for n in coeff.param.values):
+                if not name.startswith('width'):
+                        continue
+                values = coeff.sel(param = name).values
+                # -1 where the width is negative, +1 elsewhere (NaN compares
+                # False, so failed fits keep their NaN untouched).
+                sign = np.where(values < 0, -1.0, 1.0)
+                coeff.loc[{'param': name}] = values * sign
+                if cov is not None:
+                        # Row and column of this parameter; ``sign`` broadcasts
+                        # over the remaining cov axis (and over the map axes).
+                        cov.loc[{'cov_i': name}] = cov.sel(cov_i = name).values * sign[..., np.newaxis]
+                        cov.loc[{'cov_j': name}] = cov.sel(cov_j = name).values * sign[..., np.newaxis]
+        return fit
+
+
 def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None, toplot: bool = False, width: float | None = None, height: float | None = None, ax = None, savepath = None, **kwargs):
         """Fitting a function to peaks in the data contained in ``xrobj``, which can be a single spectrum, a map or a selected spectrum from a map.
 
@@ -529,6 +573,7 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
                 - Passing a ``bounds`` dictionary to :func:`peakfit` seems to increase the fitting time significantly. This might be an issue with :py:mod:`xarray.DataArray.curvefit`.
                 - By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.
                 - In case of using double Lorentz fitting, the names of the parameters change! See: :func:`lorentz2`.
+                - Fitted widths are always reported as positive numbers. The shape functions are even in ``width``, so ``curve_fit`` may converge to the negative solution; :func:`peakfit` maps it (coefficient and covariance) onto the equivalent positive one.
 
         .. seealso::
 
@@ -561,7 +606,13 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
         if fitresult is None:
                 fit = xrobj.curvefit('ramanshift', func, p0 = stval, bounds = bounds, errors = 'ignore', kwargs = {'maxfev': PEAKFIT_MAXFEV})
         else:
-                fit = fitresult
+                # Deep copy so the caller's Dataset is not modified by the
+                # width sign normalisation below.
+                fit = fitresult.copy(deep = True)
+        # The shape functions are even in ``width``; report the positive
+        # solution so plots, printouts and downstream code never see a
+        # negative FWHM. Exact (multiplication by +-1), see the helper.
+        fit = _positive_widths(fit)
 
         # plot the resulting fit. ``ax`` / ``savepath`` imply toplot; the
         # bare ``toplot=True`` path still draws on the current axes.

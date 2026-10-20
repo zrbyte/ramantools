@@ -199,7 +199,8 @@ class TestAlgorithms:
         fit = rt.peakfit(cal.ssxr.sel(ramanshift=slice(1450, 1700)), stval={'x0': 1582})
         assert float(fit['curvefit_coefficients'].sel(param='x0')) == pytest.approx(synthetic.G_PEAK['x0'], abs=0.5)
         # |width|: the Lorentzian is symmetric in the sign of the width parameter.
-        assert abs(float(fit['curvefit_coefficients'].sel(param='width'))) == pytest.approx(synthetic.G_PEAK['width'], rel=0.1)
+        # No abs(): peakfit reports the FWHM as a positive number (see TestPeakfitWidthSign).
+        assert float(fit['curvefit_coefficients'].sel(param='width')) == pytest.approx(synthetic.G_PEAK['width'], rel=0.1)
 
     def test_normalize_scales_peak_to_one(self, spec_nobg):
         """Normalising to the G band makes its fitted amplitude ≈ 1."""
@@ -447,3 +448,91 @@ class TestCLI:
         import subprocess
         res = subprocess.run([sys.executable, '-m', 'ramantools', '--version'], capture_output=True, text=True, cwd=ROOT)
         assert res.returncode == 0 and rt.__version__ in res.stdout
+
+
+# ---------------------------------------------------------------------------
+# Width sign normalisation in peakfit
+# ---------------------------------------------------------------------------
+
+class TestPeakfitWidthSign:
+    """``peakfit`` must report widths as positive numbers.
+
+    The synthetic G peak is the case that exposed the problem: with the
+    default starting width of 14 the Lorentz fit converges to width = -22,
+    a perfectly good fit in the mirrored parametrisation. These tests pin
+    that the reported width is +22, that the fix is an exact
+    reparametrisation (covariance consistent with a raw ``curvefit``), and
+    that it covers maps, ``lorentz2`` and user-supplied ``fitresult``.
+    """
+
+    # Full starting-value dict, identical to what peakfit fills in from the
+    # lorentz defaults, so the raw curvefit below runs the very same problem.
+    STVAL = {'x0': 1582, 'ampl': 1, 'width': 14, 'offset': 0}
+
+    def test_spectrum_width_positive_and_exact(self, spec_nobg):
+        """Reported width is +FWHM; coefficients and covariance equal the raw
+        curvefit result up to the sign flip of the width row/column."""
+        crop = spec_nobg.ssxr.sel(ramanshift=slice(1450, 1700))
+        fit = rt.peakfit(crop, stval=dict(self.STVAL))
+        raw = crop.curvefit('ramanshift', rt.lorentz, p0=dict(self.STVAL), errors='ignore', kwargs={'maxfev': 1000})
+        w = float(fit['curvefit_coefficients'].sel(param='width'))
+        assert w > 0 and w == pytest.approx(synthetic.G_PEAK['width'], rel=0.1)
+        # Exactness: every coefficient agrees with the raw fit in magnitude
+        # bit for bit (the fix multiplies by +-1.0, nothing else).
+        assert np.array_equal(np.abs(fit['curvefit_coefficients'].values), np.abs(raw['curvefit_coefficients'].values))
+        # The raw fit may come out with either sign; the reported covariance
+        # must be the raw one with the width row and column multiplied by
+        # that sign, which leaves the diagonal untouched.
+        s = np.sign(float(raw['curvefit_coefficients'].sel(param='width')))
+        expected = raw['curvefit_covariance'].values.copy()
+        i = list(raw.param.values).index('width')
+        expected[i, :] *= s
+        expected[:, i] *= s
+        assert np.array_equal(fit['curvefit_covariance'].values, expected)
+        assert np.array_equal(np.diag(fit['curvefit_covariance'].values), np.diag(raw['curvefit_covariance'].values))
+
+    def test_map_widths_positive(self, map_nobg):
+        """Every converged pixel of a map fit reports a positive width."""
+        crop = map_nobg.mapxr.sel(ramanshift=slice(1450, 1700))
+        fit = rt.peakfit(crop, stval={'x0': 1582})
+        widths = fit['curvefit_coefficients'].sel(param='width').values
+        finite = widths[np.isfinite(widths)]
+        assert finite.size > 0 and np.all(finite > 0)
+
+    def test_lorentz2_negative_start_reported_positive(self):
+        """Double Lorentz: widths started negative stay negative in the raw
+        optimiser result and must come out positive from peakfit, mixed
+        signs included.
+
+        A constructed two-peak spectrum is used because the synthetic 2D
+        band is a single Lorentzian, on which a seven-parameter lorentz2
+        fit does not converge from any reasonable start.
+        """
+        x = np.linspace(2600, 2800, 200)
+        rng = np.random.default_rng(0)
+        y = rt.lorentz2(x, 2690, 400, 40, 2740, 300, 40, 5) + rng.normal(0, 2, x.size)
+        da = xr.DataArray(y, coords={'ramanshift': x}, dims='ramanshift')
+        for w1, w2 in ((-30, -30), (30, -30)):
+            stval = {'x01': 2685, 'x02': 2745, 'ampl1': 300, 'ampl2': 300, 'width1': w1, 'width2': w2, 'offset': 0}
+            raw = da.curvefit('ramanshift', rt.lorentz2, p0=dict(stval), errors='ignore', kwargs={'maxfev': 1000})
+            fit = rt.peakfit(da, func=rt.lorentz2, stval=dict(stval))
+            raw_w = raw['curvefit_coefficients'].sel(param=['width1', 'width2']).values
+            fit_w = fit['curvefit_coefficients'].sel(param=['width1', 'width2']).values
+            # The optimiser keeps the sign it started with (the function is
+            # even in width), which is exactly the case being normalised.
+            assert np.all(np.sign(raw_w) == np.sign([w1, w2])), raw_w
+            assert np.array_equal(fit_w, np.abs(raw_w)) and np.all(fit_w > 0)
+            assert fit_w == pytest.approx([40, 40], rel=0.05)
+            # Variances are invariant under the sign flip.
+            assert np.array_equal(np.diag(fit['curvefit_covariance'].values), np.diag(raw['curvefit_covariance'].values))
+
+    def test_fitresult_input_is_normalised_not_mutated(self, spec_nobg):
+        """A caller-supplied ``fitresult`` with a negative width is returned
+        positive, and the caller's Dataset is left as it was."""
+        crop = spec_nobg.ssxr.sel(ramanshift=slice(1450, 1700))
+        fit = rt.peakfit(crop, stval={'x0': 1582})
+        negative = fit.copy(deep=True)
+        negative['curvefit_coefficients'].loc[{'param': 'width'}] = -abs(float(fit['curvefit_coefficients'].sel(param='width')))
+        out = rt.peakfit(crop, fitresult=negative)
+        assert float(out['curvefit_coefficients'].sel(param='width')) > 0
+        assert float(negative['curvefit_coefficients'].sel(param='width')) < 0  # input untouched

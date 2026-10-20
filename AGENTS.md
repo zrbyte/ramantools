@@ -93,7 +93,7 @@ fit['curvefit_covariance']
 fit.attrs['param_units']                          # {'x0': '1/cm', 'ampl': 'au', 'width': '1/cm', 'offset': 'au'}
 ```
 
-`peakfit(xrobj, func=lorentz, fitresult=None, stval=None, bounds=None, toplot=False, width=None, height=None, ax=None, savepath=None)` wraps `xarray.DataArray.curvefit` and returns an `xarray.Dataset`. Crop to the peak first; fits over the whole spectrum rarely converge. `func` can be `gaussian`, `lorentz` or `lorentz2` (two Lorentzians; parameters are then `x01, ampl1, width1, x02, ampl2, width2, offset`). `width` is the FWHM. The width can come back negative because the Lorentzian is symmetric in its sign; use `abs()`. Starting values default to the shape function's keyword defaults, so always pass at least `x0`.
+`peakfit(xrobj, func=lorentz, fitresult=None, stval=None, bounds=None, toplot=False, width=None, height=None, ax=None, savepath=None)` wraps `xarray.DataArray.curvefit` and returns an `xarray.Dataset`. Crop to the peak first; fits over the whole spectrum rarely converge. `func` can be `gaussian`, `lorentz` or `lorentz2` (two Lorentzians; parameters are then `x01, ampl1, width1, x02, ampl2, width2, offset`). `width` is the FWHM and is always reported as a positive number (the shape functions are even in `width`; `peakfit` maps a negative solution of the optimiser onto the equivalent positive one, covariance included). Starting values default to the shape function's keyword defaults, so always pass at least `x0`.
 
 `rt.bgsubtract(x, y, polyorder=1, ...)` is the module-level background routine on plain arrays; it returns `(y_nobg, bg_values, coeff, params_used, mask, covar)`.
 
