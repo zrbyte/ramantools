@@ -47,10 +47,12 @@
 <li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="intro.html#installation">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="intro.html#examples">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html#working-without-a-notebook">Working without a notebook</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ramantools package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-ramantools.ramantools">ramantools.ramantools module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.gaussian"><code class="docutils literal notranslate"><span class="pre">gaussian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.lorentz"><code class="docutils literal notranslate"><span class="pre">lorentz()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.lorentz2"><code class="docutils literal notranslate"><span class="pre">lorentz2()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.peakfit"><code class="docutils literal notranslate"><span class="pre">peakfit()</span></code></a></li>
@@ -59,23 +61,30 @@
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.calibrate"><code class="docutils literal notranslate"><span class="pre">ramanmap.calibrate()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.crr"><code class="docutils literal notranslate"><span class="pre">ramanmap.crr()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.history"><code class="docutils literal notranslate"><span class="pre">ramanmap.history()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.load"><code class="docutils literal notranslate"><span class="pre">ramanmap.load()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.normalize"><code class="docutils literal notranslate"><span class="pre">ramanmap.normalize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.peakmask"><code class="docutils literal notranslate"><span class="pre">ramanmap.peakmask()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.plotspec"><code class="docutils literal notranslate"><span class="pre">ramanmap.plotspec()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.print_metadata"><code class="docutils literal notranslate"><span class="pre">ramanmap.print_metadata()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.remove_bg"><code class="docutils literal notranslate"><span class="pre">ramanmap.remove_bg()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.save"><code class="docutils literal notranslate"><span class="pre">ramanmap.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.ramanmap.summary"><code class="docutils literal notranslate"><span class="pre">ramanmap.summary()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.singlespec"><code class="docutils literal notranslate"><span class="pre">singlespec</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.calibrate"><code class="docutils literal notranslate"><span class="pre">singlespec.calibrate()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.crr"><code class="docutils literal notranslate"><span class="pre">singlespec.crr()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.history"><code class="docutils literal notranslate"><span class="pre">singlespec.history()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.load"><code class="docutils literal notranslate"><span class="pre">singlespec.load()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.normalize"><code class="docutils literal notranslate"><span class="pre">singlespec.normalize()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.print_metadata"><code class="docutils literal notranslate"><span class="pre">singlespec.print_metadata()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.remove_bg"><code class="docutils literal notranslate"><span class="pre">singlespec.remove_bg()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.save"><code class="docutils literal notranslate"><span class="pre">singlespec.save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.singlespec.summary"><code class="docutils literal notranslate"><span class="pre">singlespec.summary()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.ramantools.wipfile"><code class="docutils literal notranslate"><span class="pre">wipfile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.wipfile.entries"><code class="docutils literal notranslate"><span class="pre">wipfile.entries</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.wipfile.image"><code class="docutils literal notranslate"><span class="pre">wipfile.image()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.wipfile.images"><code class="docutils literal notranslate"><span class="pre">wipfile.images</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.wipfile.info"><code class="docutils literal notranslate"><span class="pre">wipfile.info()</span></code></a></li>
@@ -95,6 +104,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-ramantools.wip">ramantools.wip module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#design-notes">Design notes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ramantools.wip.wipfile"><code class="docutils literal notranslate"><span class="pre">wipfile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.wip.wipfile.entries"><code class="docutils literal notranslate"><span class="pre">wipfile.entries</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.wip.wipfile.image"><code class="docutils literal notranslate"><span class="pre">wipfile.image()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.wip.wipfile.images"><code class="docutils literal notranslate"><span class="pre">wipfile.images</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.wip.wipfile.info"><code class="docutils literal notranslate"><span class="pre">wipfile.info()</span></code></a></li>
@@ -111,6 +121,11 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#ramantools-cli-module">ramantools.cli module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.cli.build_parser"><code class="docutils literal notranslate"><span class="pre">build_parser()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools.cli.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">ramantools</a><ul class="current">
@@ -118,6 +133,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#module-ramantools.ramantools">ramantools.ramantools module</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.bgsubtract"><code class="docutils literal notranslate"><span class="pre">bgsubtract()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.gaussian"><code class="docutils literal notranslate"><span class="pre">gaussian()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.lorentz"><code class="docutils literal notranslate"><span class="pre">lorentz()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.lorentz2"><code class="docutils literal notranslate"><span class="pre">lorentz2()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.ramantools.peakfit"><code class="docutils literal notranslate"><span class="pre">peakfit()</span></code></a></li>
@@ -130,6 +146,11 @@
 <li class="toctree-l3"><a class="reference internal" href="#module-ramantools.wip">ramantools.wip module</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#design-notes">Design notes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ramantools.wip.wipfile"><code class="docutils literal notranslate"><span class="pre">wipfile</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#ramantools-cli-module">ramantools.cli module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.cli.build_parser"><code class="docutils literal notranslate"><span class="pre">build_parser()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ramantools.cli.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -179,7 +200,7 @@ same objects as <code class="docutils literal notranslate"><span class="pre">ram
 this shim).</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.ramantools.bgsubtract">
-<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">bgsubtract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitmask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wmin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wmax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">60</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclusion_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/_fitting.html#bgsubtract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.bgsubtract" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">bgsubtract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitmask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hmax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wmin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wmax</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">60</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclusion_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/_fitting.html#bgsubtract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.bgsubtract" title="Link to this definition"></a></dt>
 <dd><p>Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.find_peaks</span></code>.
 These peaks are then used to define the areas of the background signal.
 In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: <code class="docutils literal notranslate"><span class="pre">polyorder</span></code>.
@@ -196,6 +217,11 @@ This can decrease the runtime.</p>
 <li><p><strong>y_data</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) – Raman intensity values</p></li>
 <li><p><strong>polyorder</strong> (<em>int</em><em>, </em><em>optional</em>) – order of polynomial used to fit the background, defaults to 1</p></li>
 <li><p><strong>toplot</strong> (<em>bool</em><em>, </em><em>optional</em>) – if <cite>True</cite> a plot of: the fit, the background used and positions of the peaks is shown, defaults to False</p></li>
+<li><p><strong>ax</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code>, optional) – matplotlib Axes to draw the <code class="docutils literal notranslate"><span class="pre">toplot</span></code> figure into. Passing an
+Axes implies <code class="docutils literal notranslate"><span class="pre">toplot=True</span></code>. Defaults to the current axes.</p></li>
+<li><p><strong>savepath</strong> (<em>str</em><em>, </em><em>optional</em>) – write the <code class="docutils literal notranslate"><span class="pre">toplot</span></code> figure to this file and close it
+instead of displaying it (implies <code class="docutils literal notranslate"><span class="pre">toplot=True</span></code>). Use this from
+headless scripts or agents to inspect a background fit.</p></li>
 <li><p><strong>fitmask</strong> (<code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array) – Fitmask to be used for polynomial fitting.</p></li>
 <li><p><strong>hmin</strong> (<em>float</em><em>, </em><em>optional</em>) – minimum height of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 50</p></li>
 <li><p><strong>hmax</strong> (<em>float</em><em>, </em><em>optional</em>) – maximum height of the peaks passed to <code class="xref py py-mod docutils literal notranslate"><span class="pre">scipy.signal.find_peaks</span></code>, defaults to 10000</p></li>
@@ -249,6 +275,34 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 <dd class="field-odd"><p>float, <code class="xref py py-mod docutils literal notranslate"><span class="pre">numpy</span></code> array, etc.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ramantools.ramantools.load">
+<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/_serialize.html#load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.load" title="Link to this definition"></a></dt>
+<dd><p>Open a file written by <code class="docutils literal notranslate"><span class="pre">ramanmap.save</span></code> / <code class="docutils literal notranslate"><span class="pre">singlespec.save</span></code>.</p>
+<p>Returns whichever container the file holds. Use this when the
+caller does not know (or care) whether a <code class="docutils literal notranslate"><span class="pre">.nc</span></code> file is a map or
+a spectrum; otherwise <code class="docutils literal notranslate"><span class="pre">ramanmap.load</span></code> / <code class="docutils literal notranslate"><span class="pre">singlespec.load</span></code> give
+a typed result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – path of the <code class="docutils literal notranslate"><span class="pre">.nc</span></code> file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> or <a class="reference internal" href="#ramantools.ramantools.singlespec" title="ramantools.ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> instance.</p>
+</dd>
+<dt class="field-odd">Example<span class="colon">:</span></dt>
+<dd class="field-odd"><p></p></dd>
+</dl>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">ramantools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rt</span>
+<span class="n">m_nobg</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">remove_bg</span><span class="p">()</span>
+<span class="n">m_nobg</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">'flake_nobg.nc'</span><span class="p">)</span>
+<span class="c1"># later, in another process:</span>
+<span class="n">m_nobg</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">'flake_nobg.nc'</span><span class="p">)</span>
+<span class="n">m_nobg</span><span class="o">.</span><span class="n">history</span><span class="p">()</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -306,7 +360,7 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 
 <dl class="py function">
 <dt class="sig sig-object py" id="ramantools.ramantools.peakfit">
-<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">peakfit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xrobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">lorentz&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitresult</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/_fitting.html#peakfit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.peakfit" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">ramantools.ramantools.</span></span><span class="sig-name descname"><span class="pre">peakfit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xrobj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">lorentz&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fitresult</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">toplot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/_fitting.html#peakfit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.peakfit" title="Link to this definition"></a></dt>
 <dd><p>Fitting a function to peaks in the data contained in <code class="docutils literal notranslate"><span class="pre">xrobj</span></code>, which can be a single spectrum, a map or a selected spectrum from a map.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -319,10 +373,14 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 <li><p><strong>toplot</strong> (<em>boolean</em><em>, </em><em>optional</em>) – plot the fit result, defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 <li><p><strong>width</strong> (<cite>int</cite> or <cite>float</cite>, optional) – width parameter of an <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> map to be used in conjunction with <code class="docutils literal notranslate"><span class="pre">toplot</span> <span class="pre">=</span> <span class="pre">True</span></code></p></li>
 <li><p><strong>height</strong> (<cite>int</cite> or <cite>float</cite>, optional) – height parameter of an <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> map to be used in conjunction with <code class="docutils literal notranslate"><span class="pre">toplot</span> <span class="pre">=</span> <span class="pre">True</span></code></p></li>
+<li><p><strong>ax</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.axes.Axes</span></code>, optional) – matplotlib Axes to draw the <code class="docutils literal notranslate"><span class="pre">toplot</span></code> figure into (implies <code class="docutils literal notranslate"><span class="pre">toplot=True</span></code>). Defaults to the current axes.</p></li>
+<li><p><strong>savepath</strong> (<em>str</em><em>, </em><em>optional</em>) – write the <code class="docutils literal notranslate"><span class="pre">toplot</span></code> figure to this file and close it instead of displaying it (implies <code class="docutils literal notranslate"><span class="pre">toplot=True</span></code>).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>fitted parameters of <code class="docutils literal notranslate"><span class="pre">func</span></code> and covariances in a Dataset</p>
+<dd class="field-even"><p>fitted parameters of <code class="docutils literal notranslate"><span class="pre">func</span></code> and covariances in a Dataset. Its
+<code class="docutils literal notranslate"><span class="pre">attrs['param_units']</span></code> maps each parameter name to its unit
+(<code class="docutils literal notranslate"><span class="pre">x0</span></code> / <code class="docutils literal notranslate"><span class="pre">width</span></code> in 1/cm, <code class="docutils literal notranslate"><span class="pre">ampl</span></code> / <code class="docutils literal notranslate"><span class="pre">offset</span></code> in the input units).</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray</span></code> Dataset</p>
@@ -354,6 +412,7 @@ If automatic peak finding is used, the exclusion area is calculated in a similar
 <li><p>Passing a <code class="docutils literal notranslate"><span class="pre">bounds</span></code> dictionary to <a class="reference internal" href="#ramantools.ramantools.peakfit" title="ramantools.ramantools.peakfit"><code class="xref py py-func docutils literal notranslate"><span class="pre">peakfit()</span></code></a> seems to increase the fitting time significantly. This might be an issue with <code class="xref py py-mod docutils literal notranslate"><span class="pre">xarray.DataArray.curvefit</span></code>.</p></li>
 <li><p>By passing a previous fit result, using the optional parameter <code class="docutils literal notranslate"><span class="pre">fitresult</span></code>, we can just plot the fit result at multiple regions of the map.</p></li>
 <li><p>In case of using double Lorentz fitting, the names of the parameters change! See: <a class="reference internal" href="#ramantools.ramantools.lorentz2" title="ramantools.ramantools.lorentz2"><code class="xref py py-func docutils literal notranslate"><span class="pre">lorentz2()</span></code></a>.</p></li>
+<li><p>Fitted widths are always reported as positive numbers. The shape functions are even in <code class="docutils literal notranslate"><span class="pre">width</span></code>, so <code class="docutils literal notranslate"><span class="pre">curve_fit</span></code> may converge to the negative solution; <a class="reference internal" href="#ramantools.ramantools.peakfit" title="ramantools.ramantools.peakfit"><code class="xref py py-func docutils literal notranslate"><span class="pre">peakfit()</span></code></a> maps it (coefficient and covariance) onto the equivalent positive one.</p></li>
 </ul>
 </div>
 <div class="admonition seealso">
@@ -507,8 +566,41 @@ The CRR peaks are determined as the standard deviation of the data: <cite>std</c
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramantools.ramanmap.history">
-<span class="sig-name descname"><span class="pre">history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/map.html#ramanmap.history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.ramanmap.history" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">as_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/map.html#ramanmap.history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.ramanmap.history" title="Link to this definition"></a></dt>
 <dd><p>Display the notes accumulated in the ‘comments’ attribute of the <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code> <cite>xarray</cite> variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>as_list</strong> (<em>bool</em><em>, </em><em>optional</em>) – when <code class="docutils literal notranslate"><span class="pre">True</span></code>, nothing is printed and the
+structured history is returned instead: a list of
+<code class="docutils literal notranslate"><span class="pre">{'step':</span> <span class="pre">name,</span> <span class="pre">'params':</span> <span class="pre">{...}}</span></code> dicts, one per
+pipeline step (<code class="docutils literal notranslate"><span class="pre">load</span></code>, <code class="docutils literal notranslate"><span class="pre">remove_bg</span></code>, <code class="docutils literal notranslate"><span class="pre">calibrate</span></code>,
+<code class="docutils literal notranslate"><span class="pre">normalize</span></code>, <code class="docutils literal notranslate"><span class="pre">crr</span></code>, <code class="docutils literal notranslate"><span class="pre">peakmask</span></code>). Objects created
+before 0.6.0 (e.g. read back from an old netCDF file)
+have no structured record; for those the free-text
+comments are returned one <code class="docutils literal notranslate"><span class="pre">{'step':</span> <span class="pre">'comment',</span>
+<span class="pre">'text':</span> <span class="pre">...}</span></code> entry per line.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code> (default) or the list of step records.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramantools.ramanmap.load">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.map.ramanmap"><span class="pre">ramanmap</span></a></span></span><a class="reference internal" href="_modules/ramantools/map.html#ramanmap.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.ramanmap.load" title="Link to this definition"></a></dt>
+<dd><p>Read a map written by <a class="reference internal" href="#ramantools.ramantools.ramanmap.save" title="ramantools.ramantools.ramanmap.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – path of the <code class="docutils literal notranslate"><span class="pre">.nc</span></code> file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the restored <a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a> instance.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>TypeError</strong> – if the file holds a <a class="reference internal" href="#ramantools.ramantools.singlespec" title="ramantools.ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a>.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -596,7 +688,7 @@ Keyword arguments used by <a class="reference internal" href="#ramantools.ramant
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramantools.ramanmap.plotspec">
-<span class="sig-name descname"><span class="pre">plotspec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/map.html#ramanmap.plotspec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.ramanmap.plotspec" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">plotspec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/map.html#ramanmap.plotspec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.ramanmap.plotspec" title="Link to this definition"></a></dt>
 <dd><p>Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
 Needs width and height coordinates for the single spectrum and the Raman shift where we want to plot the Raman intensity in the map.</p>
 <dl class="field-list simple">
@@ -608,6 +700,12 @@ Needs width and height coordinates for the single spectrum and the Raman shift w
 <li><p><strong>width</strong> (<em>float</em>) – ‘width’ coordinate in um, from <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code></p></li>
 <li><p><strong>height</strong> (<em>float</em>) – ‘height’ coordinate in um, from <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code></p></li>
 <li><p><strong>shift</strong> (<em>float</em>) – ‘ramanshift’ coordinate in um, from <code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap.mapxr</span></code></p></li>
+<li><p><strong>savepath</strong> (<em>str</em><em>, </em><em>optional</em>) – if given, the figure is written to this file
+(any format matplotlib supports, e.g. <code class="docutils literal notranslate"><span class="pre">.png</span></code>) and
+closed, so nothing is displayed. This is the way to
+look at a map from a headless script or an agent.</p></li>
+<li><p><strong>axes</strong> (<em>tuple</em><em>, </em><em>optional</em>) – a pair <code class="docutils literal notranslate"><span class="pre">(ax_map,</span> <span class="pre">ax_spectrum)</span></code> of matplotlib
+Axes to draw into instead of creating a new figure.</p></li>
 </ul>
 </dd>
 </dl>
@@ -690,6 +788,45 @@ After running, the ‘comments’ attribute of the new <cite>xarray</cite> insta
 <span class="n">new_m</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_x</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_y</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">'nearest'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramantools.ramanmap.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_raw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/map.html#ramanmap.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.ramanmap.save" title="Link to this definition"></a></dt>
+<dd><p>Write the map to a netCDF file that <a class="reference internal" href="#ramantools.ramantools.load" title="ramantools.ramantools.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load()</span></code></a> restores completely.</p>
+<p>Unlike <code class="docutils literal notranslate"><span class="pre">m.mapxr.to_netcdf()</span></code>, this also stores the fit
+<code class="docutils literal notranslate"><span class="pre">mask</span></code>, the <code class="docutils literal notranslate"><span class="pre">normfactor</span></code>, the raw <code class="docutils literal notranslate"><span class="pre">map</span></code> / <code class="docutils literal notranslate"><span class="pre">ramanshift</span></code>
+arrays and the metadata attributes (<code class="docutils literal notranslate"><span class="pre">samplename</span></code>, <code class="docutils literal notranslate"><span class="pre">laser</span></code>,
+<code class="docutils literal notranslate"><span class="pre">pixel_x</span></code> …), so the loaded object is interchangeable with
+the original, processing history included.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – output path (<code class="docutils literal notranslate"><span class="pre">.nc</span></code> by convention).</p></li>
+<li><p><strong>include_raw</strong> (<em>bool</em><em>, </em><em>optional</em>) – also store the unprocessed <code class="docutils literal notranslate"><span class="pre">map</span></code> array.
+<code class="docutils literal notranslate"><span class="pre">False</span></code> roughly halves the file; on load, <code class="docutils literal notranslate"><span class="pre">map</span></code> is
+then reconstructed from the processed data.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramantools.ramanmap.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/ramantools/map.html#ramanmap.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.ramanmap.summary" title="Link to this definition"></a></dt>
+<dd><p>Key facts about the map as a plain dict.</p>
+<p>The same information <code class="xref py py-meth docutils literal notranslate"><span class="pre">__repr__()</span></code> prints, in a form a
+script or agent can consume: name, sample, source file,
+pixel grid and physical size, ramanshift range and step,
+instrument settings, the units of the values and the list
+of processing steps applied so far. Only metadata is read;
+the intensity data is never touched, so this is instant
+on large maps. Values are JSON-serialisable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict of summary fields.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -813,8 +950,36 @@ The CRR peaks are determined as the standard deviation of the data: <cite>std</c
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramantools.singlespec.history">
-<span class="sig-name descname"><span class="pre">history</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/spec.html#singlespec.history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.singlespec.history" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">history</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">as_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/spec.html#singlespec.history"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.singlespec.history" title="Link to this definition"></a></dt>
 <dd><p>Display the notes accumulated in the ‘comments’ attribute of the <code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec.ssxr</span></code> <cite>xarray</cite> variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>as_list</strong> (<em>bool</em><em>, </em><em>optional</em>) – when <code class="docutils literal notranslate"><span class="pre">True</span></code>, nothing is printed and the
+structured history is returned: a list of
+<code class="docutils literal notranslate"><span class="pre">{'step':</span> <span class="pre">name,</span> <span class="pre">'params':</span> <span class="pre">{...}}</span></code> dicts, one per
+pipeline step. See <a class="reference internal" href="#ramantools.ramantools.ramanmap.history" title="ramantools.ramantools.ramanmap.history"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ramanmap.history()</span></code></a>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code> (default) or the list of step records.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramantools.singlespec.load">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ramantools.ramantools.singlespec" title="ramantools.spec.singlespec"><span class="pre">singlespec</span></a></span></span><a class="reference internal" href="_modules/ramantools/spec.html#singlespec.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.singlespec.load" title="Link to this definition"></a></dt>
+<dd><p>Read a spectrum written by <a class="reference internal" href="#ramantools.ramantools.singlespec.save" title="ramantools.ramantools.singlespec.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> – path of the <code class="docutils literal notranslate"><span class="pre">.nc</span></code> file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the restored <a class="reference internal" href="#ramantools.ramantools.singlespec" title="ramantools.ramantools.singlespec"><code class="xref py py-class docutils literal notranslate"><span class="pre">singlespec</span></code></a> instance.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>TypeError</strong> – if the file holds a <a class="reference internal" href="#ramantools.ramantools.ramanmap" title="ramantools.ramantools.ramanmap"><code class="xref py py-class docutils literal notranslate"><span class="pre">ramanmap</span></code></a>.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -913,6 +1078,32 @@ After running, the ‘comments’ attribute of the new <cite>xarray</cite> insta
 </div>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramantools.singlespec.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_raw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/spec.html#singlespec.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.singlespec.save" title="Link to this definition"></a></dt>
+<dd><p>Write the spectrum to a netCDF file that <a class="reference internal" href="#ramantools.ramantools.load" title="ramantools.ramantools.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load()</span></code></a> restores completely.</p>
+<p>Stores <code class="docutils literal notranslate"><span class="pre">ssxr</span></code> with its history, the fit <code class="docutils literal notranslate"><span class="pre">mask</span></code>, the
+<code class="docutils literal notranslate"><span class="pre">normfactor</span></code>, the raw <code class="docutils literal notranslate"><span class="pre">counts</span></code> / <code class="docutils literal notranslate"><span class="pre">ramanshift</span></code> arrays and
+the metadata attributes. See <a class="reference internal" href="#ramantools.ramantools.ramanmap.save" title="ramantools.ramantools.ramanmap.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ramanmap.save()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – output path (<code class="docutils literal notranslate"><span class="pre">.nc</span></code> by convention).</p></li>
+<li><p><strong>include_raw</strong> (<em>bool</em><em>, </em><em>optional</em>) – also store the unprocessed <code class="docutils literal notranslate"><span class="pre">counts</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ramantools.ramantools.singlespec.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/ramantools/spec.html#singlespec.summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.singlespec.summary" title="Link to this definition"></a></dt>
+<dd><p>Key facts about the spectrum as a plain, JSON-serialisable dict.</p>
+<p>Mirror of <a class="reference internal" href="#ramantools.ramantools.ramanmap.summary" title="ramantools.ramantools.ramanmap.summary"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ramanmap.summary()</span></code></a>: name, sample, source,
+stage position, ramanshift range and step, instrument
+settings, value units and the processing steps so far.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -945,6 +1136,18 @@ within a file; captions are what Witec Project shows in its tree.</p>
 <span class="n">mask</span> <span class="o">=</span> <span class="n">wip</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="mi">254</span><span class="p">)</span>
 </pre></div>
 </div>
+<dl class="py property">
+<dt class="sig sig-object py" id="ramantools.ramantools.wipfile.entries">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">entries</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></span><a class="headerlink" href="#ramantools.ramantools.wipfile.entries" title="Link to this definition"></a></dt>
+<dd><p>The full inventory as a list of plain dicts.</p>
+<p>Each dict has the keys <code class="docutils literal notranslate"><span class="pre">id</span></code> (int), <code class="docutils literal notranslate"><span class="pre">kind</span></code> (<code class="docutils literal notranslate"><span class="pre">'map'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'spectrum'</span></code>, <code class="docutils literal notranslate"><span class="pre">'graph'</span></code>, <code class="docutils literal notranslate"><span class="pre">'image'</span></code>, <code class="docutils literal notranslate"><span class="pre">'mask'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'bitmap'</span></code>, <code class="docutils literal notranslate"><span class="pre">'text'</span></code> or <code class="docutils literal notranslate"><span class="pre">'other'</span></code>), <code class="docutils literal notranslate"><span class="pre">caption</span></code> (str)
+and <code class="docutils literal notranslate"><span class="pre">shape</span></code> (str, e.g. <code class="docutils literal notranslate"><span class="pre">'(1600,</span> <span class="pre">80,</span> <span class="pre">60)'</span></code>). The raw SDK
+object is deliberately left out so the list is JSON-
+serialisable; fetch it through <code class="xref py py-attr docutils literal notranslate"><span class="pre">project</span></code> if needed.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramantools.wipfile.image">
 <span class="sig-name descname"><span class="pre">image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataArray</span></span></span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.wipfile.image" title="Link to this definition"></a></dt>
@@ -983,14 +1186,22 @@ holds no Information block for that object.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramantools.wipfile.list">
-<span class="sig-name descname"><span class="pre">list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kinds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.wipfile.list" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kinds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.wipfile.list" title="Link to this definition"></a></dt>
 <dd><p>Print an inventory of the project: ID, kind, shape and caption.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>kinds</strong> – optional iterable of kinds to show, e.g.
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kinds</strong> – optional iterable of kinds to show, e.g.
 <code class="docutils literal notranslate"><span class="pre">('map',</span> <span class="pre">'spectrum')</span></code>. Defaults to everything except
 the SDK-internal <code class="docutils literal notranslate"><span class="pre">'other'</span></code> objects (transformations,
-interpretations, colour profiles).</p>
+interpretations, colour profiles).</p></li>
+<li><p><strong>as_list</strong> (<em>bool</em><em>, </em><em>optional</em>) – when <code class="docutils literal notranslate"><span class="pre">True</span></code>, print nothing and return the
+matching inventory records as a list of dicts (same
+layout as <a class="reference internal" href="#ramantools.ramantools.wipfile.entries" title="ramantools.ramantools.wipfile.entries"><code class="xref py py-attr docutils literal notranslate"><span class="pre">entries</span></code></a>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code> (default) or the list of records.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1075,7 +1286,7 @@ own space transformation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.ramantools.wipfile.tree">
-<span class="sig-name descname"><span class="pre">tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">show_all</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.wipfile.tree" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">show_all</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.ramantools.wipfile.tree" title="Link to this definition"></a></dt>
 <dd><p>Print the project as an ASCII tree, grouped per scan like Witec Project’s own tree.</p>
 <p>Each top-level node is a scan (or video image); beneath it come
 the raw spectral data object, with everything derived from it
@@ -1090,8 +1301,15 @@ and <a class="reference internal" href="#ramantools.ramantools.wipfile.image" ti
 they add beyond their parent node.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>show_all</strong> – also list the SDK-internal objects, with
-their class name in place of the kind.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>show_all</strong> – also list the SDK-internal objects, with
+their class name in place of the kind.</p></li>
+<li><p><strong>as_string</strong> (<em>bool</em><em>, </em><em>optional</em>) – return the tree as one string instead of
+printing it (for logging, saving, or feeding to a tool).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code> (default) or the tree text.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1179,6 +1397,18 @@ within a file; captions are what Witec Project shows in its tree.</p>
 <span class="n">mask</span> <span class="o">=</span> <span class="n">wip</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="mi">254</span><span class="p">)</span>
 </pre></div>
 </div>
+<dl class="py property">
+<dt class="sig sig-object py" id="ramantools.wip.wipfile.entries">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">entries</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span></span><a class="headerlink" href="#ramantools.wip.wipfile.entries" title="Link to this definition"></a></dt>
+<dd><p>The full inventory as a list of plain dicts.</p>
+<p>Each dict has the keys <code class="docutils literal notranslate"><span class="pre">id</span></code> (int), <code class="docutils literal notranslate"><span class="pre">kind</span></code> (<code class="docutils literal notranslate"><span class="pre">'map'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'spectrum'</span></code>, <code class="docutils literal notranslate"><span class="pre">'graph'</span></code>, <code class="docutils literal notranslate"><span class="pre">'image'</span></code>, <code class="docutils literal notranslate"><span class="pre">'mask'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'bitmap'</span></code>, <code class="docutils literal notranslate"><span class="pre">'text'</span></code> or <code class="docutils literal notranslate"><span class="pre">'other'</span></code>), <code class="docutils literal notranslate"><span class="pre">caption</span></code> (str)
+and <code class="docutils literal notranslate"><span class="pre">shape</span></code> (str, e.g. <code class="docutils literal notranslate"><span class="pre">'(1600,</span> <span class="pre">80,</span> <span class="pre">60)'</span></code>). The raw SDK
+object is deliberately left out so the list is JSON-
+serialisable; fetch it through <code class="xref py py-attr docutils literal notranslate"><span class="pre">project</span></code> if needed.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.wip.wipfile.image">
 <span class="sig-name descname"><span class="pre">image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataArray</span></span></span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.image"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.wip.wipfile.image" title="Link to this definition"></a></dt>
@@ -1217,14 +1447,22 @@ holds no Information block for that object.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.wip.wipfile.list">
-<span class="sig-name descname"><span class="pre">list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kinds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.wip.wipfile.list" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kinds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.wip.wipfile.list" title="Link to this definition"></a></dt>
 <dd><p>Print an inventory of the project: ID, kind, shape and caption.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>kinds</strong> – optional iterable of kinds to show, e.g.
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kinds</strong> – optional iterable of kinds to show, e.g.
 <code class="docutils literal notranslate"><span class="pre">('map',</span> <span class="pre">'spectrum')</span></code>. Defaults to everything except
 the SDK-internal <code class="docutils literal notranslate"><span class="pre">'other'</span></code> objects (transformations,
-interpretations, colour profiles).</p>
+interpretations, colour profiles).</p></li>
+<li><p><strong>as_list</strong> (<em>bool</em><em>, </em><em>optional</em>) – when <code class="docutils literal notranslate"><span class="pre">True</span></code>, print nothing and return the
+matching inventory records as a list of dicts (same
+layout as <a class="reference internal" href="#ramantools.wip.wipfile.entries" title="ramantools.wip.wipfile.entries"><code class="xref py py-attr docutils literal notranslate"><span class="pre">entries</span></code></a>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code> (default) or the list of records.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1309,7 +1547,7 @@ own space transformation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ramantools.wip.wipfile.tree">
-<span class="sig-name descname"><span class="pre">tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">show_all</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.wip.wipfile.tree" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">tree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">show_all</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_string</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ramantools/wip.html#wipfile.tree"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.wip.wipfile.tree" title="Link to this definition"></a></dt>
 <dd><p>Print the project as an ASCII tree, grouped per scan like Witec Project’s own tree.</p>
 <p>Each top-level node is a scan (or video image); beneath it come
 the raw spectral data object, with everything derived from it
@@ -1324,12 +1562,58 @@ and <a class="reference internal" href="#ramantools.wip.wipfile.image" title="ra
 they add beyond their parent node.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>show_all</strong> – also list the SDK-internal objects, with
-their class name in place of the kind.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>show_all</strong> – also list the SDK-internal objects, with
+their class name in place of the kind.</p></li>
+<li><p><strong>as_string</strong> (<em>bool</em><em>, </em><em>optional</em>) – return the tree as one string instead of
+printing it (for logging, saving, or feeding to a tool).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code> (default) or the tree text.</p>
 </dd>
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+</section>
+<section id="ramantools-cli-module">
+<h2>ramantools.cli module<a class="headerlink" href="#ramantools-cli-module" title="Link to this heading"></a></h2>
+<p>Command-line interface, installed as the <code class="docutils literal notranslate"><span class="pre">ramantools</span></code> command (also
+<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">ramantools</span></code>). Run <code class="docutils literal notranslate"><span class="pre">ramantools</span> <span class="pre">--help</span></code> for the sub-commands
+<code class="docutils literal notranslate"><span class="pre">inspect</span></code>, <code class="docutils literal notranslate"><span class="pre">info</span></code>, <code class="docutils literal notranslate"><span class="pre">export</span></code>, <code class="docutils literal notranslate"><span class="pre">history</span></code> and <code class="docutils literal notranslate"><span class="pre">plot</span></code>.</p>
+<p id="module-ramantools.cli">Command-line interface: <code class="docutils literal notranslate"><span class="pre">ramantools</span> <span class="pre">&lt;command&gt;</span> <span class="pre">...</span></code> or <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">ramantools</span></code>.</p>
+<p>Covers the chores that an agent or a shell script does before and after
+the Python-side analysis, without writing Python:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">inspect</span></code>  — what is in a file. For a WITec project this is the
+object tree (or the JSON inventory); for a text export or a saved
+<code class="docutils literal notranslate"><span class="pre">.nc</span></code> file it is the container summary.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">info</span></code>     — the Witec “Information” text of a project object.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">export</span></code>   — extract a map or spectrum from a project (or load a
+text export) and write it to a <code class="docutils literal notranslate"><span class="pre">.nc</span></code> file that <code class="xref py py-func docutils literal notranslate"><span class="pre">ramantools.load()</span></code>
+reads back, so later steps never touch the 260 MB project again.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">history</span></code>  — processing history of a saved <code class="docutils literal notranslate"><span class="pre">.nc</span></code> file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot</span></code>     — render a map (image at one Raman shift + one spectrum)
+or a spectrum to an image file, for headless inspection.</p></li>
+</ul>
+<p>Every command accepts <code class="docutils literal notranslate"><span class="pre">--json</span></code> where structured output makes sense,
+and <a class="reference internal" href="#ramantools.cli.main" title="ramantools.cli.main"><code class="xref py py-func docutils literal notranslate"><span class="pre">main()</span></code></a> returns the exit status instead of calling <code class="docutils literal notranslate"><span class="pre">sys.exit</span></code>
+so the CLI can be exercised in-process by the test suite.</p>
+<p>Imports of the heavy modules happen inside the command functions, so
+<code class="docutils literal notranslate"><span class="pre">ramantools</span> <span class="pre">--help</span></code> stays fast and the CLI module can be imported
+without pulling in matplotlib or the WITec SDK.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="ramantools.cli.build_parser">
+<span class="sig-prename descclassname"><span class="pre">ramantools.cli.</span></span><span class="sig-name descname"><span class="pre">build_parser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ArgumentParser</span></span></span><a class="reference internal" href="_modules/ramantools/cli.html#build_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.cli.build_parser" title="Link to this definition"></a></dt>
+<dd><p>Assemble the argparse tree. Kept separate so docs / tests can introspect it.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="ramantools.cli.main">
+<span class="sig-prename descclassname"><span class="pre">ramantools.cli.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="_modules/ramantools/cli.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ramantools.cli.main" title="Link to this definition"></a></dt>
+<dd><p>Run the CLI; returns the exit status (0 on success).</p>
 </dd></dl>
 
 </section>

@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ramantools.cli &mdash; Ramantools 2023 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=a4664895"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ramantools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#examples">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#working-without-a-notebook">Working without a notebook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ramantools.html">ramantools package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">ramantools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ramantools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ramantools.cli</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ramantools.cli</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Command-line interface: ``ramantools &lt;command&gt; ...`` or ``python -m ramantools``.</span>
+
+<span class="sd">Covers the chores that an agent or a shell script does before and after</span>
+<span class="sd">the Python-side analysis, without writing Python:</span>
+
+<span class="sd">* ``inspect``  — what is in a file. For a WITec project this is the</span>
+<span class="sd">  object tree (or the JSON inventory); for a text export or a saved</span>
+<span class="sd">  ``.nc`` file it is the container summary.</span>
+<span class="sd">* ``info``     — the Witec "Information" text of a project object.</span>
+<span class="sd">* ``export``   — extract a map or spectrum from a project (or load a</span>
+<span class="sd">  text export) and write it to a ``.nc`` file that :func:`ramantools.load`</span>
+<span class="sd">  reads back, so later steps never touch the 260 MB project again.</span>
+<span class="sd">* ``history``  — processing history of a saved ``.nc`` file.</span>
+<span class="sd">* ``plot``     — render a map (image at one Raman shift + one spectrum)</span>
+<span class="sd">  or a spectrum to an image file, for headless inspection.</span>
+
+<span class="sd">Every command accepts ``--json`` where structured output makes sense,</span>
+<span class="sd">and :func:`main` returns the exit status instead of calling ``sys.exit``</span>
+<span class="sd">so the CLI can be exercised in-process by the test suite.</span>
+
+<span class="sd">Imports of the heavy modules happen inside the command functions, so</span>
+<span class="sd">``ramantools --help`` stays fast and the CLI module can be imported</span>
+<span class="sd">without pulling in matplotlib or the WITec SDK.</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>  <span class="c1"># command-line parsing</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>  <span class="c1"># --json output</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>  <span class="c1"># file-extension dispatch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>  <span class="c1"># stderr for error messages</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Helpers</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_kind_of_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Classify an input path by extension: ``'wip'``, ``'nc'`` or ``'txt'``."""</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">path</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'.wip'</span><span class="p">,</span> <span class="s1">'.wid'</span><span class="p">):</span>
+                <span class="k">return</span> <span class="s1">'wip'</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'.nc'</span><span class="p">,</span> <span class="s1">'.h5'</span><span class="p">,</span> <span class="s1">'.hdf5'</span><span class="p">,</span> <span class="s1">'.netcdf'</span><span class="p">):</span>
+                <span class="k">return</span> <span class="s1">'nc'</span>
+        <span class="k">return</span> <span class="s1">'txt'</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_key</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""``--id`` accepts an integer object ID or an exact caption string."""</span>
+        <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">value</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_any</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">as_map</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Open ``path`` as a ramanmap or singlespec, whatever its format.</span>
+
+<span class="sd">        * ``.wip`` → needs ``key`` (``--id``); the object's kind decides</span>
+<span class="sd">          the class unless ``as_map`` forces it.</span>
+<span class="sd">        * ``.nc`` → :func:`ramantools.load`.</span>
+<span class="sd">        * text export → ``as_map`` picks the class; when ``None`` the</span>
+<span class="sd">          file is treated as a map if it has more than two columns.</span>
+<span class="sd">        """</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">ramantools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rt</span>
+        <span class="n">kind</span> <span class="o">=</span> <span class="n">_kind_of_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'wip'</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">"a WITec project needs --id &lt;object ID or caption&gt;"</span><span class="p">)</span>
+                <span class="n">wip</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">wipfile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+                <span class="n">entry</span> <span class="o">=</span> <span class="n">wip</span><span class="o">.</span><span class="n">_entry</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">entry</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'map'</span> <span class="ow">or</span> <span class="p">(</span><span class="n">as_map</span> <span class="ow">and</span> <span class="n">entry</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'graph'</span><span class="p">):</span>
+                        <span class="k">return</span> <span class="n">wip</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">entry</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'spectrum'</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">wip</span><span class="o">.</span><span class="n">singlespec</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="sa">f</span><span class="s2">"object </span><span class="si">{</span><span class="n">entry</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2"> is a </span><span class="si">{</span><span class="n">entry</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span><span class="si">}</span><span class="s2">; only maps and spectra can be loaded"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'nc'</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">rt</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="c1"># Text export: peek at the first data row to tell map from spectrum.</span>
+        <span class="k">if</span> <span class="n">as_map</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">'latin1'</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
+                                <span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'</span><span class="se">\t</span><span class="s1">'</span><span class="p">)</span>
+                                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'.'</span><span class="p">,</span> <span class="s1">''</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'-'</span><span class="p">,</span> <span class="s1">''</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'E'</span><span class="p">,</span> <span class="s1">''</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'+'</span><span class="p">,</span> <span class="s1">''</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                                        <span class="n">as_map</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span>
+                                        <span class="k">break</span>
+                <span class="k">if</span> <span class="n">as_map</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">as_map</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">rt</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="k">if</span> <span class="n">as_map</span> <span class="k">else</span> <span class="n">rt</span><span class="o">.</span><span class="n">singlespec</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_emit</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">as_json</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Print ``obj`` as JSON or as plain text (its repr)."""</span>
+        <span class="k">if</span> <span class="n">as_json</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Commands</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cmd_inspect</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``inspect FILE``: tree / inventory of a project, or a container summary.</span>
+
+<span class="sd">        A project without ``--id`` is listed as a whole; with ``--id`` the</span>
+<span class="sd">        selected object is loaded and summarised exactly like a text</span>
+<span class="sd">        export or a ``.nc`` file.</span>
+<span class="sd">        """</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">ramantools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rt</span>
+        <span class="n">kind</span> <span class="o">=</span> <span class="n">_kind_of_path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'wip'</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                <span class="n">wip</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">wipfile</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">json</span><span class="p">:</span>
+                        <span class="n">_emit</span><span class="p">(</span><span class="n">wip</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">as_list</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">all</span> <span class="k">else</span> <span class="n">wip</span><span class="o">.</span><span class="n">entries</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">wip</span><span class="p">))</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">wip</span><span class="o">.</span><span class="n">tree</span><span class="p">(</span><span class="n">show_all</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">all</span><span class="p">,</span> <span class="n">as_string</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+                <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">_load_any</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">_parse_key</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">id</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">map</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">map</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">json</span><span class="p">:</span>
+                <span class="n">_emit</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">summary</span><span class="p">(),</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cmd_info</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``info FILE --id ID``: the Witec Information text of a project object."""</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">ramantools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rt</span>
+        <span class="k">if</span> <span class="n">_kind_of_path</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">'wip'</span><span class="p">:</span>
+                <span class="n">obj</span> <span class="o">=</span> <span class="n">_load_any</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">map</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">map</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">metadata</span> <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">metadata</span> <span class="k">else</span> <span class="n">obj</span><span class="o">.</span><span class="n">metadata_datafile</span><span class="p">)</span>
+                <span class="k">return</span> <span class="mi">0</span>
+        <span class="n">wip</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">wipfile</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">wip</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">_parse_key</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no Information text for object </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+                <span class="k">return</span> <span class="mi">1</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cmd_export</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``export FILE --out OUT.nc [--id ID] [--info INFO]``: save as netCDF."""</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">_load_any</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">_parse_key</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">id</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">map</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">map</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">obj</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="n">include_raw</span><span class="o">=</span><span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">no_raw</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">json</span><span class="p">:</span>
+                <span class="n">_emit</span><span class="p">({</span><span class="s1">'written'</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">obj</span><span class="o">.</span><span class="n">summary</span><span class="p">()},</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"wrote </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cmd_history</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``history FILE.nc``: processing steps of a saved container."""</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">_load_any</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">_parse_key</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">id</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">map</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">map</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">json</span><span class="p">:</span>
+                <span class="n">_emit</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">history</span><span class="p">(</span><span class="n">as_list</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">history</span><span class="p">()</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cmd_plot</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``plot FILE --out IMG``: render a map or spectrum to an image file."""</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+        <span class="c1"># Force a non-interactive backend before pyplot is imported anywhere;</span>
+        <span class="c1"># the CLI never shows a window.</span>
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">'Agg'</span><span class="p">)</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">ramantools</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rt</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">_load_any</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">_parse_key</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">id</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">map</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">map</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">rt</span><span class="o">.</span><span class="n">ramanmap</span><span class="p">):</span>
+                <span class="c1"># Defaults: centre pixel and the strongest Raman shift of the</span>
+                <span class="c1"># mean spectrum, so a bare ``plot`` shows something sensible.</span>
+                <span class="n">width</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">width</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">size_x</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+                <span class="n">height</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">height</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">height</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">size_y</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+                <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">shift</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">shift</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">shift</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">mean_spec</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="s1">'width'</span><span class="p">,</span> <span class="s1">'height'</span><span class="p">))</span>
+                        <span class="n">shift</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">mean_spec</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">mean_spec</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">'ramanshift'</span><span class="p">))])</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">plotspec</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">shift</span><span class="p">,</span> <span class="n">savepath</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">specname</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">'tight'</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"wrote </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">out</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Parser</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="build_parser">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.cli.build_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_parser</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Assemble the argparse tree. Kept separate so docs / tests can introspect it."""</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+                <span class="n">prog</span><span class="o">=</span><span class="s1">'ramantools'</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s1">'Inspect, export and plot Witec Raman data from the command line.'</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--version'</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">'version'</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="sa">f</span><span class="s1">'ramantools </span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+        <span class="n">sub</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_subparsers</span><span class="p">(</span><span class="n">dest</span><span class="o">=</span><span class="s1">'command'</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">add_input_args</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">with_id</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">                </span><span class="sd">"""Arguments shared by every command that opens a data file."""</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'path'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'.wip/.wid project, Witec text export, or .nc file written by save()'</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">with_id</span><span class="p">:</span>
+                        <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--id'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'object ID or exact caption inside a .wip project'</span><span class="p">)</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--info'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'info (metadata) text file accompanying a text export'</span><span class="p">)</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--map'</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">'store_true'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'treat a text export as a map (default: guess from the columns)'</span><span class="p">)</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--json'</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">'store_true'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'machine-readable JSON output'</span><span class="p">)</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s1">'inspect'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'tree / inventory of a project (or, with --id, one object), or summary of a map / spectrum'</span><span class="p">)</span>
+        <span class="n">add_input_args</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--all'</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">'store_true'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'include SDK-internal objects of a project'</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">cmd_inspect</span><span class="p">)</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s1">'info'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'Witec Information text of an object'</span><span class="p">)</span>
+        <span class="n">add_input_args</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">cmd_info</span><span class="p">)</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s1">'export'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'write a map / spectrum to a .nc file readable by rt.load()'</span><span class="p">)</span>
+        <span class="n">add_input_args</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--out'</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'output .nc path'</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--no-raw'</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">'store_true'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'omit the raw (unprocessed) array'</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">cmd_export</span><span class="p">)</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s1">'history'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'processing history of a map / spectrum'</span><span class="p">)</span>
+        <span class="n">add_input_args</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">cmd_history</span><span class="p">)</span>
+
+        <span class="n">p</span> <span class="o">=</span> <span class="n">sub</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s1">'plot'</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'render a map (image + one spectrum) or a spectrum to an image file'</span><span class="p">)</span>
+        <span class="n">add_input_args</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--out'</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'output image path (.png, .pdf, .svg …)'</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--shift'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'Raman shift (1/cm) of the map image; default: strongest band'</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--width'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'width coordinate (um) of the spectrum to show; default: centre'</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">'--height'</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">'height coordinate (um) of the spectrum to show; default: centre'</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">set_defaults</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">cmd_plot</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">parser</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.cli.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Run the CLI; returns the exit status (0 on success)."""</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">build_parser</span><span class="p">()</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">args</span><span class="o">.</span><span class="n">func</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">SystemExit</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="c1"># ``raise SystemExit("message")`` inside a command: print and</span>
+                <span class="c1"># map to status 2 (usage error) instead of propagating.</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc</span><span class="o">.</span><span class="n">code</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ramantools: </span><span class="si">{</span><span class="n">exc</span><span class="o">.</span><span class="n">code</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="mi">2</span>
+                <span class="k">raise</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">,</span> <span class="ne">FileNotFoundError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="c1"># Library errors carry a readable message already. IndexError</span>
+                <span class="c1"># is what the info-file parser raises when a required field</span>
+                <span class="c1"># is missing (e.g. a spectrum info file passed for a map).</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ramantools: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+                <span class="k">return</span> <span class="mi">1</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>  <span class="c1"># pragma: no cover - ``python -m ramantools`` uses __main__.py</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Peter Nemes-Incze.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -44,6 +44,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html#installation">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html#examples">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#working-without-a-notebook">Working without a notebook</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../ramantools.html">ramantools package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../modules.html">ramantools</a></li>
 </ul>
@@ -132,7 +133,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">WITecSDK</span><span class="w"> </span><span class="kn">import</span> <span class="n">Project</span><span class="p">,</span> <span class="n">TDGraph</span><span class="p">,</span> <span class="n">TDImage</span><span class="p">,</span> <span class="n">TDBitmap</span><span class="p">,</span> <span class="n">TDText</span>  <span class="c1"># type: ignore</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">._witec</span><span class="w"> </span><span class="kn">import</span> <span class="n">_parse_info_text</span><span class="p">,</span> <span class="n">_graphname_to_name</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">._helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">_NO_INFO_NUM</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">_NO_INFO_NUM</span><span class="p">,</span> <span class="n">_record_step</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.map</span><span class="w"> </span><span class="kn">import</span> <span class="n">ramanmap</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">singlespec</span>
 
@@ -281,18 +282,41 @@
 <span class="w">                </span><span class="sd">"""``(ID, caption)`` of every text object (Information blocks, notes)."""</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_of_kind</span><span class="p">(</span><span class="s1">'text'</span><span class="p">)</span>
 
+        <span class="nd">@property</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">entries</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""The full inventory as a list of plain dicts.</span>
+
+<span class="sd">                Each dict has the keys ``id`` (int), ``kind`` (``'map'``,</span>
+<span class="sd">                ``'spectrum'``, ``'graph'``, ``'image'``, ``'mask'``,</span>
+<span class="sd">                ``'bitmap'``, ``'text'`` or ``'other'``), ``caption`` (str)</span>
+<span class="sd">                and ``shape`` (str, e.g. ``'(1600, 80, 60)'``). The raw SDK</span>
+<span class="sd">                object is deliberately left out so the list is JSON-</span>
+<span class="sd">                serialisable; fetch it through :py:attr:`project` if needed.</span>
+<span class="sd">                """</span>
+                <span class="k">return</span> <span class="p">[</span>
+                        <span class="p">{</span><span class="s1">'id'</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="s1">'id'</span><span class="p">],</span> <span class="s1">'kind'</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">],</span> <span class="s1">'caption'</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="s1">'caption'</span><span class="p">],</span> <span class="s1">'shape'</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="s1">'shape'</span><span class="p">]}</span>
+                        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span>
+                <span class="p">]</span>
+
 <div class="viewcode-block" id="wipfile.list">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.wipfile.list">[docs]</a>
-        <span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kinds</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kinds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">as_list</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
 <span class="w">                </span><span class="sd">"""Print an inventory of the project: ID, kind, shape and caption.</span>
 
 <span class="sd">                :param kinds: optional iterable of kinds to show, e.g.</span>
 <span class="sd">                        ``('map', 'spectrum')``. Defaults to everything except</span>
 <span class="sd">                        the SDK-internal ``'other'`` objects (transformations,</span>
 <span class="sd">                        interpretations, colour profiles).</span>
+<span class="sd">                :param as_list: when ``True``, print nothing and return the</span>
+<span class="sd">                        matching inventory records as a list of dicts (same</span>
+<span class="sd">                        layout as :py:attr:`entries`).</span>
+<span class="sd">                :type as_list: bool, optional</span>
+<span class="sd">                :return: ``None`` (default) or the list of records.</span>
 <span class="sd">                """</span>
                 <span class="k">if</span> <span class="n">kinds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="n">kinds</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'map'</span><span class="p">,</span> <span class="s1">'spectrum'</span><span class="p">,</span> <span class="s1">'graph'</span><span class="p">,</span> <span class="s1">'image'</span><span class="p">,</span> <span class="s1">'mask'</span><span class="p">,</span> <span class="s1">'bitmap'</span><span class="p">,</span> <span class="s1">'text'</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">as_list</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">entries</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="ow">in</span> <span class="n">kinds</span><span class="p">]</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'ID'</span><span class="si">:</span><span class="s2">&gt;5</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="s1">'kind'</span><span class="si">:</span><span class="s2">&lt;9</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'shape'</span><span class="si">:</span><span class="s2">&lt;20</span><span class="si">}</span><span class="s2"> caption"</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span>
                         <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s1">'kind'</span><span class="p">]</span> <span class="ow">in</span> <span class="n">kinds</span><span class="p">:</span>
@@ -423,7 +447,7 @@
 
 <div class="viewcode-block" id="wipfile.tree">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.wipfile.tree">[docs]</a>
-        <span class="k">def</span><span class="w"> </span><span class="nf">tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">show_all</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">show_all</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">as_string</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
 <span class="w">                </span><span class="sd">"""Print the project as an ASCII tree, grouped per scan like Witec Project's own tree.</span>
 
 <span class="sd">                Each top-level node is a scan (or video image); beneath it come</span>
@@ -441,8 +465,15 @@
 
 <span class="sd">                :param show_all: also list the SDK-internal objects, with</span>
 <span class="sd">                        their class name in place of the kind.</span>
+<span class="sd">                :param as_string: return the tree as one string instead of</span>
+<span class="sd">                        printing it (for logging, saving, or feeding to a tool).</span>
+<span class="sd">                :type as_string: bool, optional</span>
+<span class="sd">                :return: ``None`` (default) or the tree text.</span>
 <span class="sd">                """</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tree_lines</span><span class="p">(</span><span class="n">show_all</span><span class="o">=</span><span class="n">show_all</span><span class="p">)))</span></div>
+                <span class="n">text</span> <span class="o">=</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tree_lines</span><span class="p">(</span><span class="n">show_all</span><span class="o">=</span><span class="n">show_all</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">as_string</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">text</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">text</span><span class="p">)</span></div>
 
 
         <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -660,8 +691,10 @@
                         <span class="n">filename</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">,</span>
                         <span class="n">metadata</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">info_loaded</span><span class="o">=</span><span class="n">has_info</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="c1"># Record provenance in the processing history.</span>
+                <span class="c1"># Record provenance in the processing history (free text and</span>
+                <span class="c1"># structured record alike).</span>
                 <span class="n">m</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'source: WITec project object ID </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="si">}</span><span class="s1">: "</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="si">}</span><span class="s1">" </span><span class="se">\n</span><span class="s1">'</span>
+                <span class="n">_record_step</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">mapxr</span><span class="p">,</span> <span class="s1">'wip_extract'</span><span class="p">,</span> <span class="n">wipfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">object_id</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="p">),</span> <span class="n">caption</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">m</span></div>
 
 
@@ -689,6 +722,7 @@
                         <span class="n">metadata</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">info_loaded</span><span class="o">=</span><span class="n">has_info</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="n">s</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">+=</span> <span class="sa">f</span><span class="s1">'source: WITec project object ID </span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="si">}</span><span class="s1">: "</span><span class="si">{</span><span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="si">}</span><span class="s1">" </span><span class="se">\n</span><span class="s1">'</span>
+                <span class="n">_record_step</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">'wip_extract'</span><span class="p">,</span> <span class="n">wipfile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">object_id</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">ID</span><span class="p">),</span> <span class="n">caption</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">Caption</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">s</span></div>
 
 

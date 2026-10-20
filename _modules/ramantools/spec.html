@@ -44,6 +44,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html#installation">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html#examples">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#working-without-a-notebook">Working without a notebook</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../ramantools.html">ramantools package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../modules.html">ramantools</a></li>
 </ul>
@@ -95,7 +96,17 @@
         <span class="n">_apply_default_common_metadata</span><span class="p">,</span>
         <span class="n">_apply_parsed_header</span><span class="p">,</span>
         <span class="n">_set_common_xarray_attrs</span><span class="p">,</span>
+        <span class="c1"># 0.6.0: structured history + repr/summary builders (see map.py).</span>
+        <span class="n">_record_step</span><span class="p">,</span>
+        <span class="n">_history_steps</span><span class="p">,</span>
+        <span class="n">_comments_as_steps</span><span class="p">,</span>
+        <span class="n">_container_summary</span><span class="p">,</span>
+        <span class="n">_format_summary</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="c1"># Package logger for ``debug`` traces of each pipeline step.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._log</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+<span class="c1"># netCDF round-trip (``save`` / ``load``).</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._serialize</span><span class="w"> </span><span class="kn">import</span> <span class="n">_save_container</span><span class="p">,</span> <span class="n">_load_container</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._witec</span><span class="w"> </span><span class="kn">import</span> <span class="n">_parse_info_file</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._io</span><span class="w"> </span><span class="kn">import</span> <span class="n">_load_witec_datafile</span>
 <span class="c1"># bgsubtract is used by remove_bg; _compute_calibshift / _normalize_to_peak</span>
@@ -167,9 +178,19 @@
 
 <div class="viewcode-block" id="singlespec.history">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.history">[docs]</a>
-        <span class="k">def</span><span class="w"> </span><span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">history</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">as_list</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
 <span class="w">                </span><span class="sd">"""Display the notes accumulated in the 'comments' attribute of the :class:`singlespec.ssxr` `xarray` variable.</span>
+
+<span class="sd">                :param as_list: when ``True``, nothing is printed and the</span>
+<span class="sd">                        structured history is returned: a list of</span>
+<span class="sd">                        ``{'step': name, 'params': {...}}`` dicts, one per</span>
+<span class="sd">                        pipeline step. See :py:meth:`ramanmap.history`.</span>
+<span class="sd">                :type as_list: bool, optional</span>
+<span class="sd">                :return: ``None`` (default) or the list of step records.</span>
 <span class="sd">                """</span>
+                <span class="k">if</span> <span class="n">as_list</span><span class="p">:</span>
+                        <span class="n">steps</span> <span class="o">=</span> <span class="n">_history_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">)</span>
+                        <span class="k">return</span> <span class="n">steps</span> <span class="k">if</span> <span class="n">steps</span> <span class="k">else</span> <span class="n">_comments_as_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s1">'Data modification history:</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">])</span></div>
 
@@ -186,6 +207,51 @@
                 <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">])</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s1">'------------------'</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="singlespec.summary">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.summary">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">summary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Key facts about the spectrum as a plain, JSON-serialisable dict.</span>
+
+<span class="sd">                Mirror of :py:meth:`ramanmap.summary`: name, sample, source,</span>
+<span class="sd">                stage position, ramanshift range and step, instrument</span>
+<span class="sd">                settings, value units and the processing steps so far.</span>
+<span class="sd">                """</span>
+                <span class="k">return</span> <span class="n">_container_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">)</span></div>
+
+
+        <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+                <span class="c1"># Multi-line summary (see ramanmap.__repr__).</span>
+                <span class="k">return</span> <span class="n">_format_summary</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+
+<div class="viewcode-block" id="singlespec.save">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.save">[docs]</a>
+        <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">include_raw</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Write the spectrum to a netCDF file that :py:meth:`load` restores completely.</span>
+
+<span class="sd">                Stores ``ssxr`` with its history, the fit ``mask``, the</span>
+<span class="sd">                ``normfactor``, the raw ``counts`` / ``ramanshift`` arrays and</span>
+<span class="sd">                the metadata attributes. See :py:meth:`ramanmap.save`.</span>
+
+<span class="sd">                :param path: output path (``.nc`` by convention).</span>
+<span class="sd">                :param include_raw: also store the unprocessed ``counts``.</span>
+<span class="sd">                :type include_raw: bool, optional</span>
+<span class="sd">                """</span>
+                <span class="n">_save_container</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">'singlespec'</span><span class="p">,</span> <span class="n">include_raw</span><span class="o">=</span><span class="n">include_raw</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="singlespec.load">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.singlespec.load">[docs]</a>
+        <span class="nd">@classmethod</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">singlespec</span><span class="p">:</span>
+<span class="w">                </span><span class="sd">"""Read a spectrum written by :py:meth:`save`.</span>
+
+<span class="sd">                :param path: path of the ``.nc`` file.</span>
+<span class="sd">                :return: the restored :class:`singlespec` instance.</span>
+<span class="sd">                :raises TypeError: if the file holds a :class:`ramanmap`.</span>
+<span class="sd">                """</span>
+                <span class="k">return</span> <span class="n">_load_container</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">expect</span><span class="o">=</span><span class="s1">'singlespec'</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="singlespec.remove_bg">
@@ -249,6 +315,14 @@
                 <span class="c1"># adding a note to `xarray` comments attribute if it exists</span>
                 <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">'comments'</span><span class="p">):</span>
                         <span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">'background subtracted, with parameters: '</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fitparams</span><span class="p">)</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span>
+                <span class="c1"># Structured record of the same step: bgsubtract's effective</span>
+                <span class="c1"># parameters plus the fitted polynomial coefficients.</span>
+                <span class="n">_record_step</span><span class="p">(</span>
+                        <span class="n">singlesp_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">'remove_bg'</span><span class="p">,</span>
+                        <span class="n">fitmask_supplied</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'fitmask'</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">coeff</span><span class="o">=</span><span class="n">coeff</span><span class="p">,</span> <span class="o">**</span><span class="n">fitparams</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">'remove_bg: params=</span><span class="si">%s</span><span class="s1"> coeff=</span><span class="si">%s</span><span class="s1">'</span><span class="p">,</span> <span class="n">fitparams</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">coeff</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
                 <span class="c1"># save the fitmask as a variable of `singlespec`</span>
                 <span class="n">singlesp_mod</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span>
 
@@ -298,6 +372,12 @@
                                 <span class="o">+</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">calibshift</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span>
                                 <span class="o">+</span> <span class="s1">' cm^-1 to the raw ramanshift</span><span class="se">\n</span><span class="s1">'</span>
                         <span class="p">)</span>
+                <span class="n">_record_step</span><span class="p">(</span>
+                        <span class="n">ss_mod</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">'calibrate'</span><span class="p">,</span>
+                        <span class="n">peakshift</span><span class="o">=</span><span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span><span class="o">=</span><span class="n">calibfactor</span><span class="p">,</span> <span class="n">shift_applied</span><span class="o">=</span><span class="n">calibshift</span><span class="p">,</span>
+                        <span class="n">func</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'func'</span><span class="p">,</span> <span class="s1">'lorentz'</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">'calibrate: peakshift=</span><span class="si">%s</span><span class="s1"> calibfactor=</span><span class="si">%s</span><span class="s1"> shift_applied=</span><span class="si">%s</span><span class="s1">'</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="n">calibfactor</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">calibshift</span><span class="p">))</span>
                 <span class="k">return</span> <span class="n">ss_mod</span></div>
 
 
@@ -348,6 +428,13 @@
                         <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span>
                 <span class="p">)</span>
 
+                <span class="n">_record_step</span><span class="p">(</span>
+                        <span class="n">normalized</span><span class="p">,</span> <span class="s1">'normalize'</span><span class="p">,</span>
+                        <span class="n">mode</span><span class="o">=</span><span class="s1">'const'</span><span class="p">,</span> <span class="n">peakshift</span><span class="o">=</span><span class="n">peakshift</span><span class="p">,</span> <span class="n">peak_position</span><span class="o">=</span><span class="n">peakpos</span><span class="p">,</span>
+                        <span class="n">normfactor</span><span class="o">=</span><span class="n">peakampl</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'func'</span><span class="p">,</span> <span class="s1">'lorentz'</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">'normalize: peakshift=</span><span class="si">%s</span><span class="s1"> peak_position=</span><span class="si">%s</span><span class="s1"> normfactor=</span><span class="si">%s</span><span class="s1">'</span><span class="p">,</span> <span class="n">peakshift</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">peakpos</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">peakampl</span><span class="p">))</span>
+
                 <span class="c1"># Lightweight copy and attach normalized data.</span>
                 <span class="n">ss_norm</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
                 <span class="n">ss_norm</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="n">normalized</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -385,6 +472,8 @@
                         <span class="o">+</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">n_spikes</span><span class="si">}</span><span class="s1">'</span>
                         <span class="o">+</span> <span class="s1">' Ramanshift coordinates.</span><span class="se">\n</span><span class="s1">'</span>
                 <span class="p">)</span>
+                <span class="n">_record_step</span><span class="p">(</span><span class="n">ss_crr</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">'crr'</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="n">cutoff</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span> <span class="n">n_replaced</span><span class="o">=</span><span class="n">n_spikes</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">'crr: cutoff=</span><span class="si">%s</span><span class="s1"> window=</span><span class="si">%s</span><span class="s1"> n_replaced=</span><span class="si">%d</span><span class="s1">'</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">,</span> <span class="n">window</span><span class="p">,</span> <span class="n">n_spikes</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">ss_crr</span></div>
 
 
@@ -573,7 +662,14 @@
                 <span class="c1"># don't need to be set twice.</span>
                 <span class="n">_set_common_xarray_attrs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">)</span>
                 <span class="c1"># Spec-only extra: Z positioner coordinate (maps don't carry it).</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'sample positioner Z'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positioner_z</span></div>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'sample positioner Z'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positioner_z</span>
+                <span class="c1"># First structured history entry: provenance of the data.</span>
+                <span class="n">_record_step</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">ssxr</span><span class="p">,</span> <span class="s1">'load'</span><span class="p">,</span>
+                        <span class="n">source</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">),</span> <span class="n">info_loaded</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_info_loaded</span><span class="p">),</span>
+                        <span class="n">n_points</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">)),</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">'load: singlespec </span><span class="si">%s</span><span class="s1"> (</span><span class="si">%d</span><span class="s1"> points)'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">))</span></div>
 
 </pre></div>
 

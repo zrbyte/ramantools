@@ -44,6 +44,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html#installation">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../intro.html#examples">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#working-without-a-notebook">Working without a notebook</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../ramantools.html">ramantools package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../modules.html">ramantools</a></li>
 </ul>
@@ -92,7 +93,12 @@
 
 <span class="c1"># _midpoint is needed in peakfit's ``toplot`` branch to pick a central</span>
 <span class="c1"># spectrum for plotting when no explicit width/height is given.</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">._helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">_midpoint</span>
+<span class="c1"># _plot_target / _finish_plot implement the 0.6.0 ``ax`` / ``savepath``</span>
+<span class="c1"># keywords; _record_step / _step_names are the structured history.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">_midpoint</span><span class="p">,</span> <span class="n">_plot_target</span><span class="p">,</span> <span class="n">_finish_plot</span><span class="p">,</span> <span class="n">_record_step</span><span class="p">,</span> <span class="n">_step_names</span><span class="p">,</span> <span class="n">_jsonable</span>
+<span class="c1"># ``_say`` replaces bare print() for status text: it prints unless the</span>
+<span class="c1"># caller configured logging, in which case it only logs.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._log</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span><span class="p">,</span> <span class="n">_say</span>
 <span class="c1"># Named thresholds previously spelled as magic numbers — see _constants.py</span>
 <span class="c1"># for the rationale behind each value.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._constants</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -204,10 +210,14 @@
         <span class="n">bgoffset_high</span> <span class="o">=</span> <span class="n">ref_cropped</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
 
         <span class="c1"># Sanity check: if the spectrum baseline is high (above</span>
-        <span class="c1"># NORMALIZE_BG_THRESHOLD) or the 'background subtracted' marker is</span>
-        <span class="c1"># absent from the processing history, refuse to normalize. Same</span>
-        <span class="c1"># message as the original so upstream error-matching tests pass.</span>
-        <span class="k">if</span> <span class="p">((</span><span class="n">bgoffset_high</span> <span class="o">+</span> <span class="n">bgoffset_low</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">&gt;</span> <span class="n">NORMALIZE_BG_THRESHOLD</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="s1">'background subtracted'</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">whole_da</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]):</span>
+        <span class="c1"># NORMALIZE_BG_THRESHOLD) or no background subtraction is on record,</span>
+        <span class="c1"># refuse to normalize. The structured history is consulted first;</span>
+        <span class="c1"># the free-text 'background subtracted' marker remains as a</span>
+        <span class="c1"># fallback for objects whose comments were edited by hand or that</span>
+        <span class="c1"># pre-date the structured record. Same message as the original so</span>
+        <span class="c1"># upstream error-matching tests pass.</span>
+        <span class="n">bg_removed</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'remove_bg'</span> <span class="ow">in</span> <span class="n">_step_names</span><span class="p">(</span><span class="n">whole_da</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span><span class="s1">'background subtracted'</span> <span class="ow">in</span> <span class="n">whole_da</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'comments'</span><span class="p">,</span> <span class="s1">''</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">bgoffset_high</span> <span class="o">+</span> <span class="n">bgoffset_low</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">&gt;</span> <span class="n">NORMALIZE_BG_THRESHOLD</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">bg_removed</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                         <span class="s2">"The background was not removed, or the peak selected is not suitable "</span>
                         <span class="s2">"for normalization. This should be done in case of normalizing to a peak amplitude"</span>
@@ -402,7 +412,7 @@
 
 <div class="viewcode-block" id="bgsubtract">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.bgsubtract">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">bgsubtract</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">polyorder</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">toplot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">hmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">wmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">wmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span> <span class="n">prom</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclusion_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">bgsubtract</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">polyorder</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">toplot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fitmask</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">hmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">hmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span> <span class="n">wmin</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span> <span class="n">wmax</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">60</span><span class="p">,</span> <span class="n">prom</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">exclusion_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">peak_pos</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">savepath</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.</span>
 <span class="sd">        These peaks are then used to define the areas of the background signal.</span>
 <span class="sd">        In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: ``polyorder``.</span>
@@ -423,6 +433,13 @@
 <span class="sd">        :type polyorder: int, optional</span>
 <span class="sd">        :param toplot: if `True` a plot of: the fit, the background used and positions of the peaks is shown, defaults to False</span>
 <span class="sd">        :type toplot: bool, optional</span>
+<span class="sd">        :param ax: matplotlib Axes to draw the ``toplot`` figure into. Passing an</span>
+<span class="sd">                Axes implies ``toplot=True``. Defaults to the current axes.</span>
+<span class="sd">        :type ax: :class:`matplotlib.axes.Axes`, optional</span>
+<span class="sd">        :param savepath: write the ``toplot`` figure to this file and close it</span>
+<span class="sd">                instead of displaying it (implies ``toplot=True``). Use this from</span>
+<span class="sd">                headless scripts or agents to inspect a background fit.</span>
+<span class="sd">        :type savepath: str, optional</span>
 <span class="sd">        :param fitmask: Fitmask to be used for polynomial fitting.</span>
 <span class="sd">        :type fitmask: :py:mod:`numpy` array</span>
 <span class="sd">        :param hmin: minimum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 50</span>
@@ -516,35 +533,85 @@
         <span class="c1"># Line subtracted data</span>
         <span class="n">y_data_nobg</span> <span class="o">=</span> <span class="n">y_data</span> <span class="o">-</span> <span class="n">bg_values</span>
 
-        <span class="k">if</span> <span class="n">toplot</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="c1"># ``ax`` / ``savepath`` are opt-in ways of asking for the plot; the</span>
+        <span class="c1"># historical ``toplot=True`` path draws on the current axes exactly</span>
+        <span class="c1"># as before (``_plot_target`` returns ``plt.gca()`` in that case).</span>
+        <span class="k">if</span> <span class="n">toplot</span> <span class="o">==</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">savepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ax</span><span class="p">,</span> <span class="n">owns_figure</span> <span class="o">=</span> <span class="n">_plot_target</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">savepath</span><span class="p">)</span>
                 <span class="c1"># Plot the data and peaks</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'Raman spectrum'</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'Raman spectrum'</span><span class="p">)</span>
 
                 <span class="c1"># Highlight the peaks</span>
                 <span class="k">if</span> <span class="n">fitmask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">y_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">'green'</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'peaks'</span><span class="p">)</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">y_data</span><span class="p">[</span><span class="n">peak_indices</span><span class="p">],</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">'green'</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'peaks'</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                         <span class="k">pass</span>
 
                 <span class="c1"># Plot the fitted polynomial</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">'k'</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s2">"dashed"</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'fitted polynomial'</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">'k'</span><span class="p">,</span> <span class="n">ls</span> <span class="o">=</span> <span class="s2">"dashed"</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'fitted polynomial'</span><span class="p">)</span>
 
                 <span class="c1"># Highlight the background used for fitting</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">uncovered_x_data</span><span class="p">,</span> <span class="n">uncovered_y_data</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">'red'</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span> <span class="s1">'o'</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'background used for fit'</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">uncovered_x_data</span><span class="p">,</span> <span class="n">uncovered_y_data</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">'red'</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span> <span class="s1">'o'</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'background used for fit'</span><span class="p">)</span> <span class="c1"># type: ignore</span>
 
-                <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">'Raman shift (cm$^{-1}$)'</span><span class="p">)</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">'Raman intensity (a.u.)'</span><span class="p">)</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">'Data plot with peaks, fitted line and background highlighted.'</span><span class="p">)</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-        
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">'Raman shift (cm$^{-1}$)'</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">'Raman intensity (a.u.)'</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">'Data plot with peaks, fitted line and background highlighted.'</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+                <span class="c1"># Save + close when a file was requested (no-op otherwise).</span>
+                <span class="n">_finish_plot</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">savepath</span><span class="p">,</span> <span class="n">owns_figure</span><span class="p">)</span>
+
         <span class="n">params_used_at_run</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'polyorder'</span><span class="p">:</span> <span class="n">polyorder</span><span class="p">,</span> <span class="s1">'hmin'</span><span class="p">:</span> <span class="n">hmin</span><span class="p">,</span> <span class="s1">'hmax'</span><span class="p">:</span> <span class="n">hmax</span><span class="p">,</span> <span class="s1">'wmin'</span><span class="p">:</span> <span class="n">wmin</span><span class="p">,</span> <span class="s1">'wmax'</span><span class="p">:</span> <span class="n">wmax</span><span class="p">,</span> <span class="s1">'prom'</span><span class="p">:</span><span class="n">prom</span><span class="p">,</span> <span class="s1">'exclusion_factor'</span><span class="p">:</span> <span class="n">exclusion_factor</span><span class="p">,</span> <span class="s1">'peak_pos'</span><span class="p">:</span> <span class="n">peak_pos</span><span class="p">}</span>
 
         <span class="k">return</span> <span class="n">y_data_nobg</span><span class="p">,</span> <span class="n">bg_values</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span> <span class="n">params_used_at_run</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">covar</span></div>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_positive_widths</span><span class="p">(</span><span class="n">fit</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Report every ``width*`` parameter of a fit as a positive number.</span>
+
+<span class="sd">        :func:`gaussian`, :func:`lorentz` and :func:`lorentz2` depend on</span>
+<span class="sd">        ``width`` only through ``width**2`` (the Lorentz numerator is</span>
+<span class="sd">        ``area * width`` with ``area`` itself proportional to ``width``),</span>
+<span class="sd">        so ``+w`` and ``-w`` describe the same curve and ``curve_fit`` is</span>
+<span class="sd">        free to converge to either sign. The negative solution is not a</span>
+<span class="sd">        bad fit, only an awkward parametrisation, and it used to leak into</span>
+<span class="sd">        plots, printouts and downstream code (``peakmask`` had to take</span>
+<span class="sd">        ``abs``). This maps it onto the positive one exactly:</span>
+
+<span class="sd">        * the coefficient is multiplied by ``-1``;</span>
+<span class="sd">        * the covariance row and column of that parameter are multiplied</span>
+<span class="sd">          by ``-1`` as well, which is the covariance of the reparametrised</span>
+<span class="sd">          problem (the diagonal element is multiplied twice and therefore</span>
+<span class="sd">          unchanged).</span>
+
+<span class="sd">        Positive widths and NaNs (failed pixels) are multiplied by ``1.0``</span>
+<span class="sd">        and stay bit-identical, so fits that were already fine are not</span>
+<span class="sd">        altered in any way. Works for a single spectrum (0-d parameters)</span>
+<span class="sd">        and for maps (parameters over ``height`` / ``width``) alike.</span>
+<span class="sd">        Modifies ``fit`` in place and returns it.</span>
+<span class="sd">        """</span>
+        <span class="n">coeff</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">'curvefit_coefficients'</span><span class="p">]</span>
+        <span class="c1"># ``curvefit_covariance`` is always produced by xarray's curvefit,</span>
+        <span class="c1"># but a Dataset assembled by hand may lack it; cope with both.</span>
+        <span class="n">cov</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">'curvefit_covariance'</span><span class="p">]</span> <span class="k">if</span> <span class="s1">'curvefit_covariance'</span> <span class="ow">in</span> <span class="n">fit</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">coeff</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">values</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">'width'</span><span class="p">):</span>
+                        <span class="k">continue</span>
+                <span class="n">values</span> <span class="o">=</span> <span class="n">coeff</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+                <span class="c1"># -1 where the width is negative, +1 elsewhere (NaN compares</span>
+                <span class="c1"># False, so failed fits keep their NaN untouched).</span>
+                <span class="n">sign</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">values</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+                <span class="n">coeff</span><span class="o">.</span><span class="n">loc</span><span class="p">[{</span><span class="s1">'param'</span><span class="p">:</span> <span class="n">name</span><span class="p">}]</span> <span class="o">=</span> <span class="n">values</span> <span class="o">*</span> <span class="n">sign</span>
+                <span class="k">if</span> <span class="n">cov</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="c1"># Row and column of this parameter; ``sign`` broadcasts</span>
+                        <span class="c1"># over the remaining cov axis (and over the map axes).</span>
+                        <span class="n">cov</span><span class="o">.</span><span class="n">loc</span><span class="p">[{</span><span class="s1">'cov_i'</span><span class="p">:</span> <span class="n">name</span><span class="p">}]</span> <span class="o">=</span> <span class="n">cov</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">cov_i</span> <span class="o">=</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">values</span> <span class="o">*</span> <span class="n">sign</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+                        <span class="n">cov</span><span class="o">.</span><span class="n">loc</span><span class="p">[{</span><span class="s1">'cov_j'</span><span class="p">:</span> <span class="n">name</span><span class="p">}]</span> <span class="o">=</span> <span class="n">cov</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">cov_j</span> <span class="o">=</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">values</span> <span class="o">*</span> <span class="n">sign</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">fit</span>
+
+
 <div class="viewcode-block" id="peakfit">
 <a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.peakfit">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">peakfit</span><span class="p">(</span><span class="n">xrobj</span><span class="p">,</span> <span class="n">func</span> <span class="o">=</span> <span class="n">lorentz</span><span class="p">,</span> <span class="n">fitresult</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bounds</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">toplot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">peakfit</span><span class="p">(</span><span class="n">xrobj</span><span class="p">,</span> <span class="n">func</span> <span class="o">=</span> <span class="n">lorentz</span><span class="p">,</span> <span class="n">fitresult</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stval</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bounds</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">toplot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">savepath</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Fitting a function to peaks in the data contained in ``xrobj``, which can be a single spectrum, a map or a selected spectrum from a map.</span>
 
 <span class="sd">        :param xrobj: :py:mod:`xarray` DataArray, of a single spectrum or a map.</span>
@@ -563,8 +630,14 @@
 <span class="sd">        :type width: `int` or `float`, optional</span>
 <span class="sd">        :param height: height parameter of an :py:mod:`xarray` map to be used in conjunction with ``toplot = True``</span>
 <span class="sd">        :type height: `int` or `float`, optional</span>
-<span class="sd">        </span>
-<span class="sd">        :return: fitted parameters of ``func`` and covariances in a Dataset</span>
+<span class="sd">        :param ax: matplotlib Axes to draw the ``toplot`` figure into (implies ``toplot=True``). Defaults to the current axes.</span>
+<span class="sd">        :type ax: :class:`matplotlib.axes.Axes`, optional</span>
+<span class="sd">        :param savepath: write the ``toplot`` figure to this file and close it instead of displaying it (implies ``toplot=True``).</span>
+<span class="sd">        :type savepath: str, optional</span>
+
+<span class="sd">        :return: fitted parameters of ``func`` and covariances in a Dataset. Its</span>
+<span class="sd">                ``attrs['param_units']`` maps each parameter name to its unit</span>
+<span class="sd">                (``x0`` / ``width`` in 1/cm, ``ampl`` / ``offset`` in the input units).</span>
 <span class="sd">        :rtype: :py:mod:`xarray` Dataset</span>
 
 <span class="sd">        :Example:</span>
@@ -593,6 +666,7 @@
 <span class="sd">                - Passing a ``bounds`` dictionary to :func:`peakfit` seems to increase the fitting time significantly. This might be an issue with :py:mod:`xarray.DataArray.curvefit`.</span>
 <span class="sd">                - By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.</span>
 <span class="sd">                - In case of using double Lorentz fitting, the names of the parameters change! See: :func:`lorentz2`.</span>
+<span class="sd">                - Fitted widths are always reported as positive numbers. The shape functions are even in ``width``, so ``curve_fit`` may converge to the negative solution; :func:`peakfit` maps it (coefficient and covariance) onto the equivalent positive one.</span>
 
 <span class="sd">        .. seealso::</span>
 
@@ -625,10 +699,18 @@
         <span class="k">if</span> <span class="n">fitresult</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">fit</span> <span class="o">=</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">curvefit</span><span class="p">(</span><span class="s1">'ramanshift'</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">p0</span> <span class="o">=</span> <span class="n">stval</span><span class="p">,</span> <span class="n">bounds</span> <span class="o">=</span> <span class="n">bounds</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="s1">'ignore'</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'maxfev'</span><span class="p">:</span> <span class="n">PEAKFIT_MAXFEV</span><span class="p">})</span>
         <span class="k">else</span><span class="p">:</span>
-                <span class="n">fit</span> <span class="o">=</span> <span class="n">fitresult</span>
+                <span class="c1"># Deep copy so the caller's Dataset is not modified by the</span>
+                <span class="c1"># width sign normalisation below.</span>
+                <span class="n">fit</span> <span class="o">=</span> <span class="n">fitresult</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># The shape functions are even in ``width``; report the positive</span>
+        <span class="c1"># solution so plots, printouts and downstream code never see a</span>
+        <span class="c1"># negative FWHM. Exact (multiplication by +-1), see the helper.</span>
+        <span class="n">fit</span> <span class="o">=</span> <span class="n">_positive_widths</span><span class="p">(</span><span class="n">fit</span><span class="p">)</span>
 
-        <span class="c1"># plot the resulting fit</span>
-        <span class="k">if</span> <span class="n">toplot</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="c1"># plot the resulting fit. ``ax`` / ``savepath`` imply toplot; the</span>
+        <span class="c1"># bare ``toplot=True`` path still draws on the current axes.</span>
+        <span class="k">if</span> <span class="n">toplot</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">ax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">savepath</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ax</span><span class="p">,</span> <span class="n">owns_figure</span> <span class="o">=</span> <span class="n">_plot_target</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">savepath</span><span class="p">)</span>
                 <span class="c1">#check if the xrobj is a single spectrum or map</span>
                 <span class="k">if</span> <span class="s1">'width'</span> <span class="ow">in</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">dims</span><span class="p">:</span>
                         <span class="c1"># it's a map</span>
@@ -644,18 +726,21 @@
                         <span class="n">paramnames</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">'curvefit_coefficients'</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">plotwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">plotheight</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">'nearest'</span><span class="p">)</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">values</span>
                         <span class="n">funcparams</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">'curvefit_coefficients'</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">plotwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">plotheight</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">'nearest'</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
                         <span class="c1"># plot the data</span>
-                        <span class="n">xrobj</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">plotwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">plotheight</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">'nearest'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span> <span class="o">=</span> <span class="s1">'black'</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">lw</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'data'</span><span class="p">)</span>                        
+                        <span class="n">xrobj</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">width</span> <span class="o">=</span> <span class="n">plotwidth</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">plotheight</span><span class="p">,</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">'nearest'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">'black'</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">lw</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'data'</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                         <span class="n">paramnames</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">'curvefit_coefficients'</span><span class="p">]</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">values</span>
                         <span class="n">funcparams</span> <span class="o">=</span> <span class="n">fit</span><span class="p">[</span><span class="s1">'curvefit_coefficients'</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
                         <span class="c1"># plot the data</span>
-                        <span class="n">xrobj</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span> <span class="o">=</span> <span class="s1">'black'</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">lw</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'data'</span><span class="p">)</span>
+                        <span class="n">xrobj</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">'black'</span><span class="p">,</span> <span class="n">marker</span> <span class="o">=</span> <span class="s1">'.'</span><span class="p">,</span> <span class="n">lw</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'data'</span><span class="p">)</span>
 
-                <span class="c1"># print the starting and fitted values of the parameters</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">'Values of starting parameters: </span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="n">stval</span><span class="p">,</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">'Values of fitted parameters:</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+                <span class="c1"># Report the starting and fitted parameter values. ``_say``</span>
+                <span class="c1"># prints exactly what the old ``print`` calls did unless the</span>
+                <span class="c1"># caller has configured logging, in which case the text goes</span>
+                <span class="c1"># through the ``ramantools`` logger only.</span>
+                <span class="n">_say</span><span class="p">(</span><span class="s1">'Values of starting parameters: </span><span class="se">\n</span><span class="s1"> '</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">stval</span><span class="p">)</span> <span class="o">+</span> <span class="s1">' </span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+                <span class="n">_say</span><span class="p">(</span><span class="s1">'Values of fitted parameters:</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">fitvalues</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">paramnames</span><span class="p">,</span> <span class="n">funcparams</span><span class="p">):</span>
-                        <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s1">':'</span><span class="p">,</span> <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">fitvalues</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
+                        <span class="n">_say</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> : </span><span class="si">{</span><span class="n">fitvalues</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
 
                 <span class="n">shiftmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
                 <span class="n">shiftmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">ramanshift</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
@@ -668,17 +753,35 @@
                 <span class="n">plotarea_x</span> <span class="o">=</span> <span class="mi">100</span>
                 <span class="n">plotarea_y</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.8</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">funcvalues</span><span class="p">),</span> <span class="mf">1.1</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">funcvalues</span><span class="p">)]</span>
 
-                <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="n">funcvalues</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">'red'</span><span class="p">,</span> <span class="n">lw</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'fit'</span><span class="p">)</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">([</span><span class="n">fitpeakpos</span> <span class="o">-</span> <span class="n">plotarea_x</span><span class="p">,</span> <span class="n">fitpeakpos</span> <span class="o">+</span> <span class="n">plotarea_x</span><span class="p">])</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">plotarea_y</span><span class="p">)</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-        
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">shift</span><span class="p">,</span> <span class="n">funcvalues</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">'red'</span><span class="p">,</span> <span class="n">lw</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span> <span class="o">=</span> <span class="s1">'fit'</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="n">fitpeakpos</span> <span class="o">-</span> <span class="n">plotarea_x</span><span class="p">,</span> <span class="n">fitpeakpos</span> <span class="o">+</span> <span class="n">plotarea_x</span><span class="p">])</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">plotarea_y</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+                <span class="c1"># Save + close when a file was requested (no-op otherwise).</span>
+                <span class="n">_finish_plot</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">savepath</span><span class="p">,</span> <span class="n">owns_figure</span><span class="p">)</span>
+
         <span class="c1"># copy attributes to the fit dataset, update the 'comments'</span>
         <span class="n">fit</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="c1"># update the comments if it exists</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span> <span class="s1">'comments'</span><span class="p">):</span>
                 <span class="n">fit</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'comments'</span><span class="p">]</span> <span class="o">+=</span> <span class="s1">'peak fitting, using '</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span> <span class="o">+</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span>
-                
+        <span class="c1"># Structured history entry on the fit Dataset itself, so a saved fit</span>
+        <span class="c1"># result records which function and starting values produced it.</span>
+        <span class="n">_record_step</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span> <span class="s1">'peakfit'</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="n">func</span><span class="p">,</span> <span class="n">stval</span><span class="o">=</span><span class="n">stval</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="n">bounds</span><span class="p">)</span>
+        <span class="c1"># Units of each fitted parameter: positions and widths share the</span>
+        <span class="c1"># ramanshift unit, amplitudes and offsets the intensity unit of the</span>
+        <span class="c1"># input. Parameter names come from the shape function itself so the</span>
+        <span class="c1"># double-Lorentz variants (x01 / ampl2 …) are covered automatically.</span>
+        <span class="n">shift_unit</span> <span class="o">=</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">'ramanshift'</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'units'</span><span class="p">,</span> <span class="s1">'1/cm'</span><span class="p">)</span>
+        <span class="n">value_unit</span> <span class="o">=</span> <span class="n">xrobj</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'units'</span><span class="p">,</span> <span class="s1">'au'</span><span class="p">)</span>
+        <span class="n">fit</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'param_units'</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="n">shift_unit</span> <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s1">'x0'</span><span class="p">,</span> <span class="s1">'width'</span><span class="p">))</span> <span class="k">else</span> <span class="n">value_unit</span>
+                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">param_names</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="p">}</span>
+        <span class="c1"># _jsonable turns numpy scalars inside stval into plain Python numbers</span>
+        <span class="c1"># so the log line reads ``'offset': 11.3`` rather than ``np.float64(11.3)``.</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">'peakfit: func=</span><span class="si">%s</span><span class="s1"> stval=</span><span class="si">%s</span><span class="s1"> dims=</span><span class="si">%s</span><span class="s1">'</span><span class="p">,</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">_jsonable</span><span class="p">(</span><span class="n">stval</span><span class="p">),</span> <span class="nb">dict</span><span class="p">(</span><span class="n">xrobj</span><span class="o">.</span><span class="n">sizes</span><span class="p">))</span>
+
         <span class="k">return</span> <span class="n">fit</span></div>
 
 

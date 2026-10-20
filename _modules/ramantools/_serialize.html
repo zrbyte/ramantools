@@ -1,0 +1,337 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ramantools._serialize &mdash; Ramantools 2023 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=a4664895"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ramantools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#installation">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#examples">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html#working-without-a-notebook">Working without a notebook</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ramantools.html">ramantools package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">ramantools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ramantools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">ramantools._serialize</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for ramantools._serialize</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""netCDF round-trip for :class:`ramanmap` and :class:`singlespec`.</span>
+
+<span class="sd">Before 0.6.0 the only way to persist a processed object was</span>
+<span class="sd">``m.mapxr.to_netcdf(...)``, which keeps the DataArray but silently drops</span>
+<span class="sd">everything else the container carries: the background fit mask, the</span>
+<span class="sd">normalisation factor, the raw (unprocessed) array and the Python-side</span>
+<span class="sd">metadata attributes. This module writes all of that into one netCDF</span>
+<span class="sd">file (HDF5 under the hood, via the ``h5netcdf`` engine) and rebuilds an</span>
+<span class="sd">identical container from it, so an analysis can be split across</span>
+<span class="sd">processes, scripts or agent tool calls without re-running the pipeline.</span>
+
+<span class="sd">File layout (one :class:`xarray.Dataset`):</span>
+
+<span class="sd">* ``data`` — the processed DataArray (``mapxr`` / ``ssxr``) with all its</span>
+<span class="sd">  attrs, including ``comments`` and ``processing_steps``.</span>
+<span class="sd">* ``mask`` — the background fit mask, when present. A 1-D numpy mask is</span>
+<span class="sd">  stored along ``ramanshift``; a per-pixel 3-D mask (from</span>
+<span class="sd">  ``remove_bg(mode='individual')`` without a fitmask) keeps its own dims.</span>
+<span class="sd">* ``normfactor`` — scalar or per-pixel normalisation factor, when present.</span>
+<span class="sd">* ``raw`` — the untouched array as loaded from disk (``map`` / ``counts``)</span>
+<span class="sd">  with its own ``raw_ramanshift`` coordinate, unless ``include_raw=False``.</span>
+<span class="sd">* Dataset attributes ``ramantools_version``, ``ramantools_class``,</span>
+<span class="sd">  ``ramantools_container`` (JSON of the plain metadata attributes such</span>
+<span class="sd">  as ``samplename`` / ``laser`` / ``pixel_x``) and a few bookkeeping keys.</span>
+
+<span class="sd">Both classes expose this as ``obj.save(path)`` / ``cls.load(path)``; the</span>
+<span class="sd">package-level :func:`load` dispatches on the stored class name so a</span>
+<span class="sd">caller that does not know what a file holds can still open it.</span>
+<span class="sd">"""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>  <span class="c1"># JSON encode / decode of the container attribute dict</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>  <span class="c1"># type: ignore</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>  <span class="c1"># type: ignore</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.version</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">_jsonable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._log</span><span class="w"> </span><span class="kn">import</span> <span class="n">logger</span>
+
+<span class="c1"># netCDF engine. h5netcdf is a hard dependency (setup.py) because the</span>
+<span class="c1"># scipy fallback writes netCDF3, which cannot hold 64-bit integers,</span>
+<span class="c1"># booleans or compressed variables.</span>
+<span class="n">_ENGINE</span> <span class="o">=</span> <span class="s1">'h5netcdf'</span>
+
+<span class="c1"># Plain Python attributes of each container that are not derivable from</span>
+<span class="c1"># the DataArray and therefore have to be written out explicitly. The</span>
+<span class="c1"># order is irrelevant; the tuple is what ``_save_container`` iterates.</span>
+<span class="n">_COMMON_ATTRS</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s1">'filename'</span><span class="p">,</span> <span class="s1">'samplename'</span><span class="p">,</span> <span class="s1">'date'</span><span class="p">,</span> <span class="s1">'time'</span><span class="p">,</span> <span class="s1">'laser'</span><span class="p">,</span> <span class="s1">'itime'</span><span class="p">,</span> <span class="s1">'grating'</span><span class="p">,</span>
+        <span class="s1">'objname'</span><span class="p">,</span> <span class="s1">'objmagn'</span><span class="p">,</span> <span class="s1">'positioner_x'</span><span class="p">,</span> <span class="s1">'positioner_y'</span><span class="p">,</span>
+        <span class="s1">'metadata'</span><span class="p">,</span> <span class="s1">'metadata_datafile'</span><span class="p">,</span> <span class="s1">'wipfilename'</span><span class="p">,</span> <span class="s1">'_info_loaded'</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">_MAP_ATTRS</span> <span class="o">=</span> <span class="n">_COMMON_ATTRS</span> <span class="o">+</span> <span class="p">(</span><span class="s1">'mapname'</span><span class="p">,</span> <span class="s1">'pixel_x'</span><span class="p">,</span> <span class="s1">'pixel_y'</span><span class="p">,</span> <span class="s1">'size_x'</span><span class="p">,</span> <span class="s1">'size_y'</span><span class="p">)</span>
+<span class="n">_SPEC_ATTRS</span> <span class="o">=</span> <span class="n">_COMMON_ATTRS</span> <span class="o">+</span> <span class="p">(</span><span class="s1">'specname'</span><span class="p">,</span> <span class="s1">'positioner_z'</span><span class="p">)</span>
+
+<span class="c1"># Compression for the two bulk variables. Level 4 gzip is a good</span>
+<span class="c1"># trade-off: raw CCD counts (integers stored as float64) shrink several</span>
+<span class="c1"># fold, and both reading and writing stay fast.</span>
+<span class="n">_BULK_ENCODING</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'zlib'</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">'complevel'</span><span class="p">:</span> <span class="mi">4</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_save_container</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">da</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">include_raw</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Write ``obj`` (whose DataArray is ``da``) to ``path`` as netCDF.</span>
+
+<span class="sd">        ``kind`` is ``'ramanmap'`` or ``'singlespec'``; it selects the</span>
+<span class="sd">        attribute list and tells :func:`_load_container` which class to</span>
+<span class="sd">        rebuild. ``include_raw=False`` leaves out the raw array, roughly</span>
+<span class="sd">        halving the file for a map; on load the raw attributes are then</span>
+<span class="sd">        reconstructed from the processed data.</span>
+<span class="sd">        """</span>
+        <span class="c1"># The processed DataArray becomes the ``data`` variable; its own</span>
+        <span class="c1"># attrs (comments, processing_steps, instrument metadata) stay on</span>
+        <span class="c1"># the variable, separate from the Dataset-level bookkeeping below.</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">da</span><span class="o">.</span><span class="n">to_dataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'data'</span><span class="p">)</span>
+        <span class="n">encoding</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'data'</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">_BULK_ENCODING</span><span class="p">)}</span>
+
+        <span class="c1"># --- optional per-object variables ---------------------------------</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">'mask'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">):</span>
+                        <span class="n">ds</span><span class="p">[</span><span class="s1">'mask'</span><span class="p">]</span> <span class="o">=</span> <span class="n">mask</span>
+                        <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'ramantools_mask_kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'dataarray'</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+                        <span class="c1"># Normally the mask is one flag per ramanshift sample;</span>
+                        <span class="c1"># fall back to a private dim if the lengths disagree</span>
+                        <span class="c1"># (e.g. the user cropped the DataArray after remove_bg)</span>
+                        <span class="c1"># rather than refusing to save.</span>
+                        <span class="n">dim</span> <span class="o">=</span> <span class="s1">'ramanshift'</span> <span class="k">if</span> <span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">arr</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'ramanshift'</span><span class="p">)</span> <span class="k">else</span> <span class="s1">'mask_point'</span>
+                        <span class="n">ds</span><span class="p">[</span><span class="s1">'mask'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
+                        <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'ramantools_mask_kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'ndarray'</span>
+
+        <span class="n">normfactor</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">'normfactor'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">normfactor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">normfactor</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">):</span>
+                        <span class="n">ds</span><span class="p">[</span><span class="s1">'normfactor'</span><span class="p">]</span> <span class="o">=</span> <span class="n">normfactor</span>
+                        <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'ramantools_normfactor_kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'dataarray'</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># 0-d variable; stored as float so numpy scalars and</span>
+                        <span class="c1"># Python floats come back identically.</span>
+                        <span class="n">ds</span><span class="p">[</span><span class="s1">'normfactor'</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">normfactor</span><span class="p">))</span>
+                        <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'ramantools_normfactor_kind'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'scalar'</span>
+
+        <span class="c1"># --- raw array -----------------------------------------------------</span>
+        <span class="k">if</span> <span class="n">include_raw</span><span class="p">:</span>
+                <span class="n">raw_rs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">ramanshift</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'ramanmap'</span><span class="p">:</span>
+                        <span class="n">raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">map</span><span class="p">)</span>
+                        <span class="n">ds</span><span class="p">[</span><span class="s1">'raw'</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s1">'raw_ramanshift'</span><span class="p">,</span> <span class="s1">'raw_row'</span><span class="p">,</span> <span class="s1">'raw_col'</span><span class="p">),</span> <span class="n">raw</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">counts</span><span class="p">)</span>
+                        <span class="n">ds</span><span class="p">[</span><span class="s1">'raw'</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s1">'raw_ramanshift'</span><span class="p">,),</span> <span class="n">raw</span><span class="p">)</span>
+                <span class="n">ds</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">'raw_ramanshift'</span><span class="p">]</span> <span class="o">=</span> <span class="n">raw_rs</span>
+                <span class="n">encoding</span><span class="p">[</span><span class="s1">'raw'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">_BULK_ENCODING</span><span class="p">)</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'ramantools_include_raw'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">bool</span><span class="p">(</span><span class="n">include_raw</span><span class="p">))</span>
+
+        <span class="c1"># --- container attributes -----------------------------------------</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="n">_MAP_ATTRS</span> <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'ramanmap'</span> <span class="k">else</span> <span class="n">_SPEC_ATTRS</span>
+        <span class="n">container</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">_jsonable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">}</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'ramantools_container'</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">container</span><span class="p">)</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'ramantools_class'</span><span class="p">]</span> <span class="o">=</span> <span class="n">kind</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'ramantools_version'</span><span class="p">]</span> <span class="o">=</span> <span class="n">__version__</span>
+        <span class="c1"># DataArray ``.name`` is not an attr, so remember it separately.</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'ramantools_dataarray_name'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">da</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">da</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s1">''</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">'save: writing </span><span class="si">%s</span><span class="s1"> to </span><span class="si">%s</span><span class="s1"> (include_raw=</span><span class="si">%s</span><span class="s1">)'</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">include_raw</span><span class="p">)</span>
+        <span class="n">ds</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="n">_ENGINE</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_container</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">expect</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Rebuild a container from a file written by :func:`_save_container`.</span>
+
+<span class="sd">        ``expect`` optionally pins the class (``'ramanmap'`` /</span>
+<span class="sd">        ``'singlespec'``); a mismatch raises ``TypeError`` so</span>
+<span class="sd">        ``ramanmap.load`` cannot silently hand back a spectrum.</span>
+<span class="sd">        """</span>
+        <span class="c1"># Deferred imports: map.py / spec.py import this module, so a</span>
+        <span class="c1"># top-level import here would be circular.</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.map</span><span class="w"> </span><span class="kn">import</span> <span class="n">ramanmap</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.spec</span><span class="w"> </span><span class="kn">import</span> <span class="n">singlespec</span>
+
+        <span class="c1"># load_dataset (not open_dataset) reads everything into memory and</span>
+        <span class="c1"># closes the file, so the returned object has no handle on disk.</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="n">_ENGINE</span><span class="p">)</span>
+        <span class="n">kind</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'ramantools_class'</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'ramanmap'</span><span class="p">,</span> <span class="s1">'singlespec'</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">path</span><span class="si">!s}</span><span class="s2"> was not written by ramantools.save(): "</span>
+                        <span class="s2">"missing or unknown 'ramantools_class' attribute"</span>
+                <span class="p">)</span>
+        <span class="k">if</span> <span class="n">expect</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">kind</span> <span class="o">!=</span> <span class="n">expect</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">path</span><span class="si">!s}</span><span class="s2"> holds a </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">, not a </span><span class="si">{</span><span class="n">expect</span><span class="si">}</span><span class="s2">; use rt.load() or </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">.load()"</span><span class="p">)</span>
+
+        <span class="bp">cls</span> <span class="o">=</span> <span class="n">ramanmap</span> <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'ramanmap'</span> <span class="k">else</span> <span class="n">singlespec</span>
+        <span class="c1"># Allocate without running __init__ (which would try to read a</span>
+        <span class="c1"># Witec text file).</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'ramantools_container'</span><span class="p">])</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="c1"># Processed DataArray. ``.copy()`` detaches it from the Dataset so</span>
+        <span class="c1"># later in-place edits (``mapxr[:] -= bg``) do not touch siblings.</span>
+        <span class="n">da</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'ramantools_dataarray_name'</span><span class="p">,</span> <span class="s1">''</span><span class="p">)</span>
+        <span class="n">da</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="k">if</span> <span class="n">name</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'ramanmap'</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">mapxr</span> <span class="o">=</span> <span class="n">da</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">ssxr</span> <span class="o">=</span> <span class="n">da</span>
+
+        <span class="c1"># Optional variables; absent ones are restored as None, matching a</span>
+        <span class="c1"># freshly loaded object.</span>
+        <span class="k">if</span> <span class="s1">'mask'</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'ramantools_mask_kind'</span><span class="p">)</span> <span class="o">==</span> <span class="s1">'dataarray'</span><span class="p">:</span>
+                        <span class="n">obj</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">'mask'</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">obj</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">'mask'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s1">'normfactor'</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'ramantools_normfactor_kind'</span><span class="p">)</span> <span class="o">==</span> <span class="s1">'dataarray'</span><span class="p">:</span>
+                        <span class="n">obj</span><span class="o">.</span><span class="n">normfactor</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">'normfactor'</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                        <span class="n">obj</span><span class="o">.</span><span class="n">normfactor</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="s1">'normfactor'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">normfactor</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Raw array: either the stored copy, or a best-effort reconstruction</span>
+        <span class="c1"># from the processed data when the file was saved without it.</span>
+        <span class="k">if</span> <span class="s1">'raw'</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+                <span class="n">raw</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">'raw'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s1">'raw_ramanshift'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">'load: </span><span class="si">%s</span><span class="s1"> has no raw array; reconstructing from processed data'</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">ramanshift</span> <span class="o">=</span> <span class="n">da</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="s1">'ramanshift'</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="c1"># Undo the height flip _toxarray applies so ``map`` has the</span>
+                <span class="c1"># same orientation it would have straight after loading.</span>
+                <span class="n">raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">da</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'ramanmap'</span> <span class="k">else</span> <span class="n">da</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'ramanmap'</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="n">raw</span>
+        <span class="k">else</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">raw</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+
+<div class="viewcode-block" id="load">
+<a class="viewcode-back" href="../../ramantools.html#ramantools.ramantools.load">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Open a file written by ``ramanmap.save`` / ``singlespec.save``.</span>
+
+<span class="sd">        Returns whichever container the file holds. Use this when the</span>
+<span class="sd">        caller does not know (or care) whether a ``.nc`` file is a map or</span>
+<span class="sd">        a spectrum; otherwise ``ramanmap.load`` / ``singlespec.load`` give</span>
+<span class="sd">        a typed result.</span>
+
+<span class="sd">        :param path: path of the ``.nc`` file.</span>
+<span class="sd">        :return: :class:`ramanmap` or :class:`singlespec` instance.</span>
+
+<span class="sd">        :Example:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">                import ramantools as rt</span>
+<span class="sd">                m_nobg, _, _ = m.remove_bg()</span>
+<span class="sd">                m_nobg.save('flake_nobg.nc')</span>
+<span class="sd">                # later, in another process:</span>
+<span class="sd">                m_nobg = rt.load('flake_nobg.nc')</span>
+<span class="sd">                m_nobg.history()</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">_load_container</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Peter Nemes-Incze.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -47,6 +47,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#installation">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#working-without-a-notebook">Working without a notebook</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ramantools.html">ramantools package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">ramantools</a></li>
 </ul>
@@ -118,11 +119,24 @@ Source is available from <a class="reference external" href="https://github.com/
 <span class="c1"># plot the width of the peak on a density plot</span>
 <span class="n">fit</span><span class="p">[</span><span class="s1">'curvefit_coefficients'</span><span class="p">]</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">param</span> <span class="o">=</span> <span class="s1">'width'</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">vmin</span> <span class="o">=</span> <span class="mi">40</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mi">80</span><span class="p">)</span>
 
-<span class="c1"># export the fit results and the map without the background to NetCDF format for easy loading later</span>
-<span class="n">m_nobg</span><span class="o">.</span><span class="n">mapxr</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">data_path</span> <span class="o">+</span> <span class="s1">'map.nc'</span><span class="p">)</span>
+<span class="c1"># save the map without the background, together with its history, mask and metadata,</span>
+<span class="c1"># and the fit results, for easy loading later</span>
+<span class="n">m_nobg</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">data_path</span> <span class="o">+</span> <span class="s1">'map.nc'</span><span class="p">)</span>
 <span class="n">fit</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">data_path</span> <span class="o">+</span> <span class="s1">'map_Lorentz fit.nc'</span><span class="p">)</span>
+
+<span class="c1"># in a later session: restore the object and continue</span>
+<span class="n">m_nobg</span> <span class="o">=</span> <span class="n">rt</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">data_path</span> <span class="o">+</span> <span class="s1">'map.nc'</span><span class="p">)</span>
+<span class="n">m_nobg</span><span class="o">.</span><span class="n">history</span><span class="p">()</span>
 </pre></div>
 </div>
+</section>
+<section id="working-without-a-notebook">
+<h1>Working without a notebook<a class="headerlink" href="#working-without-a-notebook" title="Link to this heading"></a></h1>
+<p>Typing an object name shows a summary (<code class="docutils literal notranslate"><span class="pre">repr(m)</span></code>; <code class="docutils literal notranslate"><span class="pre">m.summary()</span></code> returns it as a dict),
+<code class="docutils literal notranslate"><span class="pre">m.history(as_list=True)</span></code> returns the processing steps with their parameters,
+every plotting option accepts <code class="docutils literal notranslate"><span class="pre">savepath=</span></code> to write an image instead of displaying it,
+and the <code class="docutils literal notranslate"><span class="pre">ramantools</span></code> command-line tool inspects, exports and plots files directly.
+The <code class="docutils literal notranslate"><span class="pre">AGENTS.md</span></code> file in the repository collects all of this for scripts and AI agents.</p>
 </section>
 
 
