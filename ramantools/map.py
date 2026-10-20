@@ -29,7 +29,22 @@ from ._helpers import (
         _apply_default_common_metadata,
         _apply_parsed_header,
         _set_common_xarray_attrs,
+        # 0.6.0: structured processing history (JSON list in attrs next to
+        # the free-text ``comments``), repr/summary builders and the
+        # ``ax`` / ``savepath`` plotting plumbing.
+        _record_step,
+        _history_steps,
+        _comments_as_steps,
+        _container_summary,
+        _format_summary,
+        _plot_target,
+        _finish_plot,
 )
+# Package logger: pipeline methods emit ``debug`` records with their
+# parameters so agents / scripts can trace a run without parsing stdout.
+from ._log import logger
+# netCDF round-trip (``save`` / ``load``).
+from ._serialize import _save_container, _load_container
 from ._witec import _parse_info_file
 from ._io import _load_witec_datafile
 # Named thresholds previously spelled as magic numbers in peakmask
@@ -104,9 +119,24 @@ class ramanmap:
 
         """
 
-        def history(self) -> None:
+        def history(self, as_list: bool = False):
                 """Display the notes accumulated in the 'comments' attribute of the :class:`ramanmap.mapxr` `xarray` variable.
+
+                :param as_list: when ``True``, nothing is printed and the
+                        structured history is returned instead: a list of
+                        ``{'step': name, 'params': {...}}`` dicts, one per
+                        pipeline step (``load``, ``remove_bg``, ``calibrate``,
+                        ``normalize``, ``crr``, ``peakmask``). Objects created
+                        before 0.6.0 (e.g. read back from an old netCDF file)
+                        have no structured record; for those the free-text
+                        comments are returned one ``{'step': 'comment',
+                        'text': ...}`` entry per line.
+                :type as_list: bool, optional
+                :return: ``None`` (default) or the list of step records.
                 """
+                if as_list:
+                        steps = _history_steps(self.mapxr)
+                        return steps if steps else _comments_as_steps(self.mapxr)
                 print('Data modification history:\n')
                 print(self.mapxr.attrs['comments'])
 
@@ -121,11 +151,59 @@ class ramanmap:
                 print('------------------')
                 print(self.metadata)
 
-        def plotspec(self, width: float, height: float, shift: float) -> None:
+        def summary(self) -> dict:
+                """Key facts about the map as a plain dict.
+
+                The same information :py:meth:`__repr__` prints, in a form a
+                script or agent can consume: name, sample, source file,
+                pixel grid and physical size, ramanshift range and step,
+                instrument settings, the units of the values and the list
+                of processing steps applied so far. Only metadata is read;
+                the intensity data is never touched, so this is instant
+                on large maps. Values are JSON-serialisable.
+
+                :return: dict of summary fields.
+                """
+                return _container_summary(self, self.mapxr)
+
+        def __repr__(self) -> str:
+                # Multi-line summary instead of the default ``<object at 0x…>``
+                # so typing ``m`` in a notebook (or inspecting it from a
+                # script) shows what the map is and what has been done to it.
+                return _format_summary(self.summary())
+
+        def save(self, path, include_raw: bool = True) -> None:
+                """Write the map to a netCDF file that :py:meth:`load` restores completely.
+
+                Unlike ``m.mapxr.to_netcdf()``, this also stores the fit
+                ``mask``, the ``normfactor``, the raw ``map`` / ``ramanshift``
+                arrays and the metadata attributes (``samplename``, ``laser``,
+                ``pixel_x`` …), so the loaded object is interchangeable with
+                the original, processing history included.
+
+                :param path: output path (``.nc`` by convention).
+                :param include_raw: also store the unprocessed ``map`` array.
+                        ``False`` roughly halves the file; on load, ``map`` is
+                        then reconstructed from the processed data.
+                :type include_raw: bool, optional
+                """
+                _save_container(self, self.mapxr, path, kind='ramanmap', include_raw=include_raw)
+
+        @classmethod
+        def load(cls, path) -> ramanmap:
+                """Read a map written by :py:meth:`save`.
+
+                :param path: path of the ``.nc`` file.
+                :return: the restored :class:`ramanmap` instance.
+                :raises TypeError: if the file holds a :class:`singlespec`.
+                """
+                return _load_container(path, expect='ramanmap')
+
+        def plotspec(self, width: float, height: float, shift: float, savepath=None, axes=None) -> None:
                 """
                 Plots a Raman map at a given Raman shift and displays alongside a selected spectrum at a specified width and height.
                 Needs width and height coordinates for the single spectrum and the Raman shift where we want to plot the Raman intensity in the map.
-                
+
                 :return: none
 
                 :param width: 'width' coordinate in um, from :class:`ramanmap.mapxr`
@@ -134,14 +212,28 @@ class ramanmap:
                 :type height: float
                 :param shift: 'ramanshift' coordinate in um, from :class:`ramanmap.mapxr`
                 :type shift: float
+                :param savepath: if given, the figure is written to this file
+                        (any format matplotlib supports, e.g. ``.png``) and
+                        closed, so nothing is displayed. This is the way to
+                        look at a map from a headless script or an agent.
+                :type savepath: str, optional
+                :param axes: a pair ``(ax_map, ax_spectrum)`` of matplotlib
+                        Axes to draw into instead of creating a new figure.
+                :type axes: tuple, optional
 
                 """
                 spec = self.mapxr.sel(width = width, height = height, method = 'nearest')
                 ramanintensity = self.mapxr.sel(ramanshift = shift, method = 'nearest')
 
-                # Creating two subplots; the figure handle is intentionally
-                # discarded ("_" variable) because it is not used later.
-                _, [ax0, ax1] = plt.subplots(1, 2, figsize = (9, 4))
+                # Two subplots: user-supplied axes if given, otherwise a new
+                # figure. The figure handle is kept only for ``savepath``.
+                if axes is not None:
+                        ax0, ax1 = axes
+                        fig = ax0.get_figure()
+                        owns_figure = False
+                else:
+                        fig, [ax0, ax1] = plt.subplots(1, 2, figsize = (9, 4))
+                        owns_figure = True
                 # plotting the density plot of the 2D peak area ratio
                 ramanintensity.plot(
                         ax = ax0,
@@ -156,7 +248,13 @@ class ramanmap:
                 ax0.set_aspect('equal', 'box')
                 ax0.axes.title.set_size(10)
                 ax1.axes.title.set_size(10)
-                plt.tight_layout()  # Adjust subplot spacing for readability
+                fig.tight_layout()  # Adjust subplot spacing for readability
+                # Headless path: write the file and close the figure so it
+                # is not displayed a second time by an inline backend.
+                if savepath is not None:
+                        fig.savefig(savepath, bbox_inches='tight')
+                        if owns_figure:
+                                plt.close(fig)
 
         def remove_bg(self, mode: str = 'const', fitmask = None, height: float | None = None, width: float | None = None, **kwargs):
                 """Remove the background of Raman maps.
@@ -264,6 +362,18 @@ class ramanmap:
                         # update the comments attribute if it exists
                         if hasattr(map_mod.mapxr, 'comments'):
                                 map_mod.mapxr.attrs['comments'] += 'background subtracted - mode == const, background fit: middle spectrum \n'
+                        # Structured record of the same step. ``coeff`` is the
+                        # polynomial in np.polyval order; the reference pixel
+                        # is recorded so the fit can be reproduced.
+                        _record_step(
+                                map_mod.mapxr, 'remove_bg',
+                                mode='const', polyorder=kwargs.get('polyorder', 1),
+                                fitmask_supplied=fitmask is not None,
+                                reference={'width': float(spectofit.width.data), 'height': float(spectofit.height.data)},
+                                coeff=coeff,
+                        )
+                        logger.debug('remove_bg: mode=const polyorder=%s fitmask_supplied=%s coeff=%s',
+                                     kwargs.get('polyorder', 1), fitmask is not None, np.asarray(coeff).tolist())
 
                 elif mode == 'individual':
                         # Per-pixel background subtraction. Two execution paths:
@@ -282,10 +392,12 @@ class ramanmap:
                         n_params = polyorder + 1
                         # toplot would produce one plot per pixel — refuse
                         # loudly rather than spawn 4800 matplotlib figures.
-                        if kwargs.get('toplot', False):
+                        # The 0.6.0 ``savepath`` / ``ax`` keywords imply a
+                        # plot as well, so they are rejected for the same reason.
+                        if kwargs.get('toplot', False) or kwargs.get('savepath') is not None or kwargs.get('ax') is not None:
                                 raise ValueError(
-                                        "remove_bg(mode='individual') does not support toplot=True "
-                                        "— it would create one plot per pixel."
+                                        "remove_bg(mode='individual') does not support plotting "
+                                        "(toplot=True, savepath=, ax=): it would create one plot per pixel."
                                 )
 
                         # Pull underlying numpy views. ``mapxr.data`` has axis
@@ -430,6 +542,18 @@ class ramanmap:
                                         'coef_j': np.arange(n_params),
                                 },
                         )
+                        # Structured record: per-pixel coefficients are too
+                        # large for an attribute, so only their summary
+                        # statistics (via _jsonable) are kept.
+                        _record_step(
+                                map_mod.mapxr, 'remove_bg',
+                                mode='individual', polyorder=polyorder,
+                                fitmask_supplied=fitmask is not None,
+                                path='vectorized' if fitmask is not None else 'per-pixel',
+                                coeff=coeff,
+                        )
+                        logger.debug('remove_bg: mode=individual polyorder=%s path=%s pixels=%d',
+                                     polyorder, 'vectorized' if fitmask is not None else 'per-pixel', ny * nx)
 
                 else:
                         # _require_mode above already rejects anything that
@@ -502,6 +626,14 @@ class ramanmap:
                                 + f'{calibshift:.2f}'
                                 + ' cm^-1 to the raw ramanshift \n'
                         )
+                # Structured record: the applied shift plus how it was found.
+                _record_step(
+                        map_mod.mapxr, 'calibrate',
+                        peakshift=peakshift, calibfactor=calibfactor, shift_applied=calibshift,
+                        reference={'width': float(spectofit.width.data), 'height': float(spectofit.height.data)},
+                        func=kwargs.get('func', 'lorentz'),
+                )
+                logger.debug('calibrate: peakshift=%s calibfactor=%s shift_applied=%s', peakshift, calibfactor, float(calibshift))
                 return map_mod
 
         def normalize(self, peakshift: float, width: float | None = None, height: float | None = None, mode: str = 'const', **kwargs) -> ramanmap:
@@ -586,6 +718,15 @@ class ramanmap:
                         + '\n'
                 )
 
+                # Structured record; a per-pixel normfactor is summarised
+                # (shape / mean / min / max) by _jsonable.
+                _record_step(
+                        normalized, 'normalize',
+                        mode=mode, peakshift=peakshift, peak_position=peakpos,
+                        normfactor=peakampl, func=kwargs.get('func', 'lorentz'),
+                )
+                logger.debug('normalize: mode=%s peakshift=%s peak_position=%s', mode, peakshift, float(peakpos))
+
                 # Lightweight copy of the instance and attach the new data.
                 map_norm = copy.copy(self)
                 map_norm.mapxr = normalized.copy()
@@ -621,6 +762,8 @@ class ramanmap:
                         + f'{n_spikes}'
                         + ' coordinates.\n'
                 )
+                _record_step(map_crr.mapxr, 'crr', cutoff=cutoff, window=window, n_replaced=n_spikes)
+                logger.debug('crr: cutoff=%s window=%s n_replaced=%d', cutoff, window, n_spikes)
                 return map_crr
 
 
@@ -680,7 +823,11 @@ class ramanmap:
                 spectofit = self.mapxr.sel(width = mapwidth, height = mapheight, method = 'nearest')
                 fit = peakfit(spectofit, stval = {'x0': peakpos}, **kwargs)
                 peakx0 = fit['curvefit_coefficients'].sel(param = 'x0').data
-                peakwidth = fit['curvefit_coefficients'].sel(param = 'width').data
+                # The Lorentzian is symmetric in the sign of ``width``, so
+                # curve_fit may converge to a negative value; take the
+                # magnitude, otherwise the vicinity slice below is inverted
+                # (empty) and bgsubtract fails on an empty array.
+                peakwidth = np.abs(fit['curvefit_coefficients'].sel(param = 'width').data)
 
                 # vicinity of the peak
                 # this needs to be larger than the exclusion_factor used by bgsubtract()
@@ -711,6 +858,16 @@ class ramanmap:
                 # update the comment attributes if it exists
                 if hasattr(mapmasked.mapxr, 'comments'):
                         mapmasked.mapxr.attrs['comments'] += 'cropped regions, where mean Raman int. of peak: ' + f'{peakx0:.2f}' + ' is less than ' + f'{cutoff:.2f}' + ' of selected peak\n'
+                # Structured record, including how many pixels survived so
+                # a reader can judge the cutoff without re-plotting.
+                _record_step(
+                        mapmasked.mapxr, 'peakmask',
+                        peakpos=peakpos, peak_position=peakx0, peak_width=peakwidth, cutoff=cutoff,
+                        reference={'width': float(mapwidth), 'height': float(mapheight)},
+                        pixels_kept=int(peakmask.sum()), pixels_total=int(peakmask.size),
+                )
+                logger.debug('peakmask: peakpos=%s cutoff=%s kept %d of %d pixels',
+                             peakpos, cutoff, int(peakmask.sum()), int(peakmask.size))
 
                 return mapmasked, peakmask
 
@@ -950,3 +1107,12 @@ class ramanmap:
                 self.mapxr.coords['width'].attrs['long_name'] = 'width'
                 self.mapxr.coords['height'].attrs['units'] = 'um'  # type: ignore
                 self.mapxr.coords['height'].attrs['long_name'] = 'height'
+                # First structured history entry: where the data came from.
+                # The wip loader appends its own ``source`` detail afterwards.
+                _record_step(
+                        self.mapxr, 'load',
+                        source=str(self.filename), info_loaded=bool(self._info_loaded),
+                        pixel_x=int(self.pixel_x), pixel_y=int(self.pixel_y),
+                )
+                logger.debug('load: ramanmap %s (%dx%d pixels, %d points)',
+                             self.filename, self.pixel_x, self.pixel_y, len(self.ramanshift))

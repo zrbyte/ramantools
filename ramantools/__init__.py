@@ -9,6 +9,7 @@ from .ramantools import (
         bgsubtract,
         peakfit,
         wipfile,
+        load,
 )
 
 # Explicitly define the public interface for clarity
@@ -23,4 +24,5 @@ __all__ = [
         "bgsubtract",
         "peakfit",
         "wipfile",
+        "load",
 ]

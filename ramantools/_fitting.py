@@ -17,7 +17,12 @@ from scipy.signal import find_peaks  # type: ignore
 
 # _midpoint is needed in peakfit's ``toplot`` branch to pick a central
 # spectrum for plotting when no explicit width/height is given.
-from ._helpers import _midpoint
+# _plot_target / _finish_plot implement the 0.6.0 ``ax`` / ``savepath``
+# keywords; _record_step / _step_names are the structured history.
+from ._helpers import _midpoint, _plot_target, _finish_plot, _record_step, _step_names, _jsonable
+# ``_say`` replaces bare print() for status text: it prints unless the
+# caller configured logging, in which case it only logs.
+from ._log import logger, _say
 # Named thresholds previously spelled as magic numbers — see _constants.py
 # for the rationale behind each value.
 from ._constants import (
@@ -129,10 +134,14 @@ def _normalize_to_peak(whole_da, peakshift: float, ref_coords=None, mode: str = 
         bgoffset_high = ref_cropped[-1].data
 
         # Sanity check: if the spectrum baseline is high (above
-        # NORMALIZE_BG_THRESHOLD) or the 'background subtracted' marker is
-        # absent from the processing history, refuse to normalize. Same
-        # message as the original so upstream error-matching tests pass.
-        if ((bgoffset_high + bgoffset_low) / 2 > NORMALIZE_BG_THRESHOLD) or ('background subtracted' not in whole_da.attrs['comments']):
+        # NORMALIZE_BG_THRESHOLD) or no background subtraction is on record,
+        # refuse to normalize. The structured history is consulted first;
+        # the free-text 'background subtracted' marker remains as a
+        # fallback for objects whose comments were edited by hand or that
+        # pre-date the structured record. Same message as the original so
+        # upstream error-matching tests pass.
+        bg_removed = ('remove_bg' in _step_names(whole_da)) or ('background subtracted' in whole_da.attrs.get('comments', ''))
+        if ((bgoffset_high + bgoffset_low) / 2 > NORMALIZE_BG_THRESHOLD) or not bg_removed:
                 raise ValueError(
                         "The background was not removed, or the peak selected is not suitable "
                         "for normalization. This should be done in case of normalizing to a peak amplitude"
@@ -313,7 +322,7 @@ def polynomial_fit(order: int, x_data, y_data):
 
         return coeff, covar
 
-def bgsubtract(x_data, y_data, polyorder: int = 1, toplot: bool = False, fitmask = None, hmin: float = 50, hmax: float = 10000, wmin: float = 4, wmax: float = 60, prom: float = 10, exclusion_factor: float = 6, peak_pos = None):
+def bgsubtract(x_data, y_data, polyorder: int = 1, toplot: bool = False, fitmask = None, hmin: float = 50, hmax: float = 10000, wmin: float = 4, wmax: float = 60, prom: float = 10, exclusion_factor: float = 6, peak_pos = None, ax = None, savepath = None):
         """Takes Raman shift and Raman intensity data and automatically finds peaks in the spectrum, using :py:mod:`scipy.find_peaks`.
         These peaks are then used to define the areas of the background signal.
         In the areas with the peaks removed, the background is fitted by a polynomial of order given by the optional argument: ``polyorder``.
@@ -334,6 +343,13 @@ def bgsubtract(x_data, y_data, polyorder: int = 1, toplot: bool = False, fitmask
         :type polyorder: int, optional
         :param toplot: if `True` a plot of: the fit, the background used and positions of the peaks is shown, defaults to False
         :type toplot: bool, optional
+        :param ax: matplotlib Axes to draw the ``toplot`` figure into. Passing an
+                Axes implies ``toplot=True``. Defaults to the current axes.
+        :type ax: :class:`matplotlib.axes.Axes`, optional
+        :param savepath: write the ``toplot`` figure to this file and close it
+                instead of displaying it (implies ``toplot=True``). Use this from
+                headless scripts or agents to inspect a background fit.
+        :type savepath: str, optional
         :param fitmask: Fitmask to be used for polynomial fitting.
         :type fitmask: :py:mod:`numpy` array
         :param hmin: minimum height of the peaks passed to :py:mod:`scipy.signal.find_peaks`, defaults to 50
@@ -427,32 +443,82 @@ def bgsubtract(x_data, y_data, polyorder: int = 1, toplot: bool = False, fitmask
         # Line subtracted data
         y_data_nobg = y_data - bg_values
 
-        if toplot == True:
+        # ``ax`` / ``savepath`` are opt-in ways of asking for the plot; the
+        # historical ``toplot=True`` path draws on the current axes exactly
+        # as before (``_plot_target`` returns ``plt.gca()`` in that case).
+        if toplot == True or ax is not None or savepath is not None:
+                ax, owns_figure = _plot_target(ax, savepath)
                 # Plot the data and peaks
-                plt.plot(x_data, y_data, label = 'Raman spectrum')
+                ax.plot(x_data, y_data, label = 'Raman spectrum')
 
                 # Highlight the peaks
                 if fitmask is None:
-                        plt.scatter(x_data[peak_indices], y_data[peak_indices], color = 'green', label = 'peaks')
+                        ax.scatter(x_data[peak_indices], y_data[peak_indices], color = 'green', label = 'peaks')
                 else:
                         pass
 
                 # Plot the fitted polynomial
-                plt.plot(x_data, bg_values, color = 'k', ls = "dashed", label = 'fitted polynomial')
+                ax.plot(x_data, bg_values, color = 'k', ls = "dashed", label = 'fitted polynomial')
 
                 # Highlight the background used for fitting
-                plt.scatter(uncovered_x_data, uncovered_y_data, color = 'red', marker= 'o', alpha = 1, label = 'background used for fit') # type: ignore
+                ax.scatter(uncovered_x_data, uncovered_y_data, color = 'red', marker= 'o', alpha = 1, label = 'background used for fit') # type: ignore
 
-                plt.xlabel('Raman shift (cm$^{-1}$)')
-                plt.ylabel('Raman intensity (a.u.)')
-                plt.title('Data plot with peaks, fitted line and background highlighted.')
-                plt.legend()
-        
+                ax.set_xlabel('Raman shift (cm$^{-1}$)')
+                ax.set_ylabel('Raman intensity (a.u.)')
+                ax.set_title('Data plot with peaks, fitted line and background highlighted.')
+                ax.legend()
+                # Save + close when a file was requested (no-op otherwise).
+                _finish_plot(ax, savepath, owns_figure)
+
         params_used_at_run = {'polyorder': polyorder, 'hmin': hmin, 'hmax': hmax, 'wmin': wmin, 'wmax': wmax, 'prom':prom, 'exclusion_factor': exclusion_factor, 'peak_pos': peak_pos}
 
         return y_data_nobg, bg_values, coeff, params_used_at_run, mask, covar
 
-def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None, toplot: bool = False, width: float | None = None, height: float | None = None, **kwargs):
+def _positive_widths(fit):
+        """Report every ``width*`` parameter of a fit as a positive number.
+
+        :func:`gaussian`, :func:`lorentz` and :func:`lorentz2` depend on
+        ``width`` only through ``width**2`` (the Lorentz numerator is
+        ``area * width`` with ``area`` itself proportional to ``width``),
+        so ``+w`` and ``-w`` describe the same curve and ``curve_fit`` is
+        free to converge to either sign. The negative solution is not a
+        bad fit, only an awkward parametrisation, and it used to leak into
+        plots, printouts and downstream code (``peakmask`` had to take
+        ``abs``). This maps it onto the positive one exactly:
+
+        * the coefficient is multiplied by ``-1``;
+        * the covariance row and column of that parameter are multiplied
+          by ``-1`` as well, which is the covariance of the reparametrised
+          problem (the diagonal element is multiplied twice and therefore
+          unchanged).
+
+        Positive widths and NaNs (failed pixels) are multiplied by ``1.0``
+        and stay bit-identical, so fits that were already fine are not
+        altered in any way. Works for a single spectrum (0-d parameters)
+        and for maps (parameters over ``height`` / ``width``) alike.
+        Modifies ``fit`` in place and returns it.
+        """
+        coeff = fit['curvefit_coefficients']
+        # ``curvefit_covariance`` is always produced by xarray's curvefit,
+        # but a Dataset assembled by hand may lack it; cope with both.
+        cov = fit['curvefit_covariance'] if 'curvefit_covariance' in fit else None
+        for name in (str(n) for n in coeff.param.values):
+                if not name.startswith('width'):
+                        continue
+                values = coeff.sel(param = name).values
+                # -1 where the width is negative, +1 elsewhere (NaN compares
+                # False, so failed fits keep their NaN untouched).
+                sign = np.where(values < 0, -1.0, 1.0)
+                coeff.loc[{'param': name}] = values * sign
+                if cov is not None:
+                        # Row and column of this parameter; ``sign`` broadcasts
+                        # over the remaining cov axis (and over the map axes).
+                        cov.loc[{'cov_i': name}] = cov.sel(cov_i = name).values * sign[..., np.newaxis]
+                        cov.loc[{'cov_j': name}] = cov.sel(cov_j = name).values * sign[..., np.newaxis]
+        return fit
+
+
+def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None, toplot: bool = False, width: float | None = None, height: float | None = None, ax = None, savepath = None, **kwargs):
         """Fitting a function to peaks in the data contained in ``xrobj``, which can be a single spectrum, a map or a selected spectrum from a map.
 
         :param xrobj: :py:mod:`xarray` DataArray, of a single spectrum or a map.
@@ -471,8 +537,14 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
         :type width: `int` or `float`, optional
         :param height: height parameter of an :py:mod:`xarray` map to be used in conjunction with ``toplot = True``
         :type height: `int` or `float`, optional
-        
-        :return: fitted parameters of ``func`` and covariances in a Dataset
+        :param ax: matplotlib Axes to draw the ``toplot`` figure into (implies ``toplot=True``). Defaults to the current axes.
+        :type ax: :class:`matplotlib.axes.Axes`, optional
+        :param savepath: write the ``toplot`` figure to this file and close it instead of displaying it (implies ``toplot=True``).
+        :type savepath: str, optional
+
+        :return: fitted parameters of ``func`` and covariances in a Dataset. Its
+                ``attrs['param_units']`` maps each parameter name to its unit
+                (``x0`` / ``width`` in 1/cm, ``ampl`` / ``offset`` in the input units).
         :rtype: :py:mod:`xarray` Dataset
 
         :Example:
@@ -501,6 +573,7 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
                 - Passing a ``bounds`` dictionary to :func:`peakfit` seems to increase the fitting time significantly. This might be an issue with :py:mod:`xarray.DataArray.curvefit`.
                 - By passing a previous fit result, using the optional parameter ``fitresult``, we can just plot the fit result at multiple regions of the map.
                 - In case of using double Lorentz fitting, the names of the parameters change! See: :func:`lorentz2`.
+                - Fitted widths are always reported as positive numbers. The shape functions are even in ``width``, so ``curve_fit`` may converge to the negative solution; :func:`peakfit` maps it (coefficient and covariance) onto the equivalent positive one.
 
         .. seealso::
 
@@ -533,10 +606,18 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
         if fitresult is None:
                 fit = xrobj.curvefit('ramanshift', func, p0 = stval, bounds = bounds, errors = 'ignore', kwargs = {'maxfev': PEAKFIT_MAXFEV})
         else:
-                fit = fitresult
+                # Deep copy so the caller's Dataset is not modified by the
+                # width sign normalisation below.
+                fit = fitresult.copy(deep = True)
+        # The shape functions are even in ``width``; report the positive
+        # solution so plots, printouts and downstream code never see a
+        # negative FWHM. Exact (multiplication by +-1), see the helper.
+        fit = _positive_widths(fit)
 
-        # plot the resulting fit
-        if toplot is True:
+        # plot the resulting fit. ``ax`` / ``savepath`` imply toplot; the
+        # bare ``toplot=True`` path still draws on the current axes.
+        if toplot is True or ax is not None or savepath is not None:
+                ax, owns_figure = _plot_target(ax, savepath)
                 #check if the xrobj is a single spectrum or map
                 if 'width' in xrobj.dims:
                         # it's a map
@@ -552,18 +633,21 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
                         paramnames = fit['curvefit_coefficients'].sel(width = plotwidth, height = plotheight, method = 'nearest').param.values
                         funcparams = fit['curvefit_coefficients'].sel(width = plotwidth, height = plotheight, method = 'nearest').data
                         # plot the data
-                        xrobj.sel(width = plotwidth, height = plotheight, method = 'nearest').plot(color = 'black', marker = '.', lw = 0, label = 'data')                        
+                        xrobj.sel(width = plotwidth, height = plotheight, method = 'nearest').plot(ax = ax, color = 'black', marker = '.', lw = 0, label = 'data')
                 else:
                         paramnames = fit['curvefit_coefficients'].param.values
                         funcparams = fit['curvefit_coefficients'].data
                         # plot the data
-                        xrobj.plot(color = 'black', marker = '.', lw = 0, label = 'data')
+                        xrobj.plot(ax = ax, color = 'black', marker = '.', lw = 0, label = 'data')
 
-                # print the starting and fitted values of the parameters
-                print('Values of starting parameters: \n', stval, '\n')
-                print('Values of fitted parameters:\n')
+                # Report the starting and fitted parameter values. ``_say``
+                # prints exactly what the old ``print`` calls did unless the
+                # caller has configured logging, in which case the text goes
+                # through the ``ramantools`` logger only.
+                _say('Values of starting parameters: \n ' + str(stval) + ' \n')
+                _say('Values of fitted parameters:\n')
                 for name, fitvalues in zip(paramnames, funcparams):
-                        print(name, ':', f'{fitvalues:.2f}')
+                        _say(f'{name} : {fitvalues:.2f}')
 
                 shiftmin = min(xrobj.ramanshift.data)
                 shiftmax = max(xrobj.ramanshift.data)
@@ -576,16 +660,34 @@ def peakfit(xrobj, func = lorentz, fitresult = None, stval = None, bounds = None
                 plotarea_x = 100
                 plotarea_y = [0.8*np.min(funcvalues), 1.1*np.max(funcvalues)]
 
-                plt.plot(shift, funcvalues, color = 'red', lw = 3, alpha = 0.5, label = 'fit')
-                plt.xlim([fitpeakpos - plotarea_x, fitpeakpos + plotarea_x])
-                plt.ylim(plotarea_y)
-                plt.legend()
-        
+                ax.plot(shift, funcvalues, color = 'red', lw = 3, alpha = 0.5, label = 'fit')
+                ax.set_xlim([fitpeakpos - plotarea_x, fitpeakpos + plotarea_x])
+                ax.set_ylim(plotarea_y)
+                ax.legend()
+                # Save + close when a file was requested (no-op otherwise).
+                _finish_plot(ax, savepath, owns_figure)
+
         # copy attributes to the fit dataset, update the 'comments'
         fit.attrs = xrobj.attrs.copy()
         # update the comments if it exists
         if hasattr(fit, 'comments'):
                 fit.attrs['comments'] += 'peak fitting, using ' + str(func.__name__) + '\n'
-                
+        # Structured history entry on the fit Dataset itself, so a saved fit
+        # result records which function and starting values produced it.
+        _record_step(fit, 'peakfit', func=func, stval=stval, bounds=bounds)
+        # Units of each fitted parameter: positions and widths share the
+        # ramanshift unit, amplitudes and offsets the intensity unit of the
+        # input. Parameter names come from the shape function itself so the
+        # double-Lorentz variants (x01 / ampl2 …) are covered automatically.
+        shift_unit = xrobj.coords['ramanshift'].attrs.get('units', '1/cm')
+        value_unit = xrobj.attrs.get('units', 'au')
+        fit.attrs['param_units'] = {
+                name: shift_unit if name.startswith(('x0', 'width')) else value_unit
+                for name in param_names[1:]
+        }
+        # _jsonable turns numpy scalars inside stval into plain Python numbers
+        # so the log line reads ``'offset': 11.3`` rather than ``np.float64(11.3)``.
+        logger.debug('peakfit: func=%s stval=%s dims=%s', func.__name__, _jsonable(stval), dict(xrobj.sizes))
+
         return fit
 

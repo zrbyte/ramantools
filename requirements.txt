@@ -4,3 +4,4 @@ scipy
 pandas
 xarray
 WITecSDK
+h5netcdf

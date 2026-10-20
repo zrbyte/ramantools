@@ -38,6 +38,11 @@ EXPECTED_PUBLIC = [
     "polynomial_fit",
     "bgsubtract",
     "peakfit",
+    # Added after the Phase 1 refactor: the .wip reader (0.5.0) and the
+    # netCDF round-trip entry point (0.6.0). Locked here so a later
+    # module shuffle cannot drop them from either import path.
+    "wipfile",
+    "load",
 ]
 
 
@@ -108,6 +113,10 @@ RAMANMAP_METHODS = [
     "normalize",
     "crr",
     "peakmask",
+    # 0.6.0 additions: introspection and the netCDF round trip.
+    "summary",
+    "save",
+    "load",
 ]
 
 # Every method documented as public on ``singlespec``. Shorter than the
@@ -119,6 +128,10 @@ SINGLESPEC_METHODS = [
     "calibrate",
     "normalize",
     "crr",
+    # 0.6.0 additions (same surface as ramanmap).
+    "summary",
+    "save",
+    "load",
 ]
 
 
@@ -171,6 +184,24 @@ def test_utility_function_signatures():
     # peakfit(xrobj, func=lorentz, ...) — leading positional is the xarray.
     pf_params = list(inspect.signature(ramantools.peakfit).parameters)
     assert pf_params[:1] == ["xrobj"]
+    # The 0.6.0 plotting keywords were appended *after* every pre-existing
+    # parameter so positional callers of either function are unaffected.
+    assert bg_params[-2:] == ["ax", "savepath"]
+    assert pf_params[-3:] == ["ax", "savepath", "kwargs"]
+
+
+def test_history_default_still_prints_and_returns_none():
+    """``history()`` keeps its print-and-return-None contract; ``as_list`` is opt-in.
+
+    Locked because a notebook cell ending in ``m.history()`` would echo a
+    returned value a second time if the default ever started returning.
+    """
+    sig = inspect.signature(ramantools.ramanmap.history)
+    assert list(sig.parameters) == ["self", "as_list"]
+    assert sig.parameters["as_list"].default is False
+    sig = inspect.signature(ramantools.singlespec.history)
+    assert list(sig.parameters) == ["self", "as_list"]
+    assert sig.parameters["as_list"].default is False
 
 
 def test_class_init_signatures():

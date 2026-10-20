@@ -222,3 +222,271 @@ def _crr_xarray(da: xr.DataArray, cutoff: float, window: int):
         # so the caller can append a comment line without a KeyError.
         cleaned.attrs = da.attrs.copy()
         return cleaned, int(crrpos.sum().data)
+
+
+# ---------------------------------------------------------------------------
+# Structured processing history
+# ---------------------------------------------------------------------------
+#
+# ``attrs['comments']`` is a free-text log meant for humans. Agents and
+# scripts need the same information as data: which step ran, with which
+# parameters, in which order. ``attrs['processing_steps']`` carries that
+# as a JSON string (a plain string so it survives ``to_netcdf`` — netCDF
+# attributes cannot hold nested Python objects). Every pipeline method
+# appends one record through ``_record_step`` right next to its
+# ``comments`` line; ``_history_steps`` decodes the list back.
+
+import json  # JSON encode / decode of the step records
+
+# Attribute key under which the JSON-encoded step list is stored.
+_STEPS_ATTR = 'processing_steps'
+
+
+def _jsonable(value):
+        """Coerce ``value`` into something :func:`json.dumps` accepts.
+
+        Pipeline parameters are mostly floats, ints, strings and bools,
+        but a few are numpy scalars / arrays (``calibshift`` comes back
+        as a 0-d numpy array, ``peak_pos`` may be a list of numpy
+        floats) or callables (the ``func`` passed to ``peakfit``). This
+        maps each of those onto a JSON-friendly equivalent instead of
+        raising ``TypeError`` deep inside a processing method.
+        """
+        # numpy scalars / 0-d arrays → Python scalar
+        if isinstance(value, np.generic):
+                return value.item()
+        if isinstance(value, np.ndarray):
+                if value.ndim == 0:
+                        return value.item()
+                # Small arrays (e.g. polynomial coefficients) are worth
+                # keeping; large ones (a per-pixel array) are summarised
+                # by shape so the attribute stays small.
+                if value.size <= 32:
+                        return [ _jsonable(v) for v in value.tolist() ]
+                return {'shape': list(value.shape), 'dtype': str(value.dtype)}
+        if isinstance(value, xr.DataArray):
+                # Per-pixel results (individual-mode normfactor etc.):
+                # record summary statistics, not the whole array.
+                finite = value.data[np.isfinite(value.data)] if np.issubdtype(value.dtype, np.floating) else value.data
+                summary = {'shape': list(value.shape), 'dims': list(value.dims)}
+                if finite.size:
+                        summary.update(mean=float(np.mean(finite)), min=float(np.min(finite)), max=float(np.max(finite)))
+                return summary
+        if isinstance(value, dict):
+                return {str(k): _jsonable(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+                return [_jsonable(v) for v in value]
+        if callable(value):
+                # Shape functions: their name is what a reader wants.
+                return getattr(value, '__name__', repr(value))
+        if isinstance(value, (str, int, float, bool)) or value is None:
+                return value
+        # Anything else (Path objects, …) falls back to its string form.
+        return str(value)
+
+
+def _history_steps(da: xr.DataArray) -> list:
+        """Decode ``attrs['processing_steps']`` into a list of dicts.
+
+        Returns an empty list when the attribute is absent (objects
+        created before 0.6.0, or DataArrays assembled by hand). A corrupt
+        attribute is also treated as empty rather than raising, because
+        a broken history must never prevent the data from being used.
+        """
+        raw = da.attrs.get(_STEPS_ATTR, '')
+        if not raw:
+                return []
+        try:
+                steps = json.loads(raw)
+        except (TypeError, ValueError):
+                return []
+        return steps if isinstance(steps, list) else []
+
+
+def _record_step(da: xr.DataArray, step: str, **params) -> None:
+        """Append one ``{'step': step, 'params': {...}}`` record to ``da``.
+
+        Mutates ``da.attrs`` in place; callers invoke it on the *new*
+        DataArray they are about to hand back, immediately after
+        appending the human-readable ``comments`` line, so the two logs
+        stay in lockstep. Parameters pass through :func:`_jsonable`.
+        """
+        steps = _history_steps(da)
+        steps.append({'step': step, 'params': _jsonable(params)})
+        da.attrs[_STEPS_ATTR] = json.dumps(steps)
+
+
+def _step_names(da: xr.DataArray) -> list:
+        """Just the ordered step names — what ``__repr__`` shows."""
+        return [s.get('step', '?') for s in _history_steps(da)]
+
+
+def _comments_as_steps(da: xr.DataArray) -> list:
+        """Fallback for ``history(as_list=True)`` on pre-0.6.0 objects.
+
+        Splits the free-text ``comments`` into one ``{'step': 'comment',
+        'text': line}`` record per non-empty line, so callers always get
+        a list even when the structured attribute is missing.
+        """
+        text = da.attrs.get('comments', '')
+        return [{'step': 'comment', 'text': line.strip()} for line in text.splitlines() if line.strip()]
+
+
+# ---------------------------------------------------------------------------
+# Plotting helpers
+# ---------------------------------------------------------------------------
+
+def _plot_target(ax, savepath):
+        """Resolve the ``ax`` / ``savepath`` plotting kwargs to an Axes.
+
+        Shared by every method that accepts the opt-in ``ax=`` and
+        ``savepath=`` keywords added in 0.6.0:
+
+        * ``ax`` given → draw there; the caller owns the figure.
+        * ``savepath`` given (no ``ax``) → a fresh figure is created so
+          the saved image contains only this plot, and
+          :func:`_finish_plot` closes it afterwards. This is the
+          headless path agents use.
+        * neither → ``plt.gca()``, i.e. the historical behaviour of the
+          bare ``plt.plot`` calls (draw on the current axes, let the
+          inline backend display it at the end of the cell).
+
+        Returns ``(ax, owns_figure)`` where ``owns_figure`` tells
+        :func:`_finish_plot` whether closing is our responsibility.
+        """
+        import matplotlib.pyplot as plt  # local import keeps module import light
+        if ax is not None:
+                return ax, False
+        if savepath is not None:
+                _, ax = plt.subplots()
+                return ax, True
+        return plt.gca(), False
+
+
+def _finish_plot(ax, savepath, owns_figure: bool) -> None:
+        """Save and, if we created the figure, close it.
+
+        Closing matters in two ways: it frees memory in long batch runs,
+        and in Jupyter it prevents the figure from *also* being rendered
+        inline after it has been written to disk.
+        """
+        import matplotlib.pyplot as plt  # local import keeps module import light
+        if savepath is None:
+                return
+        fig = ax.get_figure()
+        fig.savefig(savepath, bbox_inches='tight')
+        if owns_figure:
+                plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Container summary / repr
+# ---------------------------------------------------------------------------
+
+def _fmt_num(value, digits: int = 3) -> str:
+        """Format a metadata number compactly; sentinels print as ``N/A``."""
+        try:
+                f = float(value)
+        except (TypeError, ValueError):
+                return str(value)
+        if np.isnan(f):
+                return 'N/A'
+        # Integers print without a decimal part (``1 s`` not ``1.000 s``).
+        if f == int(f) and abs(f) < 1e6:
+                return str(int(f))
+        return f'{f:.{digits}f}'
+
+
+def _container_summary(obj, da: xr.DataArray) -> dict:
+        """Collect the facts ``__repr__`` and ``summary()`` report, as a dict.
+
+        Shared by :class:`ramanmap` and :class:`singlespec`; the map adds
+        its pixel grid / physical size, the spectrum its Z positioner.
+        Every value is a plain Python type so the dict can be dumped as
+        JSON by the CLI. Only cheap operations are performed here — the
+        intensity data itself is never touched, so ``repr(m)`` on a
+        100 MB map is instant.
+        """
+        rs = da.coords['ramanshift'].data
+        is_map = 'width' in da.dims
+        out = {
+                'class': 'ramanmap' if is_map else 'singlespec',
+                'name': getattr(obj, 'mapname', None) if is_map else getattr(obj, 'specname', None),
+                'sample': getattr(obj, 'samplename', None),
+                'source': str(getattr(obj, 'filename', '')),
+                'wipfile': getattr(obj, 'wipfilename', ''),
+                'date': getattr(obj, 'date', None),
+                'time': getattr(obj, 'time', None),
+                'n_ramanshift': int(rs.size),
+                'ramanshift_min': float(rs.min()) if rs.size else None,
+                'ramanshift_max': float(rs.max()) if rs.size else None,
+                # Mean sample spacing — spectrometers are not perfectly
+                # linear in 1/cm, so a single step value is approximate.
+                'ramanshift_step': float(np.mean(np.diff(rs))) if rs.size > 1 else None,
+                'laser_nm': _jsonable(getattr(obj, 'laser', None)),
+                'integration_time_s': _jsonable(getattr(obj, 'itime', None)),
+                'grating': getattr(obj, 'grating', None),
+                'objective': getattr(obj, 'objname', None),
+                'magnification': getattr(obj, 'objmagn', None),
+                'positioner_x': _jsonable(getattr(obj, 'positioner_x', None)),
+                'positioner_y': _jsonable(getattr(obj, 'positioner_y', None)),
+                'units': da.attrs.get('units'),
+                'long_name': da.attrs.get('long_name'),
+                'steps': _step_names(da),
+                'has_mask': getattr(obj, 'mask', None) is not None,
+                'normfactor': _jsonable(getattr(obj, 'normfactor', None)),
+        }
+        if is_map:
+                out['pixel_x'] = int(da.sizes['width'])
+                out['pixel_y'] = int(da.sizes['height'])
+                out['size_x_um'] = _jsonable(getattr(obj, 'size_x', None))
+                out['size_y_um'] = _jsonable(getattr(obj, 'size_y', None))
+        else:
+                out['positioner_z'] = _jsonable(getattr(obj, 'positioner_z', None))
+        return out
+
+
+def _fmt_qty(value, unit: str, sep: str = ' ') -> str:
+        """``_fmt_num`` plus a unit, except that an unknown value stays a bare ``N/A``."""
+        text = _fmt_num(value)
+        return text if text == 'N/A' else f'{text}{sep}{unit}'
+
+
+def _format_summary(s: dict) -> str:
+        """Render a :func:`_container_summary` dict as the multi-line repr.
+
+        One fact per line, aligned labels, no data statistics. The
+        ``steps`` line is the processing history at a glance; ``load``
+        is always first, so an object that shows only ``load`` is raw.
+        """
+        lines = [f"<ramantools.{s['class']} {s['name']!r}>"]
+        lines.append(f"  sample:      {s['sample']}")
+        lines.append(f"  source:      {s['source']}")
+        if s['class'] == 'ramanmap':
+                lines.append(
+                        f"  map:         {s['pixel_x']} x {s['pixel_y']} pixels (width x height), "
+                        f"{_fmt_num(s['size_x_um'])} x {_fmt_num(s['size_y_um'])} um"
+                )
+        else:
+                coords = [_fmt_num(s[k]) for k in ('positioner_x', 'positioner_y', 'positioner_z')]
+                # Header-only spectra have no positioner data at all: say so
+                # once instead of printing three N/A values with a unit.
+                if all(c == 'N/A' for c in coords):
+                        lines.append("  position:    N/A")
+                else:
+                        lines.append(f"  position:    X {coords[0]}, Y {coords[1]}, Z {coords[2]} um")
+        if s['n_ramanshift']:
+                lines.append(
+                        f"  ramanshift:  {s['n_ramanshift']} points, "
+                        f"{s['ramanshift_min']:.1f} .. {s['ramanshift_max']:.1f} 1/cm "
+                        f"(step {s['ramanshift_step']:.2f})" if s['ramanshift_step'] is not None else
+                        f"  ramanshift:  {s['n_ramanshift']} points"
+                )
+        lines.append(
+                f"  instrument:  laser {_fmt_qty(s['laser_nm'], 'nm')}, integration {_fmt_qty(s['integration_time_s'], 's')}, "
+                f"grating {s['grating']}, objective {_fmt_qty(s['magnification'], 'x', sep='')}"
+        )
+        lines.append(f"  values:      {s['long_name']} [{s['units']}]")
+        steps = ' -> '.join(s['steps']) if s['steps'] else '(no structured history)'
+        lines.append(f"  steps:       {steps}")
+        return '\n'.join(lines)

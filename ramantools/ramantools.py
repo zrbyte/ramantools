@@ -26,6 +26,9 @@ from .map import ramanmap
 from .spec import singlespec
 # WITecSDK is a regular dependency, so wipfile is always importable.
 from .wip import wipfile
+# netCDF round-trip entry point (0.6.0): opens files written by
+# ``ramanmap.save`` / ``singlespec.save`` and returns the right class.
+from ._serialize import load
 
 # Module-level internals preserved for compatibility — legacy notebooks
 # occasionally poked at these (e.g. ``_midpoint`` in custom extensions).
@@ -43,4 +46,5 @@ __all__ = [
         "bgsubtract",
         "peakfit",
         "wipfile",
+        "load",
 ]

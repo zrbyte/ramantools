@@ -157,6 +157,22 @@ class TestWipfileInventory:
         wip.tree()
         assert capsys.readouterr().out.strip().splitlines() == lines
 
+    def test_cli_inspect_by_id(self, capsys):
+        """``ramantools inspect project.wip --id ID`` summarises one object.
+
+        Without ``--id`` the whole tree is printed (covered by test_tree
+        through the library call); with it the CLI must load the object
+        and print its repr, or its summary dict with ``--json``.
+        """
+        from ramantools.cli import main  # local import: the CLI is not needed elsewhere here
+        assert main(['inspect', str(WIP_PATH), '--id', '200']) == 0
+        out = capsys.readouterr().out
+        assert out.startswith('<ramantools.singlespec') and 'wip_extract' in out
+        assert main(['inspect', str(WIP_PATH), '--id', '28', '--json']) == 0
+        import json
+        data = json.loads(capsys.readouterr().out)
+        assert data['class'] == 'ramanmap' and data['pixel_x'] == 50 and data['pixel_y'] == 120
+
     def test_info_text(self, wip):
         """Information text is found for a map, for an extracted spectrum, and for a mask.
 
