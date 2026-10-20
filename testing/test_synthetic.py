@@ -54,6 +54,24 @@ def rmap(files):
     return rt.ramanmap(f['map_path'], f['info_path'])
 
 
+def two_peak_spectrum() -> xr.DataArray:
+    """Noisy sum of two Lorentzians (2690 / 2740 1/cm, FWHM 40, offset 5).
+
+    The synthetic 2D band is a single Lorentzian, on which a seven-parameter
+    ``lorentz2`` fit does not converge from any reasonable start, so tests
+    that need a converging double-Lorentz fit use this spectrum instead.
+    Seeded, so the fit result is reproducible.
+    """
+    x = np.linspace(2600, 2800, 200)
+    rng = np.random.default_rng(0)
+    y = rt.lorentz2(x, 2690, 400, 40, 2740, 300, 40, 5) + rng.normal(0, 2, x.size)
+    return xr.DataArray(y, coords={'ramanshift': x}, dims='ramanshift', attrs={'units': 'au'})
+
+
+# Starting values from which the lorentz2 fit of two_peak_spectrum converges.
+TWO_PEAK_STVAL = {'x01': 2685, 'x02': 2745, 'ampl1': 300, 'ampl2': 300, 'width1': 30, 'width2': 30, 'offset': 0}
+
+
 @pytest.fixture(scope='module')
 def spec_nobg(spec):
     """Background-subtracted spectrum via automatic peak detection."""
@@ -170,12 +188,27 @@ class TestIntrospection:
     def test_peakfit_units_and_history(self, spec_nobg):
         """peakfit attaches param_units and its own history record to the result Dataset."""
         fit = rt.peakfit(spec_nobg.ssxr.sel(ramanshift=slice(1450, 1700)), stval={'x0': 1582})
+        # Guard against checking attributes of a failed fit (all-NaN coefficients).
+        assert np.all(np.isfinite(fit['curvefit_coefficients'].values))
         assert fit.attrs['param_units'] == {'x0': '1/cm', 'ampl': 'au', 'width': '1/cm', 'offset': 'au'}
         steps = json.loads(fit.attrs['processing_steps'])
         assert steps[-1]['step'] == 'peakfit' and steps[-1]['params']['func'] == 'lorentz'
-        fit2 = rt.peakfit(spec_nobg.ssxr.sel(ramanshift=slice(2600, 2800)), func=rt.lorentz2,
-                          stval={'x01': 2690, 'x02': 2715})
-        assert fit2.attrs['param_units']['x02'] == '1/cm' and fit2.attrs['param_units']['ampl1'] == 'au'
+        # Double Lorentz on a spectrum that really has two peaks. The fit
+        # must converge (an earlier version of this test fitted the single
+        # synthetic 2D band, got NaNs and still passed on the attrs alone).
+        fit2 = rt.peakfit(two_peak_spectrum(), func=rt.lorentz2, stval=dict(TWO_PEAK_STVAL))
+        coeff2 = fit2['curvefit_coefficients']
+        assert np.all(np.isfinite(coeff2.values)), 'lorentz2 fit did not converge'
+        assert float(coeff2.sel(param='x01')) == pytest.approx(2690, abs=1)
+        assert float(coeff2.sel(param='x02')) == pytest.approx(2740, abs=1)
+        # Every lorentz2 parameter has a unit: positions and widths share
+        # the ramanshift unit, amplitudes and the offset the intensity unit.
+        assert fit2.attrs['param_units'] == {
+            'x01': '1/cm', 'ampl1': 'au', 'width1': '1/cm',
+            'x02': '1/cm', 'ampl2': 'au', 'width2': '1/cm', 'offset': 'au',
+        }
+        steps2 = json.loads(fit2.attrs['processing_steps'])
+        assert steps2[-1]['step'] == 'peakfit' and steps2[-1]['params']['func'] == 'lorentz2'
 
 
 # ---------------------------------------------------------------------------
@@ -504,16 +537,12 @@ class TestPeakfitWidthSign:
         optimiser result and must come out positive from peakfit, mixed
         signs included.
 
-        A constructed two-peak spectrum is used because the synthetic 2D
-        band is a single Lorentzian, on which a seven-parameter lorentz2
-        fit does not converge from any reasonable start.
+        Uses ``two_peak_spectrum`` (see its docstring for why the synthetic
+        2D band is not suitable).
         """
-        x = np.linspace(2600, 2800, 200)
-        rng = np.random.default_rng(0)
-        y = rt.lorentz2(x, 2690, 400, 40, 2740, 300, 40, 5) + rng.normal(0, 2, x.size)
-        da = xr.DataArray(y, coords={'ramanshift': x}, dims='ramanshift')
+        da = two_peak_spectrum()
         for w1, w2 in ((-30, -30), (30, -30)):
-            stval = {'x01': 2685, 'x02': 2745, 'ampl1': 300, 'ampl2': 300, 'width1': w1, 'width2': w2, 'offset': 0}
+            stval = dict(TWO_PEAK_STVAL, width1=w1, width2=w2)
             raw = da.curvefit('ramanshift', rt.lorentz2, p0=dict(stval), errors='ignore', kwargs={'maxfev': 1000})
             fit = rt.peakfit(da, func=rt.lorentz2, stval=dict(stval))
             raw_w = raw['curvefit_coefficients'].sel(param=['width1', 'width2']).values
