@@ -476,6 +476,10 @@ which executes this notebook and compares each cell's outputs with its
 # Write the notebook
 # ---------------------------------------------------------------------------
 
+# Deterministic cell ids: nbformat would otherwise draw random ones on
+# every write, so each regeneration would churn the committed file.
+for n, cell in enumerate(cells):
+        cell.id = f'cell-{n:02d}'
 nb = new_notebook(cells=cells)
 # Kernel metadata so Jupyter and nbclient pick the default Python kernel.
 nb.metadata['kernelspec'] = {'name': 'python3', 'display_name': 'Python 3', 'language': 'python'}
